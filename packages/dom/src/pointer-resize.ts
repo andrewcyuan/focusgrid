@@ -12,24 +12,42 @@ type ResizeDrag = {
   startX: number;
   startY: number;
   startSizes: number[];
+  ownerDocument: Document | null;
+  captureTarget: PointerCaptureTarget | null;
+};
+
+type PointerCaptureTarget = Element & {
+  setPointerCapture?: (pointerId: number) => void;
+  hasPointerCapture?: (pointerId: number) => boolean;
+  releasePointerCapture?: (pointerId: number) => void;
 };
 
 export class PointerResizeController {
   private drag: ResizeDrag | null = null;
   private pendingDeltaPx = 0;
   private pendingFrame: FrameRequest | null = null;
+  private readonly onDocumentPointerMove = (event: PointerEvent): void => {
+    this.updateResize(event);
+  };
+  private readonly onDocumentPointerUp = (event: PointerEvent): void => {
+    this.endResize(event);
+  };
+  private readonly onDocumentPointerCancel = (event: PointerEvent): void => {
+    this.endResize(event);
+  };
 
   constructor(private readonly workspace: Workspace) {}
 
-  startResize(event: PointerEvent, handle: ComputedHandle): void {
+  startResize(
+    event: PointerEvent,
+    handle: ComputedHandle,
+    captureTarget?: Element | null,
+  ): void {
     event.preventDefault();
-    this.cancelPendingFrame();
+    this.destroy();
 
-    const target = event.currentTarget;
-
-    if (target instanceof HTMLElement) {
-      target.setPointerCapture(event.pointerId);
-    }
+    const ownerDocument = this.resolveOwnerDocument(event, captureTarget);
+    const pointerCaptureTarget = this.resolveCaptureTarget(captureTarget);
 
     const split = findSplitNode(this.workspace.getState().root, handle.splitId);
 
@@ -40,7 +58,12 @@ export class PointerResizeController {
       startX: event.clientX,
       startY: event.clientY,
       startSizes: split ? [...split.sizes] : [],
+      ownerDocument,
+      captureTarget: pointerCaptureTarget,
     };
+
+    this.setPointerCapture(pointerCaptureTarget, event.pointerId);
+    this.addDocumentListeners(ownerDocument);
   }
 
   updateResize(event: PointerEvent): void {
@@ -77,13 +100,23 @@ export class PointerResizeController {
     }
 
     this.flushPendingFrame();
+    this.finishDrag();
+  }
 
-    const target = event.currentTarget;
+  destroy(): void {
+    this.cancelPendingFrame();
+    this.finishDrag();
+  }
 
-    if (target instanceof HTMLElement && target.hasPointerCapture(event.pointerId)) {
-      target.releasePointerCapture(event.pointerId);
+  private finishDrag(): void {
+    if (!this.drag) {
+      return;
     }
 
+    const { captureTarget, ownerDocument, pointerId } = this.drag;
+
+    this.removeDocumentListeners(ownerDocument);
+    this.releasePointerCapture(captureTarget, pointerId);
     this.drag = null;
   }
 
@@ -122,5 +155,81 @@ export class PointerResizeController {
 
     cancelFrame(this.pendingFrame);
     this.pendingFrame = null;
+  }
+
+  private addDocumentListeners(ownerDocument: Document | null): void {
+    ownerDocument?.addEventListener("pointermove", this.onDocumentPointerMove);
+    ownerDocument?.addEventListener("pointerup", this.onDocumentPointerUp);
+    ownerDocument?.addEventListener("pointercancel", this.onDocumentPointerCancel);
+  }
+
+  private removeDocumentListeners(ownerDocument: Document | null): void {
+    ownerDocument?.removeEventListener("pointermove", this.onDocumentPointerMove);
+    ownerDocument?.removeEventListener("pointerup", this.onDocumentPointerUp);
+    ownerDocument?.removeEventListener("pointercancel", this.onDocumentPointerCancel);
+  }
+
+  private resolveOwnerDocument(
+    event: PointerEvent,
+    captureTarget?: Element | null,
+  ): Document | null {
+    if (captureTarget?.ownerDocument) {
+      return captureTarget.ownerDocument;
+    }
+
+    if (
+      typeof Element !== "undefined" &&
+      event.target instanceof Element &&
+      event.target.ownerDocument
+    ) {
+      return event.target.ownerDocument;
+    }
+
+    return typeof document === "undefined" ? null : document;
+  }
+
+  private resolveCaptureTarget(
+    captureTarget?: Element | null,
+  ): PointerCaptureTarget | null {
+    if (!captureTarget) {
+      return null;
+    }
+
+    if (
+      "setPointerCapture" in captureTarget ||
+      "releasePointerCapture" in captureTarget
+    ) {
+      return captureTarget as PointerCaptureTarget;
+    }
+
+    return null;
+  }
+
+  private setPointerCapture(
+    target: PointerCaptureTarget | null,
+    pointerId: number,
+  ): void {
+    try {
+      target?.setPointerCapture?.(pointerId);
+    } catch {
+      // Document-level listeners keep the drag alive when capture is unavailable.
+    }
+  }
+
+  private releasePointerCapture(
+    target: PointerCaptureTarget | null,
+    pointerId: number,
+  ): void {
+    if (!target?.releasePointerCapture) {
+      return;
+    }
+
+    try {
+      if (!target.hasPointerCapture || target.hasPointerCapture(pointerId)) {
+        target.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // The drag is already ending; failed release should not block cleanup.
+    }
   }
 }

@@ -46,10 +46,6 @@ function workspaceState(): WorkspaceState {
   };
 }
 
-function eventTarget(): HTMLElement {
-  return {} as HTMLElement;
-}
-
 function keydownEvent(key: string): KeyboardEvent {
   return {
     key,
@@ -72,9 +68,54 @@ function pointerEvent(input: {
     pointerId: input.pointerId,
     clientX: input.clientX,
     clientY: input.clientY ?? 0,
-    currentTarget: eventTarget(),
     preventDefault: vi.fn(),
   } as unknown as PointerEvent;
+}
+
+function resizeHandle(): ComputedHandle {
+  return {
+    id: "root:0",
+    splitId: "root",
+    index: 0,
+    direction: "horizontal",
+    rect: {
+      x: 497,
+      y: 0,
+      width: 6,
+      height: 600,
+    },
+  };
+}
+
+type PointerListener = (event: PointerEvent) => void;
+
+function pointerDocument() {
+  const listeners = new Map<string, PointerListener>();
+  const ownerDocument = {
+    addEventListener: vi.fn((type: string, listener: EventListener) => {
+      listeners.set(type, listener as PointerListener);
+    }),
+    removeEventListener: vi.fn((type: string, listener: EventListener) => {
+      if (listeners.get(type) === listener) {
+        listeners.delete(type);
+      }
+    }),
+  } as unknown as Document;
+
+  return { ownerDocument, listeners };
+}
+
+function captureTarget(ownerDocument: Document) {
+  return {
+    ownerDocument,
+    setPointerCapture: vi.fn(),
+    hasPointerCapture: vi.fn(() => true),
+    releasePointerCapture: vi.fn(),
+  } as unknown as Element & {
+    setPointerCapture: ReturnType<typeof vi.fn>;
+    hasPointerCapture: ReturnType<typeof vi.fn>;
+    releasePointerCapture: ReturnType<typeof vi.fn>;
+  };
 }
 
 beforeEach(() => {
@@ -223,18 +264,7 @@ describe("PointerResizeController batching", () => {
     const workspace = createWorkspace(workspaceState());
     const dispatch = vi.spyOn(workspace, "dispatch");
     const controller = new PointerResizeController(workspace);
-    const handle: ComputedHandle = {
-      id: "root:0",
-      splitId: "root",
-      index: 0,
-      direction: "horizontal",
-      rect: {
-        x: 497,
-        y: 0,
-        width: 6,
-        height: 600,
-      },
-    };
+    const handle = resizeHandle();
 
     controller.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), handle);
     controller.updateResize(pointerEvent({ pointerId: 1, clientX: 110 }));
@@ -261,18 +291,7 @@ describe("PointerResizeController batching", () => {
     const workspace = createWorkspace(workspaceState());
     const dispatch = vi.spyOn(workspace, "dispatch");
     const controller = new PointerResizeController(workspace);
-    const handle: ComputedHandle = {
-      id: "root:0",
-      splitId: "root",
-      index: 0,
-      direction: "horizontal",
-      rect: {
-        x: 497,
-        y: 0,
-        width: 6,
-        height: 600,
-      },
-    };
+    const handle = resizeHandle();
 
     controller.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), handle);
     controller.updateResize(pointerEvent({ pointerId: 1, clientX: 145 }));
@@ -290,5 +309,161 @@ describe("PointerResizeController batching", () => {
     vi.runOnlyPendingTimers();
 
     expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("registers document-level drag listeners when a drag starts", () => {
+    const workspace = createWorkspace(workspaceState());
+    const controller = new PointerResizeController(workspace);
+    const { ownerDocument } = pointerDocument();
+    const target = captureTarget(ownerDocument);
+
+    controller.startResize(
+      pointerEvent({ pointerId: 1, clientX: 100 }),
+      resizeHandle(),
+      target,
+    );
+
+    expect(ownerDocument.addEventListener).toHaveBeenCalledWith(
+      "pointermove",
+      expect.any(Function),
+    );
+    expect(ownerDocument.addEventListener).toHaveBeenCalledWith(
+      "pointerup",
+      expect.any(Function),
+    );
+    expect(ownerDocument.addEventListener).toHaveBeenCalledWith(
+      "pointercancel",
+      expect.any(Function),
+    );
+  });
+
+  it("continues resizing from document pointer moves after leaving the handle", () => {
+    vi.useFakeTimers();
+
+    const workspace = createWorkspace(workspaceState());
+    const dispatch = vi.spyOn(workspace, "dispatch");
+    const controller = new PointerResizeController(workspace);
+    const { ownerDocument, listeners } = pointerDocument();
+    const target = captureTarget(ownerDocument);
+
+    controller.startResize(
+      pointerEvent({ pointerId: 1, clientX: 100 }),
+      resizeHandle(),
+      target,
+    );
+    listeners.get("pointermove")?.(pointerEvent({ pointerId: 1, clientX: 150 }));
+
+    expect(dispatch).not.toHaveBeenCalled();
+
+    vi.runOnlyPendingTimers();
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "handle.resize",
+      splitId: "root",
+      index: 0,
+      deltaPx: 50,
+      snapshotSizes: [0.5, 0.5],
+    });
+  });
+
+  it("flushes pending resize, removes listeners, and releases capture on pointer up", () => {
+    vi.useFakeTimers();
+
+    const workspace = createWorkspace(workspaceState());
+    const dispatch = vi.spyOn(workspace, "dispatch");
+    const controller = new PointerResizeController(workspace);
+    const { ownerDocument, listeners } = pointerDocument();
+    const target = captureTarget(ownerDocument);
+
+    controller.startResize(
+      pointerEvent({ pointerId: 1, clientX: 100 }),
+      resizeHandle(),
+      target,
+    );
+    listeners.get("pointermove")?.(pointerEvent({ pointerId: 1, clientX: 140 }));
+    listeners.get("pointerup")?.(pointerEvent({ pointerId: 1, clientX: 140 }));
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "handle.resize",
+      splitId: "root",
+      index: 0,
+      deltaPx: 40,
+      snapshotSizes: [0.5, 0.5],
+    });
+    expect(ownerDocument.removeEventListener).toHaveBeenCalledWith(
+      "pointermove",
+      expect.any(Function),
+    );
+    expect(ownerDocument.removeEventListener).toHaveBeenCalledWith(
+      "pointerup",
+      expect.any(Function),
+    );
+    expect(ownerDocument.removeEventListener).toHaveBeenCalledWith(
+      "pointercancel",
+      expect.any(Function),
+    );
+    expect(target.setPointerCapture).toHaveBeenCalledWith(1);
+    expect(target.releasePointerCapture).toHaveBeenCalledWith(1);
+    expect(listeners.size).toBe(0);
+
+    vi.runOnlyPendingTimers();
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("cleans up pointer cancel without leaving a pending frame", () => {
+    vi.useFakeTimers();
+
+    const workspace = createWorkspace(workspaceState());
+    const dispatch = vi.spyOn(workspace, "dispatch");
+    const controller = new PointerResizeController(workspace);
+    const { ownerDocument, listeners } = pointerDocument();
+    const target = captureTarget(ownerDocument);
+
+    controller.startResize(
+      pointerEvent({ pointerId: 1, clientX: 100 }),
+      resizeHandle(),
+      target,
+    );
+    listeners.get("pointermove")?.(pointerEvent({ pointerId: 1, clientX: 125 }));
+    listeners.get("pointercancel")?.(pointerEvent({ pointerId: 1, clientX: 125 }));
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(ownerDocument.removeEventListener).toHaveBeenCalledTimes(3);
+    expect(target.releasePointerCapture).toHaveBeenCalledWith(1);
+    expect(listeners.size).toBe(0);
+
+    vi.runOnlyPendingTimers();
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps document listeners active when pointer capture is unavailable", () => {
+    vi.useFakeTimers();
+
+    const workspace = createWorkspace(workspaceState());
+    const dispatch = vi.spyOn(workspace, "dispatch");
+    const controller = new PointerResizeController(workspace);
+    const { ownerDocument, listeners } = pointerDocument();
+    const target = { ownerDocument } as Element;
+
+    controller.startResize(
+      pointerEvent({ pointerId: 1, clientX: 100 }),
+      resizeHandle(),
+      target,
+    );
+    listeners.get("pointermove")?.(pointerEvent({ pointerId: 1, clientX: 135 }));
+
+    vi.runOnlyPendingTimers();
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "handle.resize",
+      splitId: "root",
+      index: 0,
+      deltaPx: 35,
+      snapshotSizes: [0.5, 0.5],
+    });
   });
 });
