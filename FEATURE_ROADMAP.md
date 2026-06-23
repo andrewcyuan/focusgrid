@@ -5,6 +5,11 @@ Incomplete but a good guide nonetheless
 - keyboard support
 - resizing support
 - withConfirmation hooks (actually, might want to let the client handle this.)
+- programmatic layout control
+  - wrapRoot(direction, side, sizes, preserveActivePane)
+  - select(id)
+  - swap(id?, direction)
+  - swap(id1, id2)
 
 ## Programmatic control
 - Split new panes with child components.
