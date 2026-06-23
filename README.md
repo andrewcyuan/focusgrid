@@ -17,6 +17,18 @@ The packages are intentionally layered:
 
 Core does not import DOM or React. DOM imports core. React imports core and DOM.
 
+## Keyboard Shortcuts
+
+Shortcut chords use `-` between combined keys and spaces between strokes:
+
+```ts
+parseKeySequence("Ctrl-b l");
+```
+
+Bindings can opt into tmux-style follower repeats with `repeat: true`. After a
+repeatable sequence such as `Ctrl-b l` runs, pressing `l` again within the repeat
+window runs the same command without replaying `Ctrl-b`.
+
 ## Commands
 
 ```sh

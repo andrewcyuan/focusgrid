@@ -20,8 +20,8 @@ Incomplete but a good guide nonetheless
   - moveLeft
   - moveRight
   - multipy(command) // meant to be used with moves
-  - moveHalfPageUp // meant to be used with ctrl+u in vim
-  - moveHalfPageDown // meant to be used with ctrl+d in vim
+  - moveHalfPageUp // meant to be used with ctrl-u in vim
+  - moveHalfPageDown // meant to be used with ctrl-d in vim
   - moveHalfPageLeft
   - moveHalfPageRight
   - moveToStart

@@ -23,7 +23,7 @@ export function normalizeKeyName(key: string): string {
 
 export function strokeToId(stroke: KeyStroke): string {
   const modifiers = MODIFIER_ORDER.filter((modifier) => stroke[modifier]);
-  return [...modifiers, normalizeKeyName(stroke.key)].join("+");
+  return [...modifiers, normalizeKeyName(stroke.key)].join("-");
 }
 
 export function createKeyStroke(input: Partial<KeyStroke> & { key: string }): KeyStroke {

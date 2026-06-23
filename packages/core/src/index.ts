@@ -28,6 +28,7 @@ export { deserializeWorkspace, serializeWorkspace } from "./layout/serialize";
 export { createKeyStroke, normalizeKeyName, strokeToId } from "./keyboard/normalize";
 export { parseKeySequence, parseKeyStroke } from "./keyboard/parser";
 export { createTrie, KeyRouter } from "./keyboard/trie";
+export type { KeyRouterOptions } from "./keyboard/trie";
 export type {
   KeyBinding,
   KeyMatchResult,

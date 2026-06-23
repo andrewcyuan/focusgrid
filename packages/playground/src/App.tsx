@@ -24,6 +24,7 @@ type ShortcutAction = {
   command: string;
   defaultSequence: string;
   args?: unknown;
+  repeat?: boolean;
 };
 
 type PaneComponentProps = {
@@ -39,59 +40,63 @@ const shortcutActions: ShortcutAction[] = [
     id: "split-right",
     label: "Split right",
     command: "pane.splitRight",
-    defaultSequence: "Ctrl+B %",
+    defaultSequence: "Ctrl-B %",
   },
   {
     id: "split-down",
     label: "Split down",
     command: "pane.splitDown",
-    defaultSequence: "Ctrl+B \"",
+    defaultSequence: "Ctrl-B \"",
   },
   {
     id: "close",
     label: "Close active",
     command: "pane.close",
-    defaultSequence: "Ctrl+B X",
+    defaultSequence: "Ctrl-B X",
   },
   {
     id: "focus-next",
     label: "Focus next",
     command: "pane.focusNext",
-    defaultSequence: "Ctrl+B N",
+    defaultSequence: "Ctrl-B N",
   },
   {
     id: "focus-prev",
     label: "Focus previous",
     command: "pane.focusPrevious",
-    defaultSequence: "Ctrl+B P",
+    defaultSequence: "Ctrl-B P",
   },
   {
     id: "resize-left",
     label: "Resize left",
     command: "pane.resizeLeft",
-    defaultSequence: "Ctrl+B H",
+    defaultSequence: "Ctrl-B H",
     args: { deltaPx: 48 },
+    repeat: true,
   },
   {
     id: "resize-right",
     label: "Resize right",
     command: "pane.resizeRight",
-    defaultSequence: "Ctrl+B L",
+    defaultSequence: "Ctrl-B L",
     args: { deltaPx: 48 },
+    repeat: true,
   },
   {
     id: "resize-up",
     label: "Resize up",
     command: "pane.resizeUp",
-    defaultSequence: "Ctrl+B K",
+    defaultSequence: "Ctrl-B K",
     args: { deltaPx: 48 },
+    repeat: true,
   },
   {
     id: "resize-down",
     label: "Resize down",
     command: "pane.resizeDown",
-    defaultSequence: "Ctrl+B J",
+    defaultSequence: "Ctrl-B J",
     args: { deltaPx: 48 },
+    repeat: true,
   },
 ];
 
@@ -176,6 +181,7 @@ function createKeymap(shortcuts: Record<string, string>): KeyBinding[] {
           command: action.command,
           args: action.args,
           preventDefault: true,
+          repeat: action.repeat,
         },
       ];
     } catch {
@@ -187,6 +193,43 @@ function createKeymap(shortcuts: Record<string, string>): KeyBinding[] {
 function createDefaultShortcuts(): Record<string, string> {
   return Object.fromEntries(
     shortcutActions.map((action) => [action.id, action.defaultSequence]),
+  );
+}
+
+function migrateSavedShortcutSyntax(sequence: string): string {
+  return sequence
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((stroke) => {
+      if (!stroke.includes("+")) {
+        return stroke;
+      }
+
+      const parts = stroke.split("+");
+      const key = parts.at(-1);
+      const modifiers = parts.slice(0, -1);
+
+      if (!key || modifiers.length === 0 || !modifiers.every(isKeyModifier)) {
+        return stroke;
+      }
+
+      return [...modifiers, key].join("-");
+    })
+    .join(" ");
+}
+
+function isKeyModifier(input: string): boolean {
+  const modifier = input.toLowerCase();
+  return (
+    modifier === "ctrl" ||
+    modifier === "control" ||
+    modifier === "mod" ||
+    modifier === "meta" ||
+    modifier === "cmd" ||
+    modifier === "alt" ||
+    modifier === "option" ||
+    modifier === "shift"
   );
 }
 
@@ -209,7 +252,9 @@ function loadSavedShortcuts(): Record<string, string> {
     return shortcutActions.reduce<Record<string, string>>((shortcuts, action) => {
       const value = (parsed as Record<string, unknown>)[action.id];
       shortcuts[action.id] =
-        typeof value === "string" ? value : action.defaultSequence;
+        typeof value === "string"
+          ? migrateSavedShortcutSyntax(value)
+          : action.defaultSequence;
       return shortcuts;
     }, {});
   } catch {

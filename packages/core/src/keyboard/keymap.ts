@@ -23,6 +23,7 @@ export type KeyBinding = {
   args?: unknown;
   when?: (ctx: ShortcutContext) => boolean;
   preventDefault?: boolean;
+  repeat?: boolean;
 };
 
 export type KeyMatchResult =
