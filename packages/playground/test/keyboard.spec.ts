@@ -109,3 +109,38 @@ test("repeatable leader followers run without replaying the leader", async ({
     return box?.width ?? 0;
   }).toBeLessThan(postGrowthWidth);
 });
+
+test("horizontal pointer resize continues after dragging outside the handle", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const alphaPane = page.locator('[data-pane-id="alpha"]');
+  const resizeHandle = page
+    .locator('.FocusgridResizeHandle[data-direction="horizontal"]')
+    .first();
+
+  await expect(resizeHandle).toBeVisible();
+
+  const initialBox = await alphaPane.boundingBox();
+  const handleBox = await resizeHandle.boundingBox();
+  expect(initialBox).not.toBeNull();
+  expect(handleBox).not.toBeNull();
+
+  const startX = handleBox!.x + handleBox!.width / 2;
+  const startY = handleBox!.y + handleBox!.height / 2;
+  const dragDistance = Math.max(120, handleBox!.width * 20);
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+
+  for (const step of [0.2, 0.45, 0.7, 1]) {
+    await page.mouse.move(startX + dragDistance * step, startY, { steps: 4 });
+  }
+
+  await page.mouse.up();
+
+  await expect
+    .poll(async () => (await alphaPane.boundingBox())?.width ?? 0)
+    .toBeGreaterThan(initialBox!.width + 80);
+});
