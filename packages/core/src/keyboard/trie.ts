@@ -26,6 +26,7 @@ export class KeyRouter {
 
   handle(stroke: KeyStroke, ctx: ShortcutContext): KeyMatchResult {
     const id = strokeToId(stroke);
+    const wasPending = this.current !== this.root;
     const next = this.current.children.get(id) ?? this.root.children.get(id);
 
     if (!next) {
@@ -33,6 +34,7 @@ export class KeyRouter {
       return {
         matched: false,
         pending: false,
+        preventDefault: wasPending,
       };
     }
 

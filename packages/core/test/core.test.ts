@@ -121,4 +121,36 @@ describe("keyboard", () => {
       preventDefault: true,
     });
   });
+
+  it("consumes an invalid continuation after a pending shortcut prefix", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("Ctrl+B %"),
+        command: "pane.splitRight",
+      },
+    ]);
+
+    const ctx = {
+      activePaneId: "editor",
+      inputFocused: true,
+      mode: "normal" as const,
+    };
+
+    expect(router.handle(parseKeySequence("Ctrl+B")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: true,
+    });
+
+    expect(router.handle(parseKeySequence("Z")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: true,
+    });
+
+    expect(router.handle(parseKeySequence("Z")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: false,
+    });
+  });
 });

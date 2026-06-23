@@ -1,0 +1,164 @@
+:root {
+  color: #172033;
+  background: #eef1f6;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.AppShell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.AppShell[data-sidebar-open="false"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.Sidebar {
+  min-width: 0;
+  overflow: auto;
+  border-right: 1px solid #d6dce8;
+  background: #f8fafc;
+  padding: 20px;
+}
+
+.SidebarHeader {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 24px;
+}
+
+.SidebarHeader h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.SidebarHeader span,
+.TextPaneHeader span,
+.ToolbarMeta {
+  color: #5c667a;
+  font-size: 13px;
+}
+
+.ShortcutList {
+  display: grid;
+  gap: 14px;
+}
+
+.ShortcutBinder {
+  display: grid;
+  gap: 6px;
+}
+
+.ShortcutBinder span {
+  color: #2c3548;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ShortcutBinder input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #c7cfdd;
+  border-radius: 6px;
+  background: white;
+  color: #172033;
+  padding: 8px 10px;
+}
+
+.WorkspaceShell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.Toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #d6dce8;
+  background: white;
+  padding: 10px 12px;
+}
+
+.Toolbar button {
+  border: 1px solid #b8c2d4;
+  border-radius: 6px;
+  background: #172033;
+  color: white;
+  cursor: pointer;
+  padding: 7px 12px;
+}
+
+.ToolbarMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.PlaygroundPaneRoot {
+  background: #e5eaf3;
+}
+
+.TextPane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #d6dce8;
+  background: white;
+}
+
+.TextPane[data-active="true"] {
+  border-color: #2b6de8;
+}
+
+.TextPaneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e1e6ef;
+  padding: 8px 10px;
+}
+
+.TextPane textarea {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  resize: none;
+  border: 0;
+  outline: none;
+  color: #172033;
+  padding: 12px;
+}

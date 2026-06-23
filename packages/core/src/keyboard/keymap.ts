@@ -29,6 +29,7 @@ export type KeyMatchResult =
   | {
       matched: false;
       pending: boolean;
+      preventDefault?: boolean;
     }
   | {
       matched: true;

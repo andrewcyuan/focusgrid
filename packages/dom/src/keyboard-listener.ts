@@ -5,7 +5,6 @@ import {
   type KeyStroke,
   type Workspace,
 } from "@focusgrid/core";
-import { tinykeys } from "tinykeys";
 import { isEditableTarget } from "./focus";
 
 export type KeyboardListenerOptions = {
@@ -16,8 +15,12 @@ export type KeyboardListenerOptions = {
 export class KeyboardListener {
   private readonly router: KeyRouter;
   private readonly mode: "normal" | "insert" | "resize";
-  private unsubscribe: (() => void) | null = null;
+  private mounted = false;
   private readonly onKey = (event: KeyboardEvent) => {
+    if (isModifierOnlyKey(event.key)) {
+      return;
+    }
+
     const stroke = normalizeKeyboardEvent(event);
     const result = this.router.handle(stroke, {
       activePaneId: this.workspace.getState().activePaneId,
@@ -26,6 +29,11 @@ export class KeyboardListener {
     });
 
     if (!result.matched) {
+      if (result.pending || result.preventDefault) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
       return;
     }
 
@@ -47,33 +55,74 @@ export class KeyboardListener {
   }
 
   mount(): void {
-    if (this.unsubscribe) {
+    if (this.mounted) {
       return;
     }
 
-    this.unsubscribe = tinykeys(
-      this.rootEl,
-      {
-        "[Control]+[Meta]+[Alt]+[Shift]+(.+)": this.onKey,
-      },
-      {
-        ignore: () => false,
-      },
-    );
+    this.rootEl.addEventListener("keydown", this.onKey, { capture: true });
+    this.mounted = true;
   }
 
   destroy(): void {
-    this.unsubscribe?.();
-    this.unsubscribe = null;
+    this.rootEl.removeEventListener("keydown", this.onKey, { capture: true });
+    this.mounted = false;
   }
 }
 
 export function normalizeKeyboardEvent(event: KeyboardEvent): KeyStroke {
+  const key = normalizeEventKey(event);
+
   return createKeyStroke({
-    key: event.key,
+    key,
     ctrl: event.ctrlKey,
     meta: event.metaKey,
     alt: event.altKey,
-    shift: event.shiftKey,
+    shift: event.shiftKey && !isShiftProducedSymbol(key),
   });
+}
+
+function normalizeEventKey(event: KeyboardEvent): string {
+  if (event.shiftKey && event.key.length === 1) {
+    return SHIFTED_KEY_BY_BASE_KEY[event.key] ?? event.key;
+  }
+
+  return event.key;
+}
+
+function isShiftProducedSymbol(key: string): boolean {
+  return key.length === 1 && key.toLowerCase() === key.toUpperCase();
+}
+
+const SHIFTED_KEY_BY_BASE_KEY: Record<string, string> = {
+  "`": "~",
+  "1": "!",
+  "2": "@",
+  "3": "#",
+  "4": "$",
+  "5": "%",
+  "6": "^",
+  "7": "&",
+  "8": "*",
+  "9": "(",
+  "0": ")",
+  "-": "_",
+  "=": "+",
+  "[": "{",
+  "]": "}",
+  "\\": "|",
+  ";": ":",
+  "'": "\"",
+  ",": "<",
+  ".": ">",
+  "/": "?",
+};
+
+function isModifierOnlyKey(key: string): boolean {
+  return (
+    key === "Alt" ||
+    key === "AltGraph" ||
+    key === "Control" ||
+    key === "Meta" ||
+    key === "Shift"
+  );
 }

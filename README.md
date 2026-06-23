@@ -59,13 +59,44 @@ console.log(workspace.getComputedLayout());
 ```tsx
 import { createWorkspace } from "@focusgrid/core";
 import { PaneProvider, PaneRoot } from "@focusgrid/react";
+import type { ComponentType } from "react";
 import "@focusgrid/react/styles.css";
+
+function EditorPane() {
+  return <textarea defaultValue="Write here..." />;
+}
+
+function TerminalPane() {
+  return <pre>$ pnpm test</pre>;
+}
+
+function EmptyPane({ paneId }: { paneId: string }) {
+  return <div>Unknown pane: {paneId}</div>;
+}
+
+const panes: Record<string, ComponentType> = {
+  editor: EditorPane,
+  terminal: TerminalPane,
+};
 
 const workspace = createWorkspace({
   root: {
-    kind: "pane",
+    kind: "split",
     id: "node-1",
-    paneId: "editor",
+    direction: "horizontal",
+    sizes: [0.7, 0.3],
+    children: [
+      {
+        kind: "pane",
+        id: "node-2",
+        paneId: "editor",
+      },
+      {
+        kind: "pane",
+        id: "node-3",
+        paneId: "terminal",
+      },
+    ],
   },
   activePaneId: "editor",
   container: {
@@ -77,7 +108,12 @@ const workspace = createWorkspace({
 export function App() {
   return (
     <PaneProvider workspace={workspace}>
-      <PaneRoot renderPane={(paneId) => <div>{paneId}</div>} />
+      <PaneRoot
+        renderPane={(paneId) => {
+          const Component = panes[paneId];
+          return Component ? <Component /> : <EmptyPane paneId={paneId} />;
+        }}
+      />
     </PaneProvider>
   );
 }
