@@ -428,8 +428,8 @@ describe("keyboard", () => {
     });
   });
 
-  it("uses dashes for modifier key syntax", () => {
-    expect(parseKeySequence("Ctrl-Shift-B Arrow-Left Ctrl-+ -")).toEqual([
+  it("uses dashes for modifier key syntax and normalizes arrow aliases", () => {
+    expect(parseKeySequence("Ctrl-Shift-B Arrow-Left ArrowRight Ctrl-+ -")).toEqual([
       {
         key: "b",
         ctrl: true,
@@ -438,7 +438,14 @@ describe("keyboard", () => {
         shift: true,
       },
       {
-        key: "arrow-left",
+        key: "left",
+        ctrl: false,
+        meta: false,
+        alt: false,
+        shift: false,
+      },
+      {
+        key: "right",
         ctrl: false,
         meta: false,
         alt: false,

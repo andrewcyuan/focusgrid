@@ -140,6 +140,22 @@ describe("normalizeKeyboardEvent", () => {
       shift: false,
     });
   });
+
+  it("normalizes browser arrow key names to plain directions", () => {
+    expect(
+      normalizeKeyboardEvent(
+        keyboardEvent({
+          key: "ArrowRight",
+        }),
+      ),
+    ).toEqual({
+      key: "right",
+      ctrl: false,
+      meta: false,
+      alt: false,
+      shift: false,
+    });
+  });
 });
 
 describe("KeyboardListener resize batching", () => {

@@ -15,6 +15,14 @@ export function normalizeKeyName(key: string): string {
     cmd: "meta",
     command: "meta",
     option: "alt",
+    arrowdown: "down",
+    "arrow-down": "down",
+    arrowleft: "left",
+    "arrow-left": "left",
+    arrowright: "right",
+    "arrow-right": "right",
+    arrowup: "up",
+    "arrow-up": "up",
   };
 
   const lowered = key.toLowerCase();
