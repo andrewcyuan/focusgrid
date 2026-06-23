@@ -1,11 +1,14 @@
 import { createId } from "../utils/ids";
+import { HANDLE_SIZE } from "./constants";
 import type {
   Direction,
   LayoutIndex,
   LayoutNode,
   NodeId,
   PaneId,
+  PaneResizeDirection,
   PaneNode,
+  Rect,
   SplitNode,
   WorkspaceState,
 } from "./types";
@@ -140,10 +143,7 @@ export function resizeHandle(
       return node;
     }
 
-    const totalPx =
-      node.direction === "horizontal"
-        ? state.container.width
-        : state.container.height;
+    const totalPx = getSplitAxisSize(state, splitId);
 
     if (totalPx <= 0 || index < 0 || index >= node.children.length - 1) {
       return node;
@@ -160,6 +160,11 @@ export function resizeHandle(
     );
 
     const clamped = clampAdjacentPair(nextSizes, minSizes, index);
+
+    if (sizesEqual(clamped, normalizeSizes(node.sizes, node.children.length))) {
+      return node;
+    }
+
     didResize = true;
 
     return {
@@ -178,6 +183,33 @@ export function resizeHandle(
   };
 }
 
+export function resizePane(
+  state: WorkspaceState,
+  paneId: PaneId,
+  direction: PaneResizeDirection,
+  deltaPx: number,
+): WorkspaceState {
+  const index = buildLayoutIndex(state.root);
+  const paneNode = index.paneNodeByPaneId.get(paneId);
+
+  if (!paneNode) {
+    return state;
+  }
+
+  const boundary = findPaneResizeBoundary(index, paneNode.id, direction);
+
+  if (!boundary) {
+    return state;
+  }
+
+  return resizeHandle(
+    state,
+    boundary.splitId,
+    boundary.index,
+    boundary.deltaPxSign * deltaPx,
+  );
+}
+
 export function collectPaneIds(root: LayoutNode): PaneId[] {
   const out: PaneId[] = [];
   visit(root);
@@ -193,6 +225,127 @@ export function collectPaneIds(root: LayoutNode): PaneId[] {
       visit(child);
     }
   }
+}
+
+function findPaneResizeBoundary(
+  index: LayoutIndex,
+  nodeId: NodeId,
+  direction: PaneResizeDirection,
+): { splitId: NodeId; index: number; deltaPxSign: 1 | -1 } | null {
+  let currentId = nodeId;
+  let parent = index.parentByNodeId.get(currentId) ?? null;
+
+  while (parent) {
+    const childIndex = parent.children.findIndex((child) => child.id === currentId);
+
+    if (childIndex === -1) {
+      return null;
+    }
+
+    if (isHorizontalResize(direction) && parent.direction === "horizontal") {
+      if (direction === "right" && childIndex < parent.children.length - 1) {
+        return { splitId: parent.id, index: childIndex, deltaPxSign: 1 };
+      }
+
+      if (direction === "left" && childIndex > 0) {
+        return { splitId: parent.id, index: childIndex - 1, deltaPxSign: -1 };
+      }
+    }
+
+    if (!isHorizontalResize(direction) && parent.direction === "vertical") {
+      if (direction === "down" && childIndex < parent.children.length - 1) {
+        return { splitId: parent.id, index: childIndex, deltaPxSign: 1 };
+      }
+
+      if (direction === "up" && childIndex > 0) {
+        return { splitId: parent.id, index: childIndex - 1, deltaPxSign: -1 };
+      }
+    }
+
+    currentId = parent.id;
+    parent = index.parentByNodeId.get(currentId) ?? null;
+  }
+
+  return null;
+}
+
+function isHorizontalResize(direction: PaneResizeDirection): boolean {
+  return direction === "left" || direction === "right";
+}
+
+function getSplitAxisSize(state: WorkspaceState, splitId: NodeId): number {
+  const split = findSplitNode(state.root, splitId);
+  const rect = findSplitRect(
+    state.root,
+    {
+      x: 0,
+      y: 0,
+      width: Math.max(0, state.container.width),
+      height: Math.max(0, state.container.height),
+    },
+    splitId,
+  );
+
+  if (!split || !rect) {
+    return 0;
+  }
+
+  return split.direction === "horizontal" ? rect.width : rect.height;
+}
+
+function findSplitRect(
+  node: LayoutNode,
+  rect: Rect,
+  splitId: NodeId,
+): Rect | null {
+  if (node.kind === "pane") {
+    return null;
+  }
+
+  if (node.id === splitId) {
+    return rect;
+  }
+
+  const sizes = normalizeSizes(node.sizes, node.children.length);
+  const axisSize = node.direction === "horizontal" ? rect.width : rect.height;
+  const handleTotal = Math.max(0, node.children.length - 1) * HANDLE_SIZE;
+  const contentSize = Math.max(0, axisSize - handleTotal);
+  let cursor = node.direction === "horizontal" ? rect.x : rect.y;
+
+  for (let index = 0; index < node.children.length; index += 1) {
+    const child = node.children[index]!;
+    const isLast = index === node.children.length - 1;
+    const childSize = isLast
+      ? axisEnd(rect, node.direction) - cursor
+      : Math.floor(contentSize * (sizes[index] ?? 0));
+    const childRect =
+      node.direction === "horizontal"
+        ? {
+            x: cursor,
+            y: rect.y,
+            width: Math.max(0, childSize),
+            height: rect.height,
+          }
+        : {
+            x: rect.x,
+            y: cursor,
+            width: rect.width,
+            height: Math.max(0, childSize),
+          };
+    const match = findSplitRect(child, childRect, splitId);
+
+    if (match) {
+      return match;
+    }
+
+    cursor += childSize + (isLast ? 0 : HANDLE_SIZE);
+  }
+
+  return null;
+}
+
+function axisEnd(rect: Rect, direction: Direction): number {
+  return direction === "horizontal" ? rect.x + rect.width : rect.y + rect.height;
 }
 
 function mapLayout(
@@ -256,6 +409,14 @@ function normalizeSizes(sizes: number[], expectedLength: number): number[] {
   }
 
   return sizes.map((size) => Math.max(0, size) / total);
+}
+
+function sizesEqual(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return a.every((value, index) => value === b[index]);
 }
 
 function getMinRatio(

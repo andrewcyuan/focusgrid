@@ -1,7 +1,12 @@
 export { createWorkspace, Workspace } from "./workspace";
 export type { CreateWorkspaceOptions, Listener } from "./workspace";
 
-export { CommandRegistry, createDefaultCommandRegistry } from "./commands/registry";
+export {
+  CommandRegistry,
+  DEFAULT_PANE_RESIZE_DELTA_PX,
+  createDefaultCommandRegistry,
+} from "./commands/registry";
+export type { PaneResizeCommandArgs } from "./commands/registry";
 export type { CommandContext, CommandHandler } from "./commands/types";
 
 export {
@@ -11,6 +16,7 @@ export {
   findSplitNode,
   focusPane,
   resizeHandle,
+  resizePane,
   splitPane,
 } from "./layout/operations";
 export { reducer } from "./layout/reducer";
@@ -40,6 +46,7 @@ export type {
   NodeId,
   PaneId,
   PaneNode,
+  PaneResizeDirection,
   Rect,
   SplitNode,
   WorkspaceState,

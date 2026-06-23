@@ -7,8 +7,7 @@ import type {
   SplitNode,
   WorkspaceState,
 } from "./types";
-
-const HANDLE_SIZE = 6;
+import { HANDLE_SIZE } from "./constants";
 
 export function computeLayout(state: WorkspaceState): ComputedLayout {
   const out: ComputedLayout = {

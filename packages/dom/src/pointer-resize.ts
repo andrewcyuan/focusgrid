@@ -3,6 +3,7 @@ import {
   type ComputedHandle,
   type Workspace,
 } from "@focusgrid/core";
+import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
 type ResizeDrag = {
   pointerId: number;
@@ -15,11 +16,14 @@ type ResizeDrag = {
 
 export class PointerResizeController {
   private drag: ResizeDrag | null = null;
+  private pendingDeltaPx = 0;
+  private pendingFrame: FrameRequest | null = null;
 
   constructor(private readonly workspace: Workspace) {}
 
   startResize(event: PointerEvent, handle: ComputedHandle): void {
     event.preventDefault();
+    this.cancelPendingFrame();
 
     const target = event.currentTarget;
 
@@ -55,12 +59,35 @@ export class PointerResizeController {
         ? event.clientX - this.drag.startX
         : event.clientY - this.drag.startY;
 
-    this.workspace.dispatch({
-      type: "handle.resize",
-      splitId: this.drag.splitId,
-      index: this.drag.index,
-      deltaPx,
-      snapshotSizes: this.drag.startSizes,
+    this.pendingDeltaPx = deltaPx;
+
+    if (this.pendingFrame) {
+      return;
+    }
+
+    this.pendingFrame = requestFrame(() => {
+      this.pendingFrame = null;
+
+      if (!this.drag) {
+        return;
+      }
+
+      if (
+        !findSplitNode(
+          this.workspace.getState().root,
+          this.drag.splitId,
+        )
+      ) {
+        return;
+      }
+
+      this.workspace.dispatch({
+        type: "handle.resize",
+        splitId: this.drag.splitId,
+        index: this.drag.index,
+        deltaPx: this.pendingDeltaPx,
+        snapshotSizes: this.drag.startSizes,
+      });
     });
   }
 
@@ -76,5 +103,15 @@ export class PointerResizeController {
     }
 
     this.drag = null;
+    this.cancelPendingFrame();
+  }
+
+  private cancelPendingFrame(): void {
+    if (!this.pendingFrame) {
+      return;
+    }
+
+    cancelFrame(this.pendingFrame);
+    this.pendingFrame = null;
   }
 }

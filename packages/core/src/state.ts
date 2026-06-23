@@ -8,6 +8,7 @@ export type {
   NodeId,
   PaneId,
   PaneNode,
+  PaneResizeDirection,
   Rect,
   SplitNode,
   WorkspaceState,

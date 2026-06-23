@@ -1,9 +1,27 @@
-import type { Direction, NodeId, PaneId, WorkspaceState } from "./types";
-import { closePane, focusPane, resizeHandle, splitPane } from "./operations";
+import type {
+  Direction,
+  NodeId,
+  PaneId,
+  PaneResizeDirection,
+  WorkspaceState,
+} from "./types";
+import {
+  closePane,
+  focusPane,
+  resizeHandle,
+  resizePane,
+  splitPane,
+} from "./operations";
 
 export type WorkspaceAction =
   | { type: "container.setSize"; width: number; height: number }
   | { type: "pane.focus"; paneId: PaneId }
+  | {
+      type: "pane.resize";
+      paneId: PaneId;
+      direction: PaneResizeDirection;
+      deltaPx: number;
+    }
   | {
       type: "pane.split";
       paneId: PaneId;
@@ -42,6 +60,9 @@ export function reducer(
 
     case "pane.focus":
       return focusPane(state, action.paneId);
+
+    case "pane.resize":
+      return resizePane(state, action.paneId, action.direction, action.deltaPx);
 
     case "pane.split":
       return splitPane(state, action.paneId, action.direction, action.newPaneId);
