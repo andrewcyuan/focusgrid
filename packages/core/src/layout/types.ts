@@ -20,6 +20,7 @@ export type SplitNode = {
   direction: Direction;
   children: LayoutNode[];
   sizes: number[];
+  lastFocusedChildId?: NodeId;
 };
 
 export type LayoutNode = PaneNode | SplitNode;

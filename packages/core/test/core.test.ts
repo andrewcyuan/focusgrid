@@ -422,6 +422,126 @@ describe("workspace", () => {
     expect(workspace.getState().activePaneId).toBe("lower-right");
   });
 
+  it("remembers the last focused pane inside an ambiguous directional split", () => {
+    const workspace = createWorkspace(verticalMiddleTrifoldState());
+
+    workspace.dispatch({
+      type: "pane.focus",
+      paneId: "middle-top",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "middle-top",
+      direction: "left",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("middle-top");
+
+    workspace.dispatch({
+      type: "pane.focus",
+      paneId: "middle-bottom",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "middle-bottom",
+      direction: "right",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "right",
+      direction: "left",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("middle-bottom");
+  });
+
+  it("keeps the closest entering edge ahead of remembered split focus", () => {
+    const workspace = createWorkspace(horizontalTargetWithStaleMemoryState());
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("near");
+  });
+
+  it("ignores stale split focus memory after a remembered pane is closed", () => {
+    const workspace = createWorkspace(verticalMiddleTrifoldState());
+
+    workspace.dispatch({
+      type: "pane.focus",
+      paneId: "middle-top",
+    });
+    workspace.dispatch({
+      type: "pane.close",
+      paneId: "middle-top",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("middle-bottom");
+  });
+
+  it("marks a newly split pane as focused in split memory", () => {
+    const workspace = createWorkspace(verticalMiddleTrifoldState());
+
+    workspace.dispatch({
+      type: "pane.split",
+      paneId: "middle-top",
+      direction: "vertical",
+      newPaneId: "middle-top-bottom",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "middle-top-bottom",
+      direction: "left",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("middle-top-bottom");
+  });
+
+  it("uses nested split memory when geometry would pick another pane in the branch", () => {
+    const workspace = createWorkspace(verticalMiddleTrifoldState());
+
+    workspace.dispatch({
+      type: "pane.split",
+      paneId: "middle-top",
+      direction: "vertical",
+      newPaneId: "middle-top-bottom",
+    });
+    workspace.dispatch({
+      type: "pane.focus",
+      paneId: "middle-top",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "middle-top",
+      direction: "left",
+    });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("middle-top");
+  });
+
   it("returns the same state when no directional sibling matches", () => {
     const state = horizontalSplitState();
     const next = reducer(state, {
@@ -650,6 +770,94 @@ function nestedDirectionalFocusState(): WorkspaceState {
               kind: "pane",
               id: "lower-right-node",
               paneId: "lower-right",
+            },
+          ],
+        },
+      ],
+    },
+    activePaneId: "left",
+    container: {
+      width: 1000,
+      height: 600,
+    },
+  };
+}
+
+function verticalMiddleTrifoldState(): WorkspaceState {
+  return {
+    root: {
+      kind: "split",
+      id: "root",
+      direction: "horizontal",
+      sizes: [0.25, 0.5, 0.25],
+      children: [
+        {
+          kind: "pane",
+          id: "left-node",
+          paneId: "left",
+        },
+        {
+          kind: "split",
+          id: "middle-split",
+          direction: "vertical",
+          sizes: [0.25, 0.75],
+          children: [
+            {
+              kind: "pane",
+              id: "middle-top-node",
+              paneId: "middle-top",
+            },
+            {
+              kind: "pane",
+              id: "middle-bottom-node",
+              paneId: "middle-bottom",
+            },
+          ],
+        },
+        {
+          kind: "pane",
+          id: "right-node",
+          paneId: "right",
+        },
+      ],
+    },
+    activePaneId: "middle-bottom",
+    container: {
+      width: 1200,
+      height: 600,
+    },
+  };
+}
+
+function horizontalTargetWithStaleMemoryState(): WorkspaceState {
+  return {
+    root: {
+      kind: "split",
+      id: "root",
+      direction: "horizontal",
+      sizes: [0.3, 0.7],
+      children: [
+        {
+          kind: "pane",
+          id: "left-node",
+          paneId: "left",
+        },
+        {
+          kind: "split",
+          id: "right-split",
+          direction: "horizontal",
+          sizes: [0.5, 0.5],
+          lastFocusedChildId: "far-node",
+          children: [
+            {
+              kind: "pane",
+              id: "near-node",
+              paneId: "near",
+            },
+            {
+              kind: "pane",
+              id: "far-node",
+              paneId: "far",
             },
           ],
         },

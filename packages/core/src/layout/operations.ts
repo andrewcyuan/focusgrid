@@ -51,12 +51,15 @@ export function focusPane(state: WorkspaceState, paneId: PaneId): WorkspaceState
     return state;
   }
 
-  if (state.activePaneId === paneId) {
+  const nextRoot = markFocusedPanePath(state.root, paneId);
+
+  if (state.activePaneId === paneId && nextRoot === state.root) {
     return state;
   }
 
   return {
     ...state,
+    root: nextRoot,
     activePaneId: paneId,
   };
 }
@@ -94,7 +97,17 @@ export function focusPaneInDirection(
         direction,
       );
 
-      return targetPaneId ? focusPane(state, targetPaneId) : state;
+      if (!targetPaneId) {
+        return state;
+      }
+
+      return focusPane(
+        {
+          ...state,
+          root: markFocusedPanePath(state.root, paneId),
+        },
+        targetPaneId,
+      );
     }
 
     currentId = parent.id;
@@ -146,7 +159,7 @@ export function splitPane(
 
   return {
     ...state,
-    root: nextRoot,
+    root: markFocusedPanePath(nextRoot, newPaneId),
     activePaneId: newPaneId,
   };
 }
@@ -170,7 +183,7 @@ export function closePane(state: WorkspaceState, paneId: PaneId): WorkspaceState
 
   return {
     ...state,
-    root: nextRoot,
+    root: activePaneId ? markFocusedPanePath(nextRoot, activePaneId) : nextRoot,
     activePaneId,
   };
 }
@@ -369,6 +382,7 @@ function findTargetPaneInSubtree(
         getPerpendicularCenter(pane.rect, direction) -
           getPerpendicularCenter(activePane.rect, direction),
       ),
+      focusMemoryRank: getFocusMemoryRank(subtree, pane.paneId),
       centerDistance:
         Math.abs(getRectCenter(pane.rect).x - activeCenter.x) +
         Math.abs(getRectCenter(pane.rect).y - activeCenter.y),
@@ -380,12 +394,38 @@ function findTargetPaneInSubtree(
         return edgeDelta;
       }
 
+      if (a.focusMemoryRank !== b.focusMemoryRank) {
+        return a.focusMemoryRank - b.focusMemoryRank;
+      }
+
       if (a.perpendicularDistance !== b.perpendicularDistance) {
         return a.perpendicularDistance - b.perpendicularDistance;
       }
 
       return a.centerDistance - b.centerDistance;
     })[0]!.pane.paneId;
+}
+
+function getFocusMemoryRank(subtree: LayoutNode, paneId: PaneId): number {
+  if (subtree.kind === "pane") {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const rememberedChild = subtree.children.find(
+    (child) => child.id === subtree.lastFocusedChildId,
+  );
+
+  if (!rememberedChild || !collectPaneIds(rememberedChild).includes(paneId)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  if (rememberedChild.kind === "pane") {
+    return 0;
+  }
+
+  const nestedRank = getFocusMemoryRank(rememberedChild, paneId);
+
+  return Number.isFinite(nestedRank) ? nestedRank : 1;
 }
 
 function getEnteringEdge(rect: Rect, direction: PaneFocusDirection): number {
@@ -527,6 +567,60 @@ function mapLayout(
     ...node,
     children: nextChildren,
   });
+}
+
+function markFocusedPanePath(root: LayoutNode, paneId: PaneId): LayoutNode {
+  return markFocusedPanePathInner(root, paneId).node;
+}
+
+function markFocusedPanePathInner(
+  node: LayoutNode,
+  paneId: PaneId,
+): { node: LayoutNode; contains: boolean } {
+  if (node.kind === "pane") {
+    return {
+      node,
+      contains: node.paneId === paneId,
+    };
+  }
+
+  let contains = false;
+  let focusedChildId: NodeId | null = null;
+  let didChange = false;
+
+  const children = node.children.map((child) => {
+    const result = markFocusedPanePathInner(child, paneId);
+
+    if (result.node !== child) {
+      didChange = true;
+    }
+
+    if (result.contains) {
+      contains = true;
+      focusedChildId = result.node.id;
+    }
+
+    return result.node;
+  });
+
+  if (!contains) {
+    return { node, contains: false };
+  }
+
+  if (node.lastFocusedChildId !== focusedChildId) {
+    didChange = true;
+  }
+
+  return {
+    node: didChange
+      ? {
+          ...node,
+          children,
+          lastFocusedChildId: focusedChildId ?? undefined,
+        }
+      : node,
+    contains: true,
+  };
 }
 
 function removePane(node: LayoutNode, paneId: PaneId): LayoutNode | null {
