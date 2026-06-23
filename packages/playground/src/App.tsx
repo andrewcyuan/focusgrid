@@ -23,6 +23,7 @@ type ShortcutAction = {
   label: string;
   command: string;
   defaultSequence: string;
+  args?: unknown;
 };
 
 type PaneComponentProps = {
@@ -63,6 +64,34 @@ const shortcutActions: ShortcutAction[] = [
     label: "Focus previous",
     command: "pane.focusPrevious",
     defaultSequence: "Ctrl+B P",
+  },
+  {
+    id: "resize-left",
+    label: "Resize left",
+    command: "pane.resizeLeft",
+    defaultSequence: "Ctrl+B H",
+    args: { deltaPx: 48 },
+  },
+  {
+    id: "resize-right",
+    label: "Resize right",
+    command: "pane.resizeRight",
+    defaultSequence: "Ctrl+B L",
+    args: { deltaPx: 48 },
+  },
+  {
+    id: "resize-up",
+    label: "Resize up",
+    command: "pane.resizeUp",
+    defaultSequence: "Ctrl+B K",
+    args: { deltaPx: 48 },
+  },
+  {
+    id: "resize-down",
+    label: "Resize down",
+    command: "pane.resizeDown",
+    defaultSequence: "Ctrl+B J",
+    args: { deltaPx: 48 },
   },
 ];
 
@@ -145,6 +174,7 @@ function createKeymap(shortcuts: Record<string, string>): KeyBinding[] {
         {
           sequence: parseKeySequence(sequence),
           command: action.command,
+          args: action.args,
           preventDefault: true,
         },
       ];

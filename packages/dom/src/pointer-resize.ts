@@ -67,27 +67,7 @@ export class PointerResizeController {
 
     this.pendingFrame = requestFrame(() => {
       this.pendingFrame = null;
-
-      if (!this.drag) {
-        return;
-      }
-
-      if (
-        !findSplitNode(
-          this.workspace.getState().root,
-          this.drag.splitId,
-        )
-      ) {
-        return;
-      }
-
-      this.workspace.dispatch({
-        type: "handle.resize",
-        splitId: this.drag.splitId,
-        index: this.drag.index,
-        deltaPx: this.pendingDeltaPx,
-        snapshotSizes: this.drag.startSizes,
-      });
+      this.dispatchPendingResize();
     });
   }
 
@@ -96,6 +76,8 @@ export class PointerResizeController {
       return;
     }
 
+    this.flushPendingFrame();
+
     const target = event.currentTarget;
 
     if (target instanceof HTMLElement && target.hasPointerCapture(event.pointerId)) {
@@ -103,7 +85,34 @@ export class PointerResizeController {
     }
 
     this.drag = null;
-    this.cancelPendingFrame();
+  }
+
+  private flushPendingFrame(): void {
+    if (!this.pendingFrame) {
+      return;
+    }
+
+    cancelFrame(this.pendingFrame);
+    this.pendingFrame = null;
+    this.dispatchPendingResize();
+  }
+
+  private dispatchPendingResize(): void {
+    if (!this.drag) {
+      return;
+    }
+
+    if (!findSplitNode(this.workspace.getState().root, this.drag.splitId)) {
+      return;
+    }
+
+    this.workspace.dispatch({
+      type: "handle.resize",
+      splitId: this.drag.splitId,
+      index: this.drag.index,
+      deltaPx: this.pendingDeltaPx,
+      snapshotSizes: this.drag.startSizes,
+    });
   }
 
   private cancelPendingFrame(): void {

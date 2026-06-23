@@ -254,4 +254,41 @@ describe("PointerResizeController batching", () => {
       snapshotSizes: [0.5, 0.5],
     });
   });
+
+  it("flushes the latest pending resize when the drag ends before the frame runs", () => {
+    vi.useFakeTimers();
+
+    const workspace = createWorkspace(workspaceState());
+    const dispatch = vi.spyOn(workspace, "dispatch");
+    const controller = new PointerResizeController(workspace);
+    const handle: ComputedHandle = {
+      id: "root:0",
+      splitId: "root",
+      index: 0,
+      direction: "horizontal",
+      rect: {
+        x: 497,
+        y: 0,
+        width: 6,
+        height: 600,
+      },
+    };
+
+    controller.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), handle);
+    controller.updateResize(pointerEvent({ pointerId: 1, clientX: 145 }));
+    controller.endResize(pointerEvent({ pointerId: 1, clientX: 145 }));
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "handle.resize",
+      splitId: "root",
+      index: 0,
+      deltaPx: 45,
+      snapshotSizes: [0.5, 0.5],
+    });
+
+    vi.runOnlyPendingTimers();
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
 });
