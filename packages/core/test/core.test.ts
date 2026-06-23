@@ -768,13 +768,19 @@ describe("keyboard", () => {
     );
   });
 
-  it("repeats an opted-in sequence follower during the repeat window", () => {
+  it("retains a repeatable leader so different followers can run during the repeat window", () => {
     let now = 1000;
     const router = new KeyRouter(
       [
         {
           sequence: parseKeySequence("Ctrl-B L"),
           command: "pane.resizeRight",
+          args: { deltaPx: 4 },
+          repeat: true,
+        },
+        {
+          sequence: parseKeySequence("Ctrl-B H"),
+          command: "pane.resizeLeft",
           args: { deltaPx: 4 },
           repeat: true,
         },
@@ -813,9 +819,66 @@ describe("keyboard", () => {
       preventDefault: true,
     });
 
-    now += 301;
+    now += 250;
+
+    expect(router.handle(parseKeySequence("H")[0]!, ctx)).toEqual({
+      matched: true,
+      pending: false,
+      command: "pane.resizeLeft",
+      args: { deltaPx: 4 },
+      preventDefault: true,
+    });
+
+    now += 250;
+
+    expect(router.handle(parseKeySequence("H")[0]!, ctx)).toEqual({
+      matched: true,
+      pending: false,
+      command: "pane.resizeLeft",
+      args: { deltaPx: 4 },
+      preventDefault: true,
+    });
+  });
+
+  it("does not run a different follower after the repeat window expires", () => {
+    let now = 1000;
+    const router = new KeyRouter(
+      [
+        {
+          sequence: parseKeySequence("Ctrl-B L"),
+          command: "pane.resizeRight",
+          repeat: true,
+        },
+        {
+          sequence: parseKeySequence("Ctrl-B H"),
+          command: "pane.resizeLeft",
+          repeat: true,
+        },
+      ],
+      {
+        repeatTimeoutMs: 300,
+        now: () => now,
+      },
+    );
+    const ctx = {
+      activePaneId: "editor",
+      inputFocused: true,
+      mode: "normal" as const,
+    };
+
+    router.handle(parseKeySequence("Ctrl-B")[0]!, ctx);
 
     expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
+      matched: true,
+      pending: false,
+      command: "pane.resizeRight",
+      args: undefined,
+      preventDefault: true,
+    });
+
+    now += 301;
+
+    expect(router.handle(parseKeySequence("H")[0]!, ctx)).toEqual({
       matched: false,
       pending: false,
       preventDefault: false,
@@ -846,6 +909,70 @@ describe("keyboard", () => {
     });
 
     expect(router.handle(parseKeySequence("X")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: false,
+    });
+  });
+
+  it("does not run non-repeatable bindings from a retained leader", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("Ctrl-B L"),
+        command: "pane.resizeRight",
+        repeat: true,
+      },
+      {
+        sequence: parseKeySequence("Ctrl-B X"),
+        command: "pane.close",
+      },
+    ]);
+    const ctx = {
+      activePaneId: "editor",
+      inputFocused: true,
+      mode: "normal" as const,
+    };
+
+    router.handle(parseKeySequence("Ctrl-B")[0]!, ctx);
+    router.handle(parseKeySequence("L")[0]!, ctx);
+
+    expect(router.handle(parseKeySequence("X")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: true,
+    });
+
+    expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: false,
+    });
+  });
+
+  it("cancels a retained leader after an unmatched follower", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("Ctrl-B L"),
+        command: "pane.resizeRight",
+        repeat: true,
+      },
+    ]);
+    const ctx = {
+      activePaneId: "editor",
+      inputFocused: true,
+      mode: "normal" as const,
+    };
+
+    router.handle(parseKeySequence("Ctrl-B")[0]!, ctx);
+    router.handle(parseKeySequence("L")[0]!, ctx);
+
+    expect(router.handle(parseKeySequence("Z")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: true,
+    });
+
+    expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
       matched: false,
       pending: false,
       preventDefault: false,

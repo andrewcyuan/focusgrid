@@ -70,7 +70,9 @@ test("saved plus-style shortcuts are migrated before parsing", async ({ page }) 
   await expect(page.locator(".TextPane")).toHaveCount(3);
 });
 
-test("repeatable followers run without replaying the leader", async ({ page }) => {
+test("repeatable leader followers run without replaying the leader", async ({
+  page,
+}) => {
   await page.goto("/");
 
   const alphaPane = page.locator('[data-pane-id="alpha"]');
@@ -91,7 +93,19 @@ test("repeatable followers run without replaying the leader", async ({ page }) =
   await page.keyboard.press("L");
 
   await expect(alphaText).toHaveValue("abcdef");
-  await expect
-    .poll(async () => (await alphaPane.boundingBox())?.width ?? 0)
-    .toBeGreaterThan(initialBox!.width);
+  await expect.poll(async () => {
+    const box = await alphaPane.boundingBox();
+    return box?.width ?? 0;
+  }).toBeGreaterThan(initialBox!.width);
+
+  const postGrowthWidth = (await alphaPane.boundingBox())?.width ?? 0;
+
+  await page.keyboard.press("H");
+  await page.keyboard.press("H");
+
+  await expect(alphaText).toHaveValue("abcdef");
+  await expect.poll(async () => {
+    const box = await alphaPane.boundingBox();
+    return box?.width ?? 0;
+  }).toBeLessThan(postGrowthWidth);
 });

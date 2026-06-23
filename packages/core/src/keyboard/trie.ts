@@ -21,7 +21,7 @@ const DEFAULT_REPEAT_TIMEOUT_MS = 500;
 export class KeyRouter {
   private readonly root: KeyTrieNode;
   private current: KeyTrieNode;
-  private repeat: RepeatBinding | null = null;
+  private repeat: RepeatPrefix | null = null;
   private readonly repeatTimeoutMs: number;
   private readonly now: () => number;
 
@@ -66,7 +66,7 @@ export class KeyRouter {
     if (next.binding && (!next.binding.when || next.binding.when(ctx))) {
       const binding = next.binding;
       this.current = this.root;
-      this.setRepeat(id, binding);
+      this.setRepeat(binding);
 
       return {
         matched: true,
@@ -84,8 +84,7 @@ export class KeyRouter {
   }
 
   private matchRepeat(id: string, ctx: ShortcutContext): KeyMatchResult | null {
-    if (!this.repeat || this.repeat.strokeId !== id) {
-      this.repeat = null;
+    if (!this.repeat) {
       return null;
     }
 
@@ -94,14 +93,24 @@ export class KeyRouter {
       return null;
     }
 
-    const binding = this.repeat.binding;
+    const next = this.repeat.node.children.get(id);
+    const binding = next?.binding;
 
-    if (binding.when && !binding.when(ctx)) {
+    if (
+      !binding ||
+      !binding.repeat ||
+      binding.sequence.length !== 2 ||
+      (binding.when && !binding.when(ctx))
+    ) {
       this.repeat = null;
-      return null;
+      return {
+        matched: false,
+        pending: false,
+        preventDefault: true,
+      };
     }
 
-    this.setRepeat(id, binding);
+    this.setRepeat(binding);
 
     return {
       matched: true,
@@ -112,23 +121,30 @@ export class KeyRouter {
     };
   }
 
-  private setRepeat(id: string, binding: KeyBinding): void {
-    if (!binding.repeat || binding.sequence.length < 2) {
+  private setRepeat(binding: KeyBinding): void {
+    if (!binding.repeat || binding.sequence.length !== 2) {
+      this.repeat = null;
+      return;
+    }
+
+    const prefixStroke = binding.sequence[0];
+    const prefixStrokeId = strokeToId(prefixStroke);
+    const prefixNode = this.root.children.get(prefixStrokeId);
+
+    if (!prefixNode) {
       this.repeat = null;
       return;
     }
 
     this.repeat = {
-      strokeId: id,
-      binding,
+      node: prefixNode,
       expiresAt: this.now() + this.repeatTimeoutMs,
     };
   }
 }
 
-type RepeatBinding = {
-  strokeId: string;
-  binding: KeyBinding;
+type RepeatPrefix = {
+  node: KeyTrieNode;
   expiresAt: number;
 };
 

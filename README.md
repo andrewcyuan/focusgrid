@@ -25,9 +25,10 @@ Shortcut chords use `-` between combined keys and spaces between strokes:
 parseKeySequence("Ctrl-b l");
 ```
 
-Bindings can opt into tmux-style follower repeats with `repeat: true`. After a
-repeatable sequence such as `Ctrl-b l` runs, pressing `l` again within the repeat
-window runs the same command without replaying `Ctrl-b`.
+Bindings can opt into tmux-style retained leaders with `repeat: true`. After a
+repeatable two-stroke sequence such as `Ctrl-b l` runs, pressing another
+repeatable follower under the same leader, such as `l` or `h`, within the repeat
+window runs that command without replaying `Ctrl-b`.
 
 ## Commands
 
