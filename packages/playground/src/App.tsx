@@ -31,6 +31,8 @@ type PaneComponentProps = {
   workspace: Workspace;
 };
 
+const shortcutStorageKey = "focusgrid.playground.shortcuts";
+
 const shortcutActions: ShortcutAction[] = [
   {
     id: "split-right",
@@ -152,6 +154,47 @@ function createKeymap(shortcuts: Record<string, string>): KeyBinding[] {
   });
 }
 
+function createDefaultShortcuts(): Record<string, string> {
+  return Object.fromEntries(
+    shortcutActions.map((action) => [action.id, action.defaultSequence]),
+  );
+}
+
+function loadSavedShortcuts(): Record<string, string> {
+  const defaults = createDefaultShortcuts();
+
+  try {
+    const saved = window.localStorage.getItem(shortcutStorageKey);
+
+    if (!saved) {
+      return defaults;
+    }
+
+    const parsed: unknown = JSON.parse(saved);
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return defaults;
+    }
+
+    return shortcutActions.reduce<Record<string, string>>((shortcuts, action) => {
+      const value = (parsed as Record<string, unknown>)[action.id];
+      shortcuts[action.id] =
+        typeof value === "string" ? value : action.defaultSequence;
+      return shortcuts;
+    }, {});
+  } catch {
+    return defaults;
+  }
+}
+
+function saveShortcuts(shortcuts: Record<string, string>): void {
+  try {
+    window.localStorage.setItem(shortcutStorageKey, JSON.stringify(shortcuts));
+  } catch {
+    // The playground should keep working when storage is unavailable.
+  }
+}
+
 const workspace = createWorkspace(createInitialState(), {
   commands: createPlaygroundCommands(),
 });
@@ -163,12 +206,12 @@ const paneComponents: Record<string, ComponentType<PaneComponentProps>> = {
 
 export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [shortcuts, setShortcuts] = useState(() =>
-    Object.fromEntries(
-      shortcutActions.map((action) => [action.id, action.defaultSequence]),
-    ),
-  );
+  const [shortcuts, setShortcuts] = useState(loadSavedShortcuts);
   const keymap = useMemo(() => createKeymap(shortcuts), [shortcuts]);
+
+  useEffect(() => {
+    saveShortcuts(shortcuts);
+  }, [shortcuts]);
 
   return (
     <PaneProvider workspace={workspace}>
