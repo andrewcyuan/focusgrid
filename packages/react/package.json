@@ -1,0 +1,38 @@
+{
+  "name": "@focusgrid/react",
+  "version": "0.0.1",
+  "type": "module",
+  "sideEffects": [
+    "./dist/styles.css",
+    "./styles.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm,cjs --dts --external react --external react-dom --external @focusgrid/core --external @focusgrid/dom && cp src/styles.css dist/styles.css",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@focusgrid/core": "workspace:*",
+    "@focusgrid/dom": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5"
+  }
+}
