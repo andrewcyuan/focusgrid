@@ -2,6 +2,7 @@ export type PaneId = string;
 export type NodeId = string;
 
 export type Direction = "horizontal" | "vertical";
+export type PaneFocusDirection = "left" | "right" | "up" | "down";
 export type PaneResizeDirection = "left" | "right" | "up" | "down";
 
 export type PaneNode = {

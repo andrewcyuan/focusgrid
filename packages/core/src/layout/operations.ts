@@ -1,10 +1,13 @@
 import { createId } from "../utils/ids";
 import { HANDLE_SIZE } from "./constants";
+import { computeLayout } from "./solver";
 import type {
+  ComputedPane,
   Direction,
   LayoutIndex,
   LayoutNode,
   NodeId,
+  PaneFocusDirection,
   PaneId,
   PaneResizeDirection,
   PaneNode,
@@ -56,6 +59,49 @@ export function focusPane(state: WorkspaceState, paneId: PaneId): WorkspaceState
     ...state,
     activePaneId: paneId,
   };
+}
+
+export function focusPaneInDirection(
+  state: WorkspaceState,
+  paneId: PaneId,
+  direction: PaneFocusDirection,
+): WorkspaceState {
+  const index = buildLayoutIndex(state.root);
+  const paneNode = index.paneNodeByPaneId.get(paneId);
+
+  if (!paneNode) {
+    return state;
+  }
+
+  const layout = computeLayout(state);
+  const activePane = layout.panes.find((pane) => pane.paneId === paneId);
+
+  if (!activePane) {
+    return state;
+  }
+
+  let currentId = paneNode.id;
+  let parent = index.parentByNodeId.get(currentId) ?? null;
+
+  while (parent) {
+    const sibling = findDirectionalSibling(parent, currentId, direction);
+
+    if (sibling) {
+      const targetPaneId = findTargetPaneInSubtree(
+        sibling,
+        layout.panes,
+        activePane,
+        direction,
+      );
+
+      return targetPaneId ? focusPane(state, targetPaneId) : state;
+    }
+
+    currentId = parent.id;
+    parent = index.parentByNodeId.get(currentId) ?? null;
+  }
+
+  return state;
 }
 
 export function splitPane(
@@ -196,7 +242,7 @@ export function resizePane(
     return state;
   }
 
-  const boundary = findPaneResizeBoundary(index, paneNode.id, direction);
+  const boundary = resolvePaneResizeBoundary(index, paneNode.id, direction);
 
   if (!boundary) {
     return state;
@@ -227,7 +273,7 @@ export function collectPaneIds(root: LayoutNode): PaneId[] {
   }
 }
 
-function findPaneResizeBoundary(
+function resolvePaneResizeBoundary(
   index: LayoutIndex,
   nodeId: NodeId,
   direction: PaneResizeDirection,
@@ -242,23 +288,20 @@ function findPaneResizeBoundary(
       return null;
     }
 
-    if (isHorizontalResize(direction) && parent.direction === "horizontal") {
-      if (direction === "right" && childIndex < parent.children.length - 1) {
-        return { splitId: parent.id, index: childIndex, deltaPxSign: 1 };
-      }
+    if (isHorizontalResize(direction) === (parent.direction === "horizontal")) {
+      const boundaryIndex =
+        childIndex > 0
+          ? childIndex - 1
+          : childIndex < parent.children.length - 1
+            ? childIndex
+            : null;
 
-      if (direction === "left" && childIndex > 0) {
-        return { splitId: parent.id, index: childIndex - 1, deltaPxSign: -1 };
-      }
-    }
-
-    if (!isHorizontalResize(direction) && parent.direction === "vertical") {
-      if (direction === "down" && childIndex < parent.children.length - 1) {
-        return { splitId: parent.id, index: childIndex, deltaPxSign: 1 };
-      }
-
-      if (direction === "up" && childIndex > 0) {
-        return { splitId: parent.id, index: childIndex - 1, deltaPxSign: -1 };
+      if (boundaryIndex !== null) {
+        return {
+          splitId: parent.id,
+          index: boundaryIndex,
+          deltaPxSign: isPositiveBoundaryDirection(direction) ? 1 : -1,
+        };
       }
     }
 
@@ -269,8 +312,131 @@ function findPaneResizeBoundary(
   return null;
 }
 
+function findDirectionalSibling(
+  parent: SplitNode,
+  childId: NodeId,
+  direction: PaneFocusDirection,
+): LayoutNode | null {
+  const childIndex = parent.children.findIndex((child) => child.id === childId);
+
+  if (childIndex === -1) {
+    return null;
+  }
+
+  if (isHorizontalDirection(direction) && parent.direction === "horizontal") {
+    if (direction === "right" && childIndex < parent.children.length - 1) {
+      return parent.children[childIndex + 1]!;
+    }
+
+    if (direction === "left" && childIndex > 0) {
+      return parent.children[childIndex - 1]!;
+    }
+  }
+
+  if (!isHorizontalDirection(direction) && parent.direction === "vertical") {
+    if (direction === "down" && childIndex < parent.children.length - 1) {
+      return parent.children[childIndex + 1]!;
+    }
+
+    if (direction === "up" && childIndex > 0) {
+      return parent.children[childIndex - 1]!;
+    }
+  }
+
+  return null;
+}
+
+function findTargetPaneInSubtree(
+  subtree: LayoutNode,
+  panes: ComputedPane[],
+  activePane: ComputedPane,
+  direction: PaneFocusDirection,
+): PaneId | null {
+  const subtreePaneIds = new Set(collectPaneIds(subtree));
+  const candidates = panes.filter((pane) => subtreePaneIds.has(pane.paneId));
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const activeCenter = getRectCenter(activePane.rect);
+
+  return candidates
+    .map((pane) => ({
+      pane,
+      edge: getEnteringEdge(pane.rect, direction),
+      perpendicularDistance: Math.abs(
+        getPerpendicularCenter(pane.rect, direction) -
+          getPerpendicularCenter(activePane.rect, direction),
+      ),
+      centerDistance:
+        Math.abs(getRectCenter(pane.rect).x - activeCenter.x) +
+        Math.abs(getRectCenter(pane.rect).y - activeCenter.y),
+    }))
+    .sort((a, b) => {
+      const edgeDelta = compareEnteringEdge(a.edge, b.edge, direction);
+
+      if (edgeDelta !== 0) {
+        return edgeDelta;
+      }
+
+      if (a.perpendicularDistance !== b.perpendicularDistance) {
+        return a.perpendicularDistance - b.perpendicularDistance;
+      }
+
+      return a.centerDistance - b.centerDistance;
+    })[0]!.pane.paneId;
+}
+
+function getEnteringEdge(rect: Rect, direction: PaneFocusDirection): number {
+  if (direction === "right") {
+    return rect.x;
+  }
+
+  if (direction === "left") {
+    return rect.x + rect.width;
+  }
+
+  if (direction === "down") {
+    return rect.y;
+  }
+
+  return rect.y + rect.height;
+}
+
+function compareEnteringEdge(
+  a: number,
+  b: number,
+  direction: PaneFocusDirection,
+): number {
+  return direction === "left" || direction === "up" ? b - a : a - b;
+}
+
+function getPerpendicularCenter(
+  rect: Rect,
+  direction: PaneFocusDirection,
+): number {
+  const center = getRectCenter(rect);
+  return isHorizontalDirection(direction) ? center.y : center.x;
+}
+
+function getRectCenter(rect: Rect): { x: number; y: number } {
+  return {
+    x: rect.x + rect.width / 2,
+    y: rect.y + rect.height / 2,
+  };
+}
+
+function isHorizontalDirection(direction: PaneFocusDirection): boolean {
+  return direction === "left" || direction === "right";
+}
+
 function isHorizontalResize(direction: PaneResizeDirection): boolean {
   return direction === "left" || direction === "right";
+}
+
+function isPositiveBoundaryDirection(direction: PaneResizeDirection): boolean {
+  return direction === "right" || direction === "down";
 }
 
 function getSplitAxisSize(state: WorkspaceState, splitId: NodeId): number {

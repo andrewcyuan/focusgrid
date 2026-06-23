@@ -6,6 +6,7 @@ export type {
   LayoutIndex,
   LayoutNode,
   NodeId,
+  PaneFocusDirection,
   PaneId,
   PaneNode,
   PaneResizeDirection,

@@ -145,16 +145,158 @@ describe("workspace", () => {
     expect(nested.sizes[1]).toBeCloseTo(0.298793);
   });
 
-  it("returns the same state when no pane resize boundary matches", () => {
-    const state = horizontalSplitState();
-    const next = reducer(state, {
+  it("resizes a middle pane against the left sibling boundary in a binary trifold", () => {
+    const growMiddle = reducer(leftNestedTrifoldState(), {
+      type: "pane.resize",
+      paneId: "middle",
+      direction: "left",
+      deltaPx: 100,
+    });
+
+    expect(growMiddle.root.kind).toBe("split");
+    expect(growMiddle.root.sizes).toEqual([0.5, 0.5]);
+
+    const grownNested = growMiddle.root.children[0]!;
+    expect(grownNested.kind).toBe("split");
+    expect(grownNested.sizes[0]).toBeCloseTo(0.298793);
+    expect(grownNested.sizes[1]).toBeCloseTo(0.701207);
+
+    const shrinkMiddle = reducer(leftNestedTrifoldState(), {
+      type: "pane.resize",
+      paneId: "middle",
+      direction: "right",
+      deltaPx: 100,
+    });
+
+    expect(shrinkMiddle.root.kind).toBe("split");
+    expect(shrinkMiddle.root.sizes).toEqual([0.5, 0.5]);
+
+    const shrunkNested = shrinkMiddle.root.children[0]!;
+    expect(shrunkNested.kind).toBe("split");
+    expect(shrunkNested.sizes[0]).toBeCloseTo(0.701207);
+    expect(shrunkNested.sizes[1]).toBeCloseTo(0.298793);
+  });
+
+  it("resizes a middle pane against the right sibling boundary in a binary trifold", () => {
+    const growMiddle = reducer(nestedHorizontalState(), {
+      type: "pane.resize",
+      paneId: "middle",
+      direction: "right",
+      deltaPx: 100,
+    });
+
+    expect(growMiddle.root.kind).toBe("split");
+    expect(growMiddle.root.sizes).toEqual([0.5, 0.5]);
+
+    const grownNested = growMiddle.root.children[1]!;
+    expect(grownNested.kind).toBe("split");
+    expect(grownNested.sizes[0]).toBeCloseTo(0.701207);
+    expect(grownNested.sizes[1]).toBeCloseTo(0.298793);
+
+    const shrinkMiddle = reducer(nestedHorizontalState(), {
+      type: "pane.resize",
+      paneId: "middle",
+      direction: "left",
+      deltaPx: 100,
+    });
+
+    expect(shrinkMiddle.root.kind).toBe("split");
+    expect(shrinkMiddle.root.sizes).toEqual([0.5, 0.5]);
+
+    const shrunkNested = shrinkMiddle.root.children[1]!;
+    expect(shrunkNested.kind).toBe("split");
+    expect(shrunkNested.sizes[0]).toBeCloseTo(0.298793);
+    expect(shrunkNested.sizes[1]).toBeCloseTo(0.701207);
+  });
+
+  it("resizes edge panes by moving their sibling boundary", () => {
+    const leftEdgeShrink = reducer(horizontalSplitState(), {
       type: "pane.resize",
       paneId: "left",
       direction: "left",
       deltaPx: 100,
     });
 
-    expect(next).toBe(state);
+    expect(leftEdgeShrink.root.kind).toBe("split");
+    expect(leftEdgeShrink.root.sizes[0]).toBeCloseTo(0.4);
+    expect(leftEdgeShrink.root.sizes[1]).toBeCloseTo(0.6);
+
+    const leftEdgeGrow = reducer(horizontalSplitState(), {
+      type: "pane.resize",
+      paneId: "left",
+      direction: "right",
+      deltaPx: 100,
+    });
+
+    expect(leftEdgeGrow.root.kind).toBe("split");
+    expect(leftEdgeGrow.root.sizes[0]).toBeCloseTo(0.6);
+    expect(leftEdgeGrow.root.sizes[1]).toBeCloseTo(0.4);
+
+    const rightEdgeShrink = reducer(horizontalSplitState(), {
+      type: "pane.resize",
+      paneId: "right",
+      direction: "right",
+      deltaPx: 100,
+    });
+
+    expect(rightEdgeShrink.root.kind).toBe("split");
+    expect(rightEdgeShrink.root.sizes[0]).toBeCloseTo(0.6);
+    expect(rightEdgeShrink.root.sizes[1]).toBeCloseTo(0.4);
+
+    const rightEdgeGrow = reducer(horizontalSplitState(), {
+      type: "pane.resize",
+      paneId: "right",
+      direction: "left",
+      deltaPx: 100,
+    });
+
+    expect(rightEdgeGrow.root.kind).toBe("split");
+    expect(rightEdgeGrow.root.sizes[0]).toBeCloseTo(0.4);
+    expect(rightEdgeGrow.root.sizes[1]).toBeCloseTo(0.6);
+
+    const topEdgeShrink = reducer(verticalSplitState(), {
+      type: "pane.resize",
+      paneId: "top",
+      direction: "up",
+      deltaPx: 60,
+    });
+
+    expect(topEdgeShrink.root.kind).toBe("split");
+    expect(topEdgeShrink.root.sizes[0]).toBeCloseTo(0.4);
+    expect(topEdgeShrink.root.sizes[1]).toBeCloseTo(0.6);
+
+    const topEdgeGrow = reducer(verticalSplitState(), {
+      type: "pane.resize",
+      paneId: "top",
+      direction: "down",
+      deltaPx: 60,
+    });
+
+    expect(topEdgeGrow.root.kind).toBe("split");
+    expect(topEdgeGrow.root.sizes[0]).toBeCloseTo(0.6);
+    expect(topEdgeGrow.root.sizes[1]).toBeCloseTo(0.4);
+
+    const bottomEdgeShrink = reducer(verticalSplitState(), {
+      type: "pane.resize",
+      paneId: "bottom",
+      direction: "down",
+      deltaPx: 60,
+    });
+
+    expect(bottomEdgeShrink.root.kind).toBe("split");
+    expect(bottomEdgeShrink.root.sizes[0]).toBeCloseTo(0.6);
+    expect(bottomEdgeShrink.root.sizes[1]).toBeCloseTo(0.4);
+
+    const bottomEdgeGrow = reducer(verticalSplitState(), {
+      type: "pane.resize",
+      paneId: "bottom",
+      direction: "up",
+      deltaPx: 60,
+    });
+
+    expect(bottomEdgeGrow.root.kind).toBe("split");
+    expect(bottomEdgeGrow.root.sizes[0]).toBeCloseTo(0.4);
+    expect(bottomEdgeGrow.root.sizes[1]).toBeCloseTo(0.6);
   });
 
   it("clamps pane resize to adjacent minimum sizes", () => {
@@ -227,6 +369,78 @@ describe("workspace", () => {
     expect(root.sizes[0]).toBeCloseTo(0.548);
     expect(root.sizes[1]).toBeCloseTo(0.452);
   });
+
+  it("focuses horizontally adjacent panes", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("right");
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "right",
+      direction: "left",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("left");
+  });
+
+  it("focuses vertically adjacent panes", () => {
+    const workspace = createWorkspace(verticalSplitState());
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "bottom",
+      direction: "up",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("top");
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "top",
+      direction: "down",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("bottom");
+  });
+
+  it("chooses the closest edge pane in a nested directional sibling", () => {
+    const workspace = createWorkspace(nestedDirectionalFocusState());
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("lower-right");
+  });
+
+  it("returns the same state when no directional sibling matches", () => {
+    const state = horizontalSplitState();
+    const next = reducer(state, {
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "left",
+    });
+
+    expect(next).toBe(state);
+    expect(next.activePaneId).toBe("left");
+  });
+
+  it("runs default pane directional focus commands against the active pane", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+
+    expect(workspace.commands.run("pane.focusRight", workspace)).toBe(true);
+
+    expect(workspace.getState().activePaneId).toBe("right");
+  });
 });
 
 function horizontalSplitState(): WorkspaceState {
@@ -278,6 +492,47 @@ function verticalSplitState(): WorkspaceState {
       ],
     },
     activePaneId: "bottom",
+    container: {
+      width: 1000,
+      height: 600,
+    },
+  };
+}
+
+function leftNestedTrifoldState(): WorkspaceState {
+  return {
+    root: {
+      kind: "split",
+      id: "root",
+      direction: "horizontal",
+      sizes: [0.5, 0.5],
+      children: [
+        {
+          kind: "split",
+          id: "nested",
+          direction: "horizontal",
+          sizes: [0.5, 0.5],
+          children: [
+            {
+              kind: "pane",
+              id: "left-node",
+              paneId: "left",
+            },
+            {
+              kind: "pane",
+              id: "middle-node",
+              paneId: "middle",
+            },
+          ],
+        },
+        {
+          kind: "pane",
+          id: "right-node",
+          paneId: "right",
+        },
+      ],
+    },
+    activePaneId: "middle",
     container: {
       width: 1000,
       height: 600,
@@ -360,6 +615,47 @@ function nestedHandleState(): WorkspaceState {
       ],
     },
     activePaneId: "inner-left",
+    container: {
+      width: 1000,
+      height: 600,
+    },
+  };
+}
+
+function nestedDirectionalFocusState(): WorkspaceState {
+  return {
+    root: {
+      kind: "split",
+      id: "root",
+      direction: "horizontal",
+      sizes: [0.5, 0.5],
+      children: [
+        {
+          kind: "pane",
+          id: "left-node",
+          paneId: "left",
+        },
+        {
+          kind: "split",
+          id: "right-split",
+          direction: "vertical",
+          sizes: [0.25, 0.75],
+          children: [
+            {
+              kind: "pane",
+              id: "upper-right-node",
+              paneId: "upper-right",
+            },
+            {
+              kind: "pane",
+              id: "lower-right-node",
+              paneId: "lower-right",
+            },
+          ],
+        },
+      ],
+    },
+    activePaneId: "left",
     container: {
       width: 1000,
       height: 600,

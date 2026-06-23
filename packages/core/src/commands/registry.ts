@@ -1,5 +1,5 @@
 import { createId } from "../utils/ids";
-import type { PaneResizeDirection } from "../layout/types";
+import type { PaneFocusDirection, PaneResizeDirection } from "../layout/types";
 import type { Workspace } from "../workspace";
 import type { CommandHandler } from "./types";
 
@@ -80,8 +80,29 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   registerPaneResizeCommand(commands, "pane.resizeRight", "right");
   registerPaneResizeCommand(commands, "pane.resizeUp", "up");
   registerPaneResizeCommand(commands, "pane.resizeDown", "down");
+  registerPaneFocusCommand(commands, "pane.focusLeft", "left");
+  registerPaneFocusCommand(commands, "pane.focusRight", "right");
+  registerPaneFocusCommand(commands, "pane.focusUp", "up");
+  registerPaneFocusCommand(commands, "pane.focusDown", "down");
 
   return commands;
+}
+
+function registerPaneFocusCommand(
+  commands: CommandRegistry,
+  name: string,
+  direction: PaneFocusDirection,
+): void {
+  commands.register(name, ({ workspace, state }) => {
+    const active = state.activePaneId;
+    if (!active) return;
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: active,
+      direction,
+    });
+  });
 }
 
 function registerPaneResizeCommand(

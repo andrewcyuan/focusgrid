@@ -1,6 +1,4 @@
 import {
-  CommandRegistry,
-  collectPaneIds,
   createDefaultCommandRegistry,
   createWorkspace,
   parseKeySequence,
@@ -55,16 +53,28 @@ const shortcutActions: ShortcutAction[] = [
     defaultSequence: "Ctrl-B X",
   },
   {
-    id: "focus-next",
-    label: "Focus next",
-    command: "pane.focusNext",
-    defaultSequence: "Ctrl-B N",
+    id: "focus-left",
+    label: "Focus left",
+    command: "pane.focusLeft",
+    defaultSequence: "Ctrl-B Left",
   },
   {
-    id: "focus-prev",
-    label: "Focus previous",
-    command: "pane.focusPrevious",
-    defaultSequence: "Ctrl-B P",
+    id: "focus-right",
+    label: "Focus right",
+    command: "pane.focusRight",
+    defaultSequence: "Ctrl-B Right",
+  },
+  {
+    id: "focus-up",
+    label: "Focus up",
+    command: "pane.focusUp",
+    defaultSequence: "Ctrl-B Up",
+  },
+  {
+    id: "focus-down",
+    label: "Focus down",
+    command: "pane.focusDown",
+    defaultSequence: "Ctrl-B Down",
   },
   {
     id: "resize-left",
@@ -130,40 +140,6 @@ function createInitialState(): WorkspaceState {
       height: 0,
     },
   };
-}
-
-function createPlaygroundCommands(): CommandRegistry {
-  const commands = createDefaultCommandRegistry();
-
-  commands.register("pane.focusNext", ({ workspace, state }) => {
-    focusRelativePane(workspace, state, 1);
-  });
-
-  commands.register("pane.focusPrevious", ({ workspace, state }) => {
-    focusRelativePane(workspace, state, -1);
-  });
-
-  return commands;
-}
-
-function focusRelativePane(
-  workspace: Workspace,
-  state: WorkspaceState,
-  delta: 1 | -1,
-): void {
-  const paneIds = collectPaneIds(state.root);
-
-  if (paneIds.length === 0) {
-    return;
-  }
-
-  const activeIndex = Math.max(0, paneIds.indexOf(state.activePaneId ?? ""));
-  const nextIndex = (activeIndex + delta + paneIds.length) % paneIds.length;
-
-  workspace.dispatch({
-    type: "pane.focus",
-    paneId: paneIds[nextIndex]!,
-  });
 }
 
 function createKeymap(shortcuts: Record<string, string>): KeyBinding[] {
@@ -271,7 +247,7 @@ function saveShortcuts(shortcuts: Record<string, string>): void {
 }
 
 const workspace = createWorkspace(createInitialState(), {
-  commands: createPlaygroundCommands(),
+  commands: createDefaultCommandRegistry(),
 });
 
 const paneComponents: Record<string, ComponentType<PaneComponentProps>> = {
