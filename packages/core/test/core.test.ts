@@ -4,6 +4,7 @@ import {
   createWorkspace,
   parseKeySequence,
   reducer,
+  swapPanes,
   type WorkspaceState,
 } from "../src";
 
@@ -64,6 +65,97 @@ describe("workspace", () => {
 
     expect(workspace.getState().root.kind).toBe("pane");
     expect(workspace.getState().activePaneId).toBe("editor");
+  });
+
+  it("swaps pane content while preserving layout slots", () => {
+    const workspace = createWorkspace({
+      root: {
+        kind: "split",
+        id: "root",
+        direction: "horizontal",
+        sizes: [0.25, 0.75],
+        children: [
+          {
+            kind: "pane",
+            id: "left-node",
+            paneId: "left",
+            minWidth: 100,
+            data: { title: "Left" },
+          },
+          {
+            kind: "pane",
+            id: "right-node",
+            paneId: "right",
+            minHeight: 200,
+            data: { title: "Right" },
+          },
+        ],
+      },
+      activePaneId: "left",
+      container: {
+        width: 1000,
+        height: 600,
+      },
+    });
+
+    workspace.dispatch({
+      type: "pane.swap",
+      firstPaneId: "left",
+      secondPaneId: "right",
+    });
+
+    const root = workspace.getState().root;
+    expect(root.kind).toBe("split");
+    expect(root.sizes).toEqual([0.25, 0.75]);
+
+    const firstSlot = root.children[0]!;
+    const secondSlot = root.children[1]!;
+    expect(firstSlot.kind).toBe("pane");
+    expect(secondSlot.kind).toBe("pane");
+    expect(firstSlot).toMatchObject({
+      id: "left-node",
+      paneId: "right",
+      minHeight: 200,
+      data: { title: "Right" },
+    });
+    expect(secondSlot).toMatchObject({
+      id: "right-node",
+      paneId: "left",
+      minWidth: 100,
+      data: { title: "Left" },
+    });
+
+    const layout = workspace.getComputedLayout();
+    const leftPane = layout.panes.find((pane) => pane.paneId === "left");
+    const rightPane = layout.panes.find((pane) => pane.paneId === "right");
+    expect(leftPane?.active).toBe(true);
+    expect(leftPane!.rect.x).toBeGreaterThan(rightPane!.rect.x);
+  });
+
+  it("updates split focus memory after swapping the active pane", () => {
+    const next = reducer(nestedHorizontalState(), {
+      type: "pane.swap",
+      firstPaneId: "left",
+      secondPaneId: "middle",
+    });
+
+    expect(next.activePaneId).toBe("middle");
+    expect(next.root.kind).toBe("split");
+    expect(next.root.lastFocusedChildId).toBe("left-node");
+  });
+
+  it("returns the same state when panes cannot be swapped", () => {
+    const state = horizontalSplitState();
+
+    expect(swapPanes(state, "left", "left")).toBe(state);
+    expect(swapPanes(state, "left", "missing")).toBe(state);
+    expect(
+      reducer(state, {
+        type: "pane.swap",
+        firstPaneId: "missing",
+        secondPaneId: "right",
+      }),
+    ).toBe(state);
   });
 
   it("resizes a handle from a snapshot", () => {

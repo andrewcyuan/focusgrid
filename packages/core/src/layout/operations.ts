@@ -188,6 +188,53 @@ export function closePane(state: WorkspaceState, paneId: PaneId): WorkspaceState
   };
 }
 
+export function swapPanes(
+  state: WorkspaceState,
+  firstPaneId: PaneId,
+  secondPaneId: PaneId,
+): WorkspaceState {
+  if (firstPaneId === secondPaneId) {
+    return state;
+  }
+
+  const index = buildLayoutIndex(state.root);
+  const firstPane = index.paneNodeByPaneId.get(firstPaneId);
+  const secondPane = index.paneNodeByPaneId.get(secondPaneId);
+
+  if (!firstPane || !secondPane) {
+    return state;
+  }
+
+  const nextRoot = mapLayout(state.root, (node) => {
+    if (node.kind !== "pane") {
+      return node;
+    }
+
+    if (node.id === firstPane.id) {
+      return {
+        ...secondPane,
+        id: node.id,
+      };
+    }
+
+    if (node.id === secondPane.id) {
+      return {
+        ...firstPane,
+        id: node.id,
+      };
+    }
+
+    return node;
+  });
+
+  return {
+    ...state,
+    root: state.activePaneId
+      ? markFocusedPanePath(nextRoot, state.activePaneId)
+      : nextRoot,
+  };
+}
+
 export function resizeHandle(
   state: WorkspaceState,
   splitId: NodeId,

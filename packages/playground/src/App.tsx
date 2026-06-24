@@ -1,6 +1,7 @@
 import {
   createDefaultCommandRegistry,
   createWorkspace,
+  collectPaneIds,
   parseKeySequence,
   type KeyBinding,
   type Workspace,
@@ -282,6 +283,7 @@ export function App() {
         <main className="WorkspaceShell">
           <Toolbar
             sidebarOpen={sidebarOpen}
+            workspace={workspace}
             onToggleSidebar={() => setSidebarOpen((open) => !open)}
           />
           <PaneRoot
@@ -331,18 +333,69 @@ function Sidebar({
 
 function Toolbar({
   sidebarOpen,
+  workspace,
   onToggleSidebar,
 }: {
   sidebarOpen: boolean;
+  workspace: Workspace;
   onToggleSidebar: () => void;
 }) {
   const state = useWorkspaceState();
+  const paneIds = useMemo(() => collectPaneIds(state.root), [state.root]);
+  const swapTargets = useMemo(
+    () => paneIds.filter((paneId) => paneId !== state.activePaneId),
+    [paneIds, state.activePaneId],
+  );
+  const [swapTargetId, setSwapTargetId] = useState(swapTargets[0] ?? "");
+
+  useEffect(() => {
+    if (swapTargetId && swapTargets.includes(swapTargetId)) {
+      return;
+    }
+
+    setSwapTargetId(swapTargets[0] ?? "");
+  }, [swapTargetId, swapTargets]);
 
   return (
     <header className="Toolbar">
       <button type="button" onClick={onToggleSidebar}>
         {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
       </button>
+      <div className="ToolbarActions">
+        <label>
+          <span>Swap active with</span>
+          <select
+            value={swapTargetId}
+            disabled={swapTargets.length === 0}
+            onChange={(event) => setSwapTargetId(event.target.value)}
+          >
+            {swapTargets.map((paneId) => (
+              <option key={paneId} value={paneId}>
+                {paneId}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          disabled={!state.activePaneId || !swapTargetId}
+          onClick={() => {
+            const activePaneId = state.activePaneId;
+
+            if (!activePaneId || !swapTargetId) {
+              return;
+            }
+
+            workspace.dispatch({
+              type: "pane.swap",
+              firstPaneId: activePaneId,
+              secondPaneId: swapTargetId,
+            });
+          }}
+        >
+          Swap
+        </button>
+      </div>
       <div className="ToolbarMeta">
         <span>Active: {state.activePaneId ?? "none"}</span>
         <span>

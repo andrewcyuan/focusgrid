@@ -13,6 +13,7 @@ import {
   resizeHandle,
   resizePane,
   splitPane,
+  swapPanes,
 } from "./operations";
 
 export type WorkspaceAction =
@@ -35,6 +36,7 @@ export type WorkspaceAction =
       direction: Direction;
       newPaneId: PaneId;
     }
+  | { type: "pane.swap"; firstPaneId: PaneId; secondPaneId: PaneId }
   | { type: "pane.close"; paneId: PaneId }
   | {
       type: "handle.resize";
@@ -76,6 +78,9 @@ export function reducer(
 
     case "pane.split":
       return splitPane(state, action.paneId, action.direction, action.newPaneId);
+
+    case "pane.swap":
+      return swapPanes(state, action.firstPaneId, action.secondPaneId);
 
     case "pane.close":
       return closePane(state, action.paneId);

@@ -19,6 +19,7 @@ export {
   resizeHandle,
   resizePane,
   splitPane,
+  swapPanes,
 } from "./layout/operations";
 export { reducer } from "./layout/reducer";
 export type { WorkspaceAction } from "./layout/reducer";
