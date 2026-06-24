@@ -7,8 +7,10 @@ import {
   resizePane,
   splitPane,
   swapPanes,
+  wrapRootInSplit,
   type ResizePaneOptions,
   type SplitPaneOptions,
+  type WrapRootInSplitOptions,
 } from "./layout/operations";
 import { computeLayout } from "./layout/solver";
 import type { ComputedLayout, WorkspaceState } from "./state";
@@ -22,6 +24,7 @@ export type CreateWorkspaceOptions = {
 
 export type WorkspaceApi = {
   split(paneId: PaneId, options: SplitPaneOptions): PaneId | null;
+  wrapRootInSplit(options: WrapRootInSplitOptions): PaneId | null;
   remove(paneId: PaneId): boolean;
   swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean;
   resize(paneId: PaneId, options: ResizePaneOptions): boolean;
@@ -42,6 +45,15 @@ export class Workspace {
         const newPaneId = splitOptions.newPaneId ?? createId("pane");
         const next = splitPane(this.state, paneId, {
           ...splitOptions,
+          newPaneId,
+        });
+
+        return this.commit(next) ? newPaneId : null;
+      },
+      wrapRootInSplit: (wrapOptions) => {
+        const newPaneId = wrapOptions.newPaneId ?? createId("pane");
+        const next = wrapRootInSplit(this.state, {
+          ...wrapOptions,
           newPaneId,
         });
 

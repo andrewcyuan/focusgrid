@@ -4,6 +4,7 @@ import {
   createWorkspace,
   collectPaneIds,
   defaultPaneShortcutActions,
+  type PaneSplitSide,
   type Workspace,
   type WorkspaceState,
 } from "@focusgrid/core";
@@ -24,6 +25,7 @@ type PaneComponentProps = {
 };
 
 const shortcutStorageKey = "focusgrid.playground.shortcuts";
+const rootWrapSides: PaneSplitSide[] = ["left", "right", "up", "down"];
 
 function createInitialState(): WorkspaceState {
   return {
@@ -258,6 +260,24 @@ function Toolbar({
         {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
       </button>
       <div className="ToolbarActions">
+        <div className="ToolbarButtonGroup" aria-label="Wrap root in split">
+          {rootWrapSides.map((side) => (
+            <button
+              key={side}
+              type="button"
+              onClick={() => {
+                workspace.api.wrapRootInSplit({
+                  side,
+                  minWidth: side === "left" || side === "right" ? 180 : undefined,
+                  minHeight: side === "up" || side === "down" ? 120 : undefined,
+                  preserveActivePane: true,
+                });
+              }}
+            >
+              Root {side}
+            </button>
+          ))}
+        </div>
         <label>
           <span>Swap active with</span>
           <select

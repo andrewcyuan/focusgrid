@@ -27,11 +27,13 @@ export {
   splitPane,
   swapPaneInDirection,
   swapPanes,
+  wrapRootInSplit,
 } from "./layout/operations";
 export type {
   PaneSplitSide,
   ResizePaneOptions,
   SplitPaneOptions,
+  WrapRootInSplitOptions,
 } from "./layout/operations";
 export { reducer } from "./layout/reducer";
 export type { WorkspaceAction } from "./layout/reducer";

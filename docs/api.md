@@ -25,6 +25,15 @@ type SplitPaneOptions = {
   preserveActivePane?: boolean;
 };
 
+type WrapRootInSplitOptions = {
+  side: PaneSplitSide;
+  newPaneId?: PaneId;
+  minWidth?: number;
+  minHeight?: number;
+  data?: unknown;
+  preserveActivePane?: boolean;
+};
+
 type ResizePaneOptions = {
   direction: PaneResizeDirection;
   deltaPx: number;
@@ -42,6 +51,19 @@ Splits `paneId` and inserts a new pane on `options.side`. If
 the new pane id when the split succeeds and `null` when `paneId` does not
 exist or `options.newPaneId` already belongs to another pane. By default the
 new pane becomes active, unless `preserveActivePane: true` is provided.
+
+## `workspace.api.wrapRootInSplit(options)`
+
+```ts
+wrapRootInSplit(options: WrapRootInSplitOptions): PaneId | null;
+```
+
+Wraps the current root layout in a new top-level split and inserts one new pane
+beside the existing root on `options.side`. If `options.newPaneId` is omitted,
+Focusgrid generates one; the function returns the new pane id when the wrap
+succeeds and `null` when `options.newPaneId` already belongs to another pane.
+By default the new pane becomes active, unless `preserveActivePane: true` is
+provided. `minWidth`, `minHeight`, and `data` are copied onto the inserted pane.
 
 ## `workspace.api.remove(paneId)`
 

@@ -131,6 +131,12 @@ textarea {
   min-width: 0;
 }
 
+.ToolbarButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .ToolbarActions label {
   display: flex;
   align-items: center;

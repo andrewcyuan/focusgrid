@@ -118,6 +118,110 @@ describe("workspace", () => {
     expect(preserved.getState().activePaneId).toBe("editor");
   });
 
+  it("wraps the whole root in a split through workspace.api", () => {
+    const right = createWorkspace(initialState());
+    expect(
+      right.api.wrapRootInSplit({
+        side: "right",
+        newPaneId: "sidebar",
+        minWidth: 180,
+        minHeight: 120,
+        data: { role: "sidebar" },
+      }),
+    ).toBe("sidebar");
+    expect(right.getState().activePaneId).toBe("sidebar");
+    expect(right.getState().root).toMatchObject({
+      kind: "split",
+      direction: "horizontal",
+      sizes: [0.5, 0.5],
+      lastFocusedChildId: expect.stringMatching(/^node-/),
+      children: [
+        { kind: "pane", id: "node-1", paneId: "editor" },
+        {
+          kind: "pane",
+          paneId: "sidebar",
+          minWidth: 180,
+          minHeight: 120,
+          data: { role: "sidebar" },
+        },
+      ],
+    });
+
+    const left = createWorkspace(initialState());
+    expect(left.api.wrapRootInSplit({ side: "left", newPaneId: "nav" })).toBe(
+      "nav",
+    );
+    expect(left.getState().root).toMatchObject({
+      kind: "split",
+      direction: "horizontal",
+      children: [{ paneId: "nav" }, { paneId: "editor" }],
+    });
+
+    const down = createWorkspace(initialState());
+    expect(
+      down.api.wrapRootInSplit({ side: "down", newPaneId: "console" }),
+    ).toBe("console");
+    expect(down.getState().root).toMatchObject({
+      kind: "split",
+      direction: "vertical",
+      children: [{ paneId: "editor" }, { paneId: "console" }],
+    });
+
+    const up = createWorkspace(initialState());
+    expect(up.api.wrapRootInSplit({ side: "up", newPaneId: "search" })).toBe(
+      "search",
+    );
+    expect(up.getState().root).toMatchObject({
+      kind: "split",
+      direction: "vertical",
+      children: [{ paneId: "search" }, { paneId: "editor" }],
+    });
+  });
+
+  it("wraps an existing split root as one child and can preserve active focus", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+    const oldRoot = workspace.getState().root;
+
+    expect(
+      workspace.api.wrapRootInSplit({
+        side: "left",
+        newPaneId: "activity",
+        preserveActivePane: true,
+      }),
+    ).toBe("activity");
+
+    const state = workspace.getState();
+    expect(state.activePaneId).toBe("left");
+    expect(state.root).toMatchObject({
+      kind: "split",
+      direction: "horizontal",
+      children: [{ paneId: "activity" }, oldRoot],
+      lastFocusedChildId: "root",
+    });
+  });
+
+  it("returns generated root wrapper pane ids and preserves state on duplicates", () => {
+    const generated = createWorkspace(initialState());
+    const newPaneId = generated.api.wrapRootInSplit({ side: "right" });
+
+    expect(newPaneId).toEqual(expect.stringMatching(/^pane-/));
+    expect(generated.getState().activePaneId).toBe(newPaneId);
+    expect(generated.getComputedLayout().panes.map((pane) => pane.paneId)).toContain(
+      newPaneId,
+    );
+
+    const duplicatePaneId = createWorkspace(horizontalSplitState());
+    const beforeDuplicatePaneId = duplicatePaneId.getState();
+
+    expect(
+      duplicatePaneId.api.wrapRootInSplit({
+        side: "right",
+        newPaneId: "right",
+      }),
+    ).toBeNull();
+    expect(duplicatePaneId.getState()).toBe(beforeDuplicatePaneId);
+  });
+
   it("returns null and preserves state when workspace.api.split cannot split", () => {
     const missingTarget = createWorkspace(initialState());
     const beforeMissingTarget = missingTarget.getState();
@@ -163,7 +267,7 @@ describe("workspace", () => {
     });
   });
 
-  it("accepts option-shaped reducer actions for split and resize", () => {
+  it("accepts option-shaped reducer actions for split, root wrap, and resize", () => {
     const split = reducer(initialState(), {
       type: "pane.split",
       paneId: "editor",
@@ -179,6 +283,21 @@ describe("workspace", () => {
       kind: "split",
       direction: "horizontal",
       children: [{ paneId: "nav" }, { paneId: "editor" }],
+    });
+
+    const wrapped = reducer(initialState(), {
+      type: "root.wrapInSplit",
+      options: {
+        side: "down",
+        newPaneId: "console",
+      },
+    });
+
+    expect(wrapped.activePaneId).toBe("console");
+    expect(wrapped.root).toMatchObject({
+      kind: "split",
+      direction: "vertical",
+      children: [{ paneId: "editor" }, { paneId: "console" }],
     });
 
     const resized = reducer(horizontalSplitState(), {

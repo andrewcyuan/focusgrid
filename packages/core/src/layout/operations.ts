@@ -140,6 +140,15 @@ export type SplitPaneOptions = {
   preserveActivePane?: boolean;
 };
 
+export type WrapRootInSplitOptions = {
+  side: PaneSplitSide;
+  newPaneId?: PaneId;
+  minWidth?: number;
+  minHeight?: number;
+  data?: unknown;
+  preserveActivePane?: boolean;
+};
+
 export type ResizePaneOptions = {
   direction: PaneResizeDirection;
   deltaPx: number;
@@ -211,6 +220,45 @@ export function splitPane(
     return state;
   }
 
+  const activePaneId = options.preserveActivePane ? state.activePaneId : newPaneId;
+
+  return {
+    ...state,
+    root: activePaneId ? markFocusedPanePath(nextRoot, activePaneId) : nextRoot,
+    activePaneId,
+  };
+}
+
+export function wrapRootInSplit(
+  state: WorkspaceState,
+  options: WrapRootInSplitOptions,
+): WorkspaceState {
+  const newPaneId = options.newPaneId ?? createId("pane");
+  const index = buildLayoutIndex(state.root);
+
+  if (index.paneNodeByPaneId.has(newPaneId)) {
+    return state;
+  }
+
+  const newPane: PaneNode = {
+    kind: "pane",
+    id: createId("node"),
+    paneId: newPaneId,
+    minWidth: options.minWidth,
+    minHeight: options.minHeight,
+    data: options.data,
+  };
+  const direction = splitSideToDirection(options.side);
+  const nextRoot: SplitNode = {
+    kind: "split",
+    id: createId("split"),
+    direction,
+    children:
+      options.side === "left" || options.side === "up"
+        ? [newPane, state.root]
+        : [state.root, newPane],
+    sizes: [0.5, 0.5],
+  };
   const activePaneId = options.preserveActivePane ? state.activePaneId : newPaneId;
 
   return {

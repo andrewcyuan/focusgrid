@@ -16,8 +16,10 @@ import {
   splitPane,
   swapPaneInDirection,
   swapPanes,
+  wrapRootInSplit,
   type ResizePaneOptions,
   type SplitPaneOptions,
+  type WrapRootInSplitOptions,
 } from "./operations";
 
 export type WorkspaceAction =
@@ -50,6 +52,10 @@ export type WorkspaceAction =
       type: "pane.split";
       paneId: PaneId;
       options: SplitPaneOptions;
+    }
+  | {
+      type: "root.wrapInSplit";
+      options: WrapRootInSplitOptions;
     }
   | { type: "pane.swap"; firstPaneId: PaneId; secondPaneId: PaneId }
   | {
@@ -106,6 +112,9 @@ export function reducer(
             newPaneId: action.newPaneId,
             preserveActivePane: action.preserveActivePane,
           });
+
+    case "root.wrapInSplit":
+      return wrapRootInSplit(state, action.options);
 
     case "pane.swap":
       return swapPanes(state, action.firstPaneId, action.secondPaneId);
