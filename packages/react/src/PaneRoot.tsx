@@ -10,9 +10,10 @@ import {
 } from "./lifecycle";
 import { PaneView } from "./PaneView";
 import { ResizeHandle } from "./ResizeHandle";
+import type { PaneRenderContext } from "./PaneView";
 
 export type PaneRootProps = {
-  renderPane: (paneId: string) => ReactNode;
+  renderPane: (ctx: PaneRenderContext) => ReactNode;
   keymap?: KeyBinding[];
   className?: string;
   onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;

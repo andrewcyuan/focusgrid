@@ -8,7 +8,12 @@ import {
   type Workspace,
   type WorkspaceState,
 } from "@focusgrid/core";
-import { PaneProvider, PaneRoot, useWorkspaceState } from "@focusgrid/react";
+import {
+  PaneProvider,
+  PaneRoot,
+  useWorkspaceState,
+  type PaneRenderContext,
+} from "@focusgrid/react";
 import {
   useEffect,
   useMemo,
@@ -187,8 +192,8 @@ export function App() {
           <PaneRoot
             className="PlaygroundPaneRoot"
             keymap={keymap}
-            renderPane={(paneId) => {
-              return <PaneSlot paneId={paneId} workspace={workspace} />;
+            renderPane={(ctx) => {
+              return <PaneSlot ctx={ctx} />;
             }}
           />
         </main>
@@ -322,21 +327,14 @@ function Toolbar({
   );
 }
 
-function PaneSlot({
-  paneId,
-  workspace,
-}: {
-  paneId: string;
-  workspace: Workspace;
-}) {
-  const state = useWorkspaceState();
-  const Component = paneComponents[paneId] ?? TextPane;
+function PaneSlot({ ctx }: { ctx: PaneRenderContext }) {
+  const Component = paneComponents[ctx.paneId] ?? TextPane;
 
   return (
     <Component
-      paneId={paneId}
-      active={state.activePaneId === paneId}
-      workspace={workspace}
+      paneId={ctx.paneId}
+      active={ctx.active}
+      workspace={ctx.workspace}
     />
   );
 }

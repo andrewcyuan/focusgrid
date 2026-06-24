@@ -122,7 +122,7 @@ export function App() {
   return (
     <PaneProvider workspace={workspace}>
       <PaneRoot
-        renderPane={(paneId) => {
+        renderPane={({ paneId }) => {
           const Component = panes[paneId];
           return Component ? <Component /> : <EmptyPane paneId={paneId} />;
         }}

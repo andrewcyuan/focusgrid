@@ -1,10 +1,17 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { ComputedPane } from "@focusgrid/core";
+import type { ComputedPane, PaneId, Rect, Workspace } from "@focusgrid/core";
 import { useWorkspace } from "./hooks";
+
+export type PaneRenderContext = {
+  paneId: PaneId;
+  rect: Rect;
+  active: boolean;
+  workspace: Workspace;
+};
 
 export type PaneViewProps = {
   pane: ComputedPane;
-  renderPane: (paneId: string) => ReactNode;
+  renderPane: (ctx: PaneRenderContext) => ReactNode;
 };
 
 export function PaneView({ pane, renderPane }: PaneViewProps) {
@@ -29,7 +36,12 @@ export function PaneView({ pane, renderPane }: PaneViewProps) {
         });
       }}
     >
-      {renderPane(pane.paneId)}
+      {renderPane({
+        paneId: pane.paneId,
+        rect: pane.rect,
+        active: pane.active,
+        workspace,
+      })}
     </div>
   );
 }

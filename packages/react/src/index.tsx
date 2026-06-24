@@ -6,7 +6,7 @@ export type { PaneRootProps } from "./PaneRoot";
 export type { PaneCloseEvent, PaneLayoutChangeEvent } from "./lifecycle";
 
 export { PaneView } from "./PaneView";
-export type { PaneViewProps } from "./PaneView";
+export type { PaneRenderContext, PaneViewProps } from "./PaneView";
 
 export { ResizeHandle } from "./ResizeHandle";
 export type { ResizeHandleProps } from "./ResizeHandle";
