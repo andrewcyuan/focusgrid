@@ -70,7 +70,7 @@ export function focusPaneInDirection(
   paneId: PaneId,
   direction: PaneFocusDirection,
 ): WorkspaceState {
-  const targetPaneId = findDirectionalTargetPane(state, paneId, direction);
+  const targetPaneId = findPaneInDirection(state, paneId, direction);
 
   if (!targetPaneId) {
     return state;
@@ -85,7 +85,7 @@ export function focusPaneInDirection(
   );
 }
 
-function findDirectionalTargetPane(
+export function findPaneInDirection(
   state: WorkspaceState,
   paneId: PaneId,
   direction: PaneFocusDirection,
@@ -132,12 +132,42 @@ function findDirectionalTargetPane(
   return null;
 }
 
+export type PaneSplitSide = "left" | "right" | "up" | "down";
+
+export type SplitPaneOptions = {
+  side: PaneSplitSide;
+  newPaneId?: PaneId;
+  preserveActivePane?: boolean;
+};
+
+export type ResizePaneOptions = {
+  direction: PaneResizeDirection;
+  deltaPx: number;
+};
+
+export function splitPane(
+  state: WorkspaceState,
+  paneId: PaneId,
+  options: SplitPaneOptions,
+): WorkspaceState;
 export function splitPane(
   state: WorkspaceState,
   paneId: PaneId,
   direction: Direction,
   newPaneId: PaneId,
+): WorkspaceState;
+export function splitPane(
+  state: WorkspaceState,
+  paneId: PaneId,
+  optionsOrDirection: SplitPaneOptions | Direction,
+  legacyNewPaneId?: PaneId,
 ): WorkspaceState {
+  const options =
+    typeof optionsOrDirection === "string"
+      ? directionToSplitOptions(optionsOrDirection, legacyNewPaneId)
+      : optionsOrDirection;
+  const newPaneId = options.newPaneId ?? createId("pane");
+  const direction = splitSideToDirection(options.side);
   let didSplit = false;
 
   const nextRoot = mapLayout(state.root, (node) => {
@@ -163,7 +193,10 @@ export function splitPane(
       kind: "split",
       id: createId("split"),
       direction,
-      children: [originalPane, newPane],
+      children:
+        options.side === "left" || options.side === "up"
+          ? [newPane, originalPane]
+          : [originalPane, newPane],
       sizes: [0.5, 0.5],
     };
   });
@@ -172,21 +205,23 @@ export function splitPane(
     return state;
   }
 
+  const activePaneId = options.preserveActivePane ? state.activePaneId : newPaneId;
+
   return {
     ...state,
-    root: markFocusedPanePath(nextRoot, newPaneId),
-    activePaneId: newPaneId,
+    root: activePaneId ? markFocusedPanePath(nextRoot, activePaneId) : nextRoot,
+    activePaneId,
   };
 }
 
-export function closePane(state: WorkspaceState, paneId: PaneId): WorkspaceState {
+export function removePane(state: WorkspaceState, paneId: PaneId): WorkspaceState {
   const panes = collectPaneIds(state.root);
 
   if (!panes.includes(paneId) || panes.length <= 1) {
     return state;
   }
 
-  const nextRoot = removePane(state.root, paneId);
+  const nextRoot = removePaneNode(state.root, paneId);
 
   if (!nextRoot) {
     return state;
@@ -201,6 +236,10 @@ export function closePane(state: WorkspaceState, paneId: PaneId): WorkspaceState
     root: activePaneId ? markFocusedPanePath(nextRoot, activePaneId) : nextRoot,
     activePaneId,
   };
+}
+
+export function closePane(state: WorkspaceState, paneId: PaneId): WorkspaceState {
+  return removePane(state, paneId);
 }
 
 export function swapPanes(
@@ -255,7 +294,7 @@ export function swapPaneInDirection(
   paneId: PaneId,
   direction: PaneSwapDirection,
 ): WorkspaceState {
-  const targetPaneId = findDirectionalTargetPane(state, paneId, direction);
+  const targetPaneId = findPaneInDirection(state, paneId, direction);
 
   if (!targetPaneId) {
     return state;
@@ -321,9 +360,24 @@ export function resizeHandle(
 export function resizePane(
   state: WorkspaceState,
   paneId: PaneId,
+  options: ResizePaneOptions,
+): WorkspaceState;
+export function resizePane(
+  state: WorkspaceState,
+  paneId: PaneId,
   direction: PaneResizeDirection,
   deltaPx: number,
+): WorkspaceState;
+export function resizePane(
+  state: WorkspaceState,
+  paneId: PaneId,
+  optionsOrDirection: ResizePaneOptions | PaneResizeDirection,
+  legacyDeltaPx?: number,
 ): WorkspaceState {
+  const options =
+    typeof optionsOrDirection === "string"
+      ? { direction: optionsOrDirection, deltaPx: legacyDeltaPx ?? 0 }
+      : optionsOrDirection;
   const index = buildLayoutIndex(state.root);
   const paneNode = index.paneNodeByPaneId.get(paneId);
 
@@ -331,7 +385,7 @@ export function resizePane(
     return state;
   }
 
-  const boundary = resolvePaneResizeBoundary(index, paneNode.id, direction);
+  const boundary = resolvePaneResizeBoundary(index, paneNode.id, options.direction);
 
   if (!boundary) {
     return state;
@@ -341,8 +395,22 @@ export function resizePane(
     state,
     boundary.splitId,
     boundary.index,
-    boundary.deltaPxSign * deltaPx,
+    boundary.deltaPxSign * options.deltaPx,
   );
+}
+
+function directionToSplitOptions(
+  direction: Direction,
+  newPaneId?: PaneId,
+): SplitPaneOptions {
+  return {
+    side: direction === "horizontal" ? "right" : "down",
+    newPaneId,
+  };
+}
+
+function splitSideToDirection(side: PaneSplitSide): Direction {
+  return side === "left" || side === "right" ? "horizontal" : "vertical";
 }
 
 export function collectPaneIds(root: LayoutNode): PaneId[] {
@@ -699,7 +767,7 @@ function markFocusedPanePathInner(
   };
 }
 
-function removePane(node: LayoutNode, paneId: PaneId): LayoutNode | null {
+function removePaneNode(node: LayoutNode, paneId: PaneId): LayoutNode | null {
   if (node.kind === "pane") {
     return node.paneId === paneId ? null : node;
   }
@@ -708,7 +776,7 @@ function removePane(node: LayoutNode, paneId: PaneId): LayoutNode | null {
   const sizes: number[] = [];
 
   for (let i = 0; i < node.children.length; i += 1) {
-    const child = removePane(node.children[i]!, paneId);
+    const child = removePaneNode(node.children[i]!, paneId);
 
     if (child) {
       children.push(child);

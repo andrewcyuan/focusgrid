@@ -1,9 +1,9 @@
-import { createId } from "../utils/ids";
 import type {
   PaneFocusDirection,
   PaneResizeDirection,
   PaneSwapDirection,
 } from "../layout/types";
+import { findPaneInDirection } from "../layout/operations";
 import type { Workspace } from "../workspace";
 import type { CommandHandler } from "./types";
 
@@ -50,34 +50,21 @@ export function createDefaultCommandRegistry(): CommandRegistry {
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.dispatch({
-      type: "pane.split",
-      paneId: active,
-      direction: "horizontal",
-      newPaneId: createId("pane"),
-    });
+    workspace.api.split(active, { side: "right" });
   });
 
   commands.register("pane.splitDown", ({ workspace, state }) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.dispatch({
-      type: "pane.split",
-      paneId: active,
-      direction: "vertical",
-      newPaneId: createId("pane"),
-    });
+    workspace.api.split(active, { side: "down" });
   });
 
   commands.register("pane.close", ({ workspace, state }) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.dispatch({
-      type: "pane.close",
-      paneId: active,
-    });
+    workspace.api.remove(active);
   });
 
   registerPaneResizeCommand(commands, "pane.resizeLeft", "left");
@@ -105,11 +92,7 @@ function registerPaneFocusCommand(
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: active,
-      direction,
-    });
+    workspace.api.focusDirection(direction, { fromPaneId: active });
   });
 }
 
@@ -122,11 +105,11 @@ function registerPaneSwapCommand(
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.dispatch({
-      type: "pane.swapDirection",
-      paneId: active,
-      direction,
-    });
+    const target = findPaneInDirection(workspace.getState(), active, direction);
+
+    if (!target) return;
+
+    workspace.api.swap(active, target);
   });
 }
 
@@ -139,9 +122,7 @@ function registerPaneResizeCommand(
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.dispatch({
-      type: "pane.resize",
-      paneId: active,
+    workspace.api.resize(active, {
       direction,
       deltaPx: args?.deltaPx ?? DEFAULT_PANE_RESIZE_DELTA_PX,
     });

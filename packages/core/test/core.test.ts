@@ -49,6 +49,104 @@ describe("workspace", () => {
     );
   });
 
+  it("exposes scriptable split placement through workspace.api", () => {
+    const right = createWorkspace(initialState());
+    expect(
+      right.api.split("editor", {
+        side: "right",
+        newPaneId: "terminal",
+      }),
+    ).toBe("terminal");
+    expect(right.getState().activePaneId).toBe("terminal");
+    expect(right.getState().root).toMatchObject({
+      kind: "split",
+      direction: "horizontal",
+      children: [{ paneId: "editor" }, { paneId: "terminal" }],
+    });
+
+    const left = createWorkspace(initialState());
+    expect(left.api.split("editor", { side: "left", newPaneId: "nav" })).toBe(
+      "nav",
+    );
+    expect(left.getState().root).toMatchObject({
+      kind: "split",
+      direction: "horizontal",
+      children: [{ paneId: "nav" }, { paneId: "editor" }],
+    });
+
+    const down = createWorkspace(initialState());
+    expect(down.api.split("editor", { side: "down", newPaneId: "console" })).toBe(
+      "console",
+    );
+    expect(down.getState().root).toMatchObject({
+      kind: "split",
+      direction: "vertical",
+      children: [{ paneId: "editor" }, { paneId: "console" }],
+    });
+
+    const up = createWorkspace(initialState());
+    expect(up.api.split("editor", { side: "up", newPaneId: "search" })).toBe(
+      "search",
+    );
+    expect(up.getState().root).toMatchObject({
+      kind: "split",
+      direction: "vertical",
+      children: [{ paneId: "search" }, { paneId: "editor" }],
+    });
+  });
+
+  it("returns generated split pane ids and can preserve the active pane", () => {
+    const generated = createWorkspace(initialState());
+    const newPaneId = generated.api.split("editor", { side: "right" });
+
+    expect(newPaneId).toEqual(expect.stringMatching(/^pane-/));
+    expect(generated.getState().activePaneId).toBe(newPaneId);
+    expect(generated.getComputedLayout().panes.map((pane) => pane.paneId)).toContain(
+      newPaneId,
+    );
+
+    const preserved = createWorkspace(initialState());
+    expect(
+      preserved.api.split("editor", {
+        side: "right",
+        newPaneId: "terminal",
+        preserveActivePane: true,
+      }),
+    ).toBe("terminal");
+    expect(preserved.getState().activePaneId).toBe("editor");
+  });
+
+  it("accepts option-shaped reducer actions for split and resize", () => {
+    const split = reducer(initialState(), {
+      type: "pane.split",
+      paneId: "editor",
+      options: {
+        side: "left",
+        newPaneId: "nav",
+        preserveActivePane: true,
+      },
+    });
+
+    expect(split.activePaneId).toBe("editor");
+    expect(split.root).toMatchObject({
+      kind: "split",
+      direction: "horizontal",
+      children: [{ paneId: "nav" }, { paneId: "editor" }],
+    });
+
+    const resized = reducer(horizontalSplitState(), {
+      type: "pane.resize",
+      paneId: "left",
+      options: {
+        direction: "right",
+        deltaPx: 100,
+      },
+    });
+
+    expect(resized.root.kind).toBe("split");
+    expect(resized.root.sizes[0]).toBeCloseTo(0.6);
+  });
+
   it("closes a pane and collapses a single-child split", () => {
     const workspace = createWorkspace(initialState());
 
@@ -66,6 +164,30 @@ describe("workspace", () => {
 
     expect(workspace.getState().root.kind).toBe("pane");
     expect(workspace.getState().activePaneId).toBe("editor");
+  });
+
+  it("exposes scriptable pane removal through workspace.api", () => {
+    const removeActive = createWorkspace(horizontalSplitState());
+
+    expect(removeActive.api.remove("left")).toBe(true);
+    expect(removeActive.getState().root).toMatchObject({
+      kind: "pane",
+      paneId: "right",
+    });
+    expect(removeActive.getState().activePaneId).toBe("right");
+
+    const removeInactive = createWorkspace(horizontalSplitState());
+    expect(removeInactive.api.remove("right")).toBe(true);
+    expect(removeInactive.getState().activePaneId).toBe("left");
+
+    const missing = createWorkspace(horizontalSplitState());
+    const beforeMissing = missing.getState();
+    expect(missing.api.remove("missing")).toBe(false);
+    expect(missing.getState()).toBe(beforeMissing);
+
+    const last = createWorkspace(initialState());
+    expect(last.api.remove("editor")).toBe(false);
+    expect(last.getState().activePaneId).toBe("editor");
   });
 
   it("swaps pane content while preserving layout slots", () => {
@@ -131,6 +253,24 @@ describe("workspace", () => {
     const rightPane = layout.panes.find((pane) => pane.paneId === "right");
     expect(leftPane?.active).toBe(true);
     expect(leftPane!.rect.x).toBeGreaterThan(rightPane!.rect.x);
+  });
+
+  it("exposes scriptable pane swapping through workspace.api", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+
+    expect(workspace.api.swap("left", "right")).toBe(true);
+    expect(workspace.getState().activePaneId).toBe("left");
+    expect(workspace.getState().root).toMatchObject({
+      kind: "split",
+      sizes: [0.5, 0.5],
+      children: [
+        { id: "left-node", paneId: "right" },
+        { id: "right-node", paneId: "left" },
+      ],
+    });
+
+    expect(workspace.api.swap("left", "left")).toBe(false);
+    expect(workspace.api.swap("left", "missing")).toBe(false);
   });
 
   it("updates split focus memory after swapping the active pane", () => {
@@ -550,6 +690,22 @@ describe("workspace", () => {
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.548);
     expect(root.sizes[1]).toBeCloseTo(0.452);
+  });
+
+  it("exposes scriptable pane resize and focus through workspace.api", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+
+    expect(workspace.api.resize("left", { direction: "right", deltaPx: 100 })).toBe(
+      true,
+    );
+    expect(workspace.api.focus("right")).toBe(true);
+    expect(workspace.getState().activePaneId).toBe("right");
+    expect(workspace.api.focusDirection("left")).toBe(true);
+    expect(workspace.getState().activePaneId).toBe("left");
+    expect(workspace.api.focus("missing")).toBe(false);
+    expect(
+      workspace.api.resize("missing", { direction: "right", deltaPx: 100 }),
+    ).toBe(false);
   });
 
   it("focuses horizontally adjacent panes", () => {

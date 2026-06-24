@@ -1,5 +1,10 @@
 export { createWorkspace, Workspace } from "./workspace";
-export type { CreateWorkspaceOptions, Listener } from "./workspace";
+export type {
+  CreateWorkspaceOptions,
+  FocusDirectionOptions,
+  Listener,
+  WorkspaceApi,
+} from "./workspace";
 
 export {
   CommandRegistry,
@@ -14,13 +19,20 @@ export {
   closePane,
   collectPaneIds,
   findSplitNode,
+  findPaneInDirection,
   focusPane,
   focusPaneInDirection,
+  removePane,
   resizeHandle,
   resizePane,
   splitPane,
   swapPaneInDirection,
   swapPanes,
+} from "./layout/operations";
+export type {
+  PaneSplitSide,
+  ResizePaneOptions,
+  SplitPaneOptions,
 } from "./layout/operations";
 export { reducer } from "./layout/reducer";
 export type { WorkspaceAction } from "./layout/reducer";

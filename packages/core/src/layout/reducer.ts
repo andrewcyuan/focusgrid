@@ -16,6 +16,8 @@ import {
   splitPane,
   swapPaneInDirection,
   swapPanes,
+  type ResizePaneOptions,
+  type SplitPaneOptions,
 } from "./operations";
 
 export type WorkspaceAction =
@@ -33,10 +35,21 @@ export type WorkspaceAction =
       deltaPx: number;
     }
   | {
+      type: "pane.resize";
+      paneId: PaneId;
+      options: ResizePaneOptions;
+    }
+  | {
       type: "pane.split";
       paneId: PaneId;
       direction: Direction;
       newPaneId: PaneId;
+      preserveActivePane?: boolean;
+    }
+  | {
+      type: "pane.split";
+      paneId: PaneId;
+      options: SplitPaneOptions;
     }
   | { type: "pane.swap"; firstPaneId: PaneId; secondPaneId: PaneId }
   | {
@@ -81,10 +94,18 @@ export function reducer(
       return focusPaneInDirection(state, action.paneId, action.direction);
 
     case "pane.resize":
-      return resizePane(state, action.paneId, action.direction, action.deltaPx);
+      return "options" in action
+        ? resizePane(state, action.paneId, action.options)
+        : resizePane(state, action.paneId, action.direction, action.deltaPx);
 
     case "pane.split":
-      return splitPane(state, action.paneId, action.direction, action.newPaneId);
+      return "options" in action
+        ? splitPane(state, action.paneId, action.options)
+        : splitPane(state, action.paneId, {
+            side: action.direction === "horizontal" ? "right" : "down",
+            newPaneId: action.newPaneId,
+            preserveActivePane: action.preserveActivePane,
+          });
 
     case "pane.swap":
       return swapPanes(state, action.firstPaneId, action.secondPaneId);

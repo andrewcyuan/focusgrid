@@ -1,7 +1,19 @@
 import { CommandRegistry, createDefaultCommandRegistry } from "./commands/registry";
+import { createId } from "./utils/ids";
 import { reducer, type WorkspaceAction } from "./layout/reducer";
+import {
+  focusPane,
+  focusPaneInDirection,
+  removePane,
+  resizePane,
+  splitPane,
+  swapPanes,
+  type ResizePaneOptions,
+  type SplitPaneOptions,
+} from "./layout/operations";
 import { computeLayout } from "./layout/solver";
 import type { ComputedLayout, WorkspaceState } from "./state";
+import type { PaneFocusDirection, PaneId } from "./layout/types";
 
 export type Listener = () => void;
 
@@ -9,7 +21,24 @@ export type CreateWorkspaceOptions = {
   commands?: CommandRegistry;
 };
 
+export type FocusDirectionOptions = {
+  fromPaneId?: PaneId;
+};
+
+export type WorkspaceApi = {
+  split(paneId: PaneId, options: SplitPaneOptions): PaneId | null;
+  remove(paneId: PaneId): boolean;
+  swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean;
+  resize(paneId: PaneId, options: ResizePaneOptions): boolean;
+  focus(paneId: PaneId): boolean;
+  focusDirection(
+    direction: PaneFocusDirection,
+    options?: FocusDirectionOptions,
+  ): boolean;
+};
+
 export class Workspace {
+  readonly api: WorkspaceApi;
   readonly commands: CommandRegistry;
   private state: WorkspaceState;
   private listeners = new Set<Listener>();
@@ -17,6 +46,32 @@ export class Workspace {
   constructor(initialState: WorkspaceState, options: CreateWorkspaceOptions = {}) {
     this.state = initialState;
     this.commands = options.commands ?? createDefaultCommandRegistry();
+    this.api = {
+      split: (paneId, splitOptions) => {
+        const newPaneId = splitOptions.newPaneId ?? createId("pane");
+        const next = splitPane(this.state, paneId, {
+          ...splitOptions,
+          newPaneId,
+        });
+
+        return this.commit(next) ? newPaneId : null;
+      },
+      remove: (paneId) => this.commit(removePane(this.state, paneId)),
+      swap: (firstPaneId, secondPaneId) =>
+        this.commit(swapPanes(this.state, firstPaneId, secondPaneId)),
+      resize: (paneId, resizeOptions) =>
+        this.commit(resizePane(this.state, paneId, resizeOptions)),
+      focus: (paneId) => this.commit(focusPane(this.state, paneId)),
+      focusDirection: (direction, focusOptions) => {
+        const fromPaneId = focusOptions?.fromPaneId ?? this.state.activePaneId;
+
+        if (!fromPaneId) {
+          return false;
+        }
+
+        return this.commit(focusPaneInDirection(this.state, fromPaneId, direction));
+      },
+    };
   }
 
   getState(): WorkspaceState {
@@ -30,8 +85,12 @@ export class Workspace {
   dispatch(action: WorkspaceAction): void {
     const next = reducer(this.state, action);
 
+    this.commit(next);
+  }
+
+  private commit(next: WorkspaceState): boolean {
     if (next === this.state) {
-      return;
+      return false;
     }
 
     this.state = next;
@@ -39,6 +98,8 @@ export class Workspace {
     for (const listener of this.listeners) {
       listener();
     }
+
+    return true;
   }
 
   subscribe(listener: Listener): () => void {
