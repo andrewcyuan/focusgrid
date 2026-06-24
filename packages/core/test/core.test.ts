@@ -116,6 +116,51 @@ describe("workspace", () => {
     expect(preserved.getState().activePaneId).toBe("editor");
   });
 
+  it("returns null and preserves state when workspace.api.split cannot split", () => {
+    const missingTarget = createWorkspace(initialState());
+    const beforeMissingTarget = missingTarget.getState();
+
+    expect(
+      missingTarget.api.split("missing", {
+        side: "right",
+        newPaneId: "terminal",
+      }),
+    ).toBeNull();
+    expect(missingTarget.getState()).toBe(beforeMissingTarget);
+
+    const duplicatePaneId = createWorkspace(horizontalSplitState());
+    const beforeDuplicatePaneId = duplicatePaneId.getState();
+
+    expect(
+      duplicatePaneId.api.split("left", {
+        side: "right",
+        newPaneId: "right",
+      }),
+    ).toBeNull();
+    expect(duplicatePaneId.getState()).toBe(beforeDuplicatePaneId);
+  });
+
+  it("splits when there is no active pane without inventing focus memory", () => {
+    const workspace = createWorkspace({
+      ...initialState(),
+      activePaneId: null,
+    });
+
+    expect(
+      workspace.api.split("editor", {
+        side: "right",
+        newPaneId: "terminal",
+        preserveActivePane: true,
+      }),
+    ).toBe("terminal");
+    expect(workspace.getState().activePaneId).toBeNull();
+    expect(workspace.getState().root).toMatchObject({
+      kind: "split",
+      direction: "horizontal",
+      children: [{ paneId: "editor" }, { paneId: "terminal" }],
+    });
+  });
+
   it("accepts option-shaped reducer actions for split and resize", () => {
     const split = reducer(initialState(), {
       type: "pane.split",
@@ -188,6 +233,24 @@ describe("workspace", () => {
     const last = createWorkspace(initialState());
     expect(last.api.remove("editor")).toBe(false);
     expect(last.getState().activePaneId).toBe("editor");
+  });
+
+  it("removes nested panes without preserving stale directional focus memory", () => {
+    const workspace = createWorkspace(verticalMiddleTrifoldState());
+
+    workspace.dispatch({
+      type: "pane.focus",
+      paneId: "middle-top",
+    });
+    expect(workspace.api.remove("middle-top")).toBe(true);
+
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(workspace.getState().activePaneId).toBe("middle-bottom");
   });
 
   it("swaps pane content while preserving layout slots", () => {
@@ -271,6 +334,26 @@ describe("workspace", () => {
 
     expect(workspace.api.swap("left", "left")).toBe(false);
     expect(workspace.api.swap("left", "missing")).toBe(false);
+  });
+
+  it("returns false and preserves state when workspace.api.swap cannot swap", () => {
+    const samePane = createWorkspace(horizontalSplitState());
+    const beforeSamePane = samePane.getState();
+
+    expect(samePane.api.swap("left", "left")).toBe(false);
+    expect(samePane.getState()).toBe(beforeSamePane);
+
+    const firstMissing = createWorkspace(horizontalSplitState());
+    const beforeFirstMissing = firstMissing.getState();
+
+    expect(firstMissing.api.swap("missing", "right")).toBe(false);
+    expect(firstMissing.getState()).toBe(beforeFirstMissing);
+
+    const bothMissing = createWorkspace(horizontalSplitState());
+    const beforeBothMissing = bothMissing.getState();
+
+    expect(bothMissing.api.swap("missing-a", "missing-b")).toBe(false);
+    expect(bothMissing.getState()).toBe(beforeBothMissing);
   });
 
   it("updates split focus memory after swapping the active pane", () => {
@@ -700,12 +783,85 @@ describe("workspace", () => {
     );
     expect(workspace.api.focus("right")).toBe(true);
     expect(workspace.getState().activePaneId).toBe("right");
-    expect(workspace.api.focusDirection("left")).toBe(true);
-    expect(workspace.getState().activePaneId).toBe("left");
     expect(workspace.api.focus("missing")).toBe(false);
     expect(
       workspace.api.resize("missing", { direction: "right", deltaPx: 100 }),
     ).toBe(false);
+  });
+
+  it("returns false and preserves state for no-op workspace.api.resize calls", () => {
+    const zeroDelta = createWorkspace(horizontalSplitState());
+    const beforeZeroDelta = zeroDelta.getState();
+
+    expect(zeroDelta.api.resize("left", { direction: "right", deltaPx: 0 })).toBe(
+      false,
+    );
+    expect(zeroDelta.getState()).toBe(beforeZeroDelta);
+
+    const noBoundary = createWorkspace(horizontalSplitState());
+    const beforeNoBoundary = noBoundary.getState();
+
+    expect(noBoundary.api.resize("left", { direction: "up", deltaPx: 100 })).toBe(
+      false,
+    );
+    expect(noBoundary.getState()).toBe(beforeNoBoundary);
+
+    const zeroContainer = createWorkspace({
+      ...horizontalSplitState(),
+      container: {
+        width: 0,
+        height: 600,
+      },
+    });
+    const beforeZeroContainer = zeroContainer.getState();
+
+    expect(
+      zeroContainer.api.resize("left", { direction: "right", deltaPx: 100 }),
+    ).toBe(false);
+    expect(zeroContainer.getState()).toBe(beforeZeroContainer);
+  });
+
+  it("treats negative workspace.api.resize deltas as inverse movement", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+
+    expect(
+      workspace.api.resize("left", { direction: "right", deltaPx: -100 }),
+    ).toBe(true);
+
+    const root = workspace.getState().root;
+    expect(root.kind).toBe("split");
+    expect(root.sizes[0]).toBeCloseTo(0.4);
+    expect(root.sizes[1]).toBeCloseTo(0.6);
+  });
+
+  it("keeps directional focus command-only instead of exposing it on workspace.api", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+
+    expect("focusDirection" in workspace.api).toBe(false);
+    expect(workspace.commands.run("pane.focusRight", workspace)).toBe(true);
+    expect(workspace.getState().activePaneId).toBe("right");
+  });
+
+  it("returns false and preserves state for no-op workspace.api.focus calls", () => {
+    const alreadyFocused = createWorkspace(initialState());
+    const beforeAlreadyFocused = alreadyFocused.getState();
+
+    expect(alreadyFocused.api.focus("editor")).toBe(false);
+    expect(alreadyFocused.getState()).toBe(beforeAlreadyFocused);
+
+    const missing = createWorkspace(initialState());
+    const beforeMissing = missing.getState();
+
+    expect(missing.api.focus("missing")).toBe(false);
+    expect(missing.getState()).toBe(beforeMissing);
+
+    const noActivePane = createWorkspace({
+      ...initialState(),
+      activePaneId: null,
+    });
+
+    expect(noActivePane.api.focus("editor")).toBe(true);
+    expect(noActivePane.getState().activePaneId).toBe("editor");
   });
 
   it("focuses horizontally adjacent panes", () => {

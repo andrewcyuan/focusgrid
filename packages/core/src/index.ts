@@ -1,7 +1,6 @@
 export { createWorkspace, Workspace } from "./workspace";
 export type {
   CreateWorkspaceOptions,
-  FocusDirectionOptions,
   Listener,
   WorkspaceApi,
 } from "./workspace";

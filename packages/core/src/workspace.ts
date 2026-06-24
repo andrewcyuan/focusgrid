@@ -3,7 +3,6 @@ import { createId } from "./utils/ids";
 import { reducer, type WorkspaceAction } from "./layout/reducer";
 import {
   focusPane,
-  focusPaneInDirection,
   removePane,
   resizePane,
   splitPane,
@@ -13,16 +12,12 @@ import {
 } from "./layout/operations";
 import { computeLayout } from "./layout/solver";
 import type { ComputedLayout, WorkspaceState } from "./state";
-import type { PaneFocusDirection, PaneId } from "./layout/types";
+import type { PaneId } from "./layout/types";
 
 export type Listener = () => void;
 
 export type CreateWorkspaceOptions = {
   commands?: CommandRegistry;
-};
-
-export type FocusDirectionOptions = {
-  fromPaneId?: PaneId;
 };
 
 export type WorkspaceApi = {
@@ -31,10 +26,6 @@ export type WorkspaceApi = {
   swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean;
   resize(paneId: PaneId, options: ResizePaneOptions): boolean;
   focus(paneId: PaneId): boolean;
-  focusDirection(
-    direction: PaneFocusDirection,
-    options?: FocusDirectionOptions,
-  ): boolean;
 };
 
 export class Workspace {
@@ -62,15 +53,6 @@ export class Workspace {
       resize: (paneId, resizeOptions) =>
         this.commit(resizePane(this.state, paneId, resizeOptions)),
       focus: (paneId) => this.commit(focusPane(this.state, paneId)),
-      focusDirection: (direction, focusOptions) => {
-        const fromPaneId = focusOptions?.fromPaneId ?? this.state.activePaneId;
-
-        if (!fromPaneId) {
-          return false;
-        }
-
-        return this.commit(focusPaneInDirection(this.state, fromPaneId, direction));
-      },
     };
   }
 

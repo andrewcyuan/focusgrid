@@ -92,7 +92,11 @@ function registerPaneFocusCommand(
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.api.focusDirection(direction, { fromPaneId: active });
+    workspace.dispatch({
+      type: "pane.focusDirection",
+      paneId: active,
+      direction,
+    });
   });
 }
 

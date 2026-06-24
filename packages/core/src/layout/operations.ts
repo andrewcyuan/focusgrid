@@ -168,6 +168,12 @@ export function splitPane(
       : optionsOrDirection;
   const newPaneId = options.newPaneId ?? createId("pane");
   const direction = splitSideToDirection(options.side);
+  const index = buildLayoutIndex(state.root);
+
+  if (index.paneNodeByPaneId.has(newPaneId)) {
+    return state;
+  }
+
   let didSplit = false;
 
   const nextRoot = mapLayout(state.root, (node) => {
