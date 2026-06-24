@@ -74,25 +74,21 @@ registry used by `createWorkspace()` when `options.commands` is not provided.
 
 ## Default commands
 
-### `pane.splitRight`
+### Splitting
 
 ```ts
 workspace.commands.run("pane.splitRight", workspace);
-```
-
-Splits the active pane and inserts the new pane to the right. If there is no
-active pane, the command does nothing.
-
-### `pane.splitDown`
-
-```ts
 workspace.commands.run("pane.splitDown", workspace);
 ```
 
-Splits the active pane and inserts the new pane below it. If there is no active
-pane, the command does nothing.
+Splits the active pane and inserts the new pane in the requested direction:
 
-### `pane.close`
+- `pane.splitRight`: inserts the new pane to the right.
+- `pane.splitDown`: inserts the new pane below.
+
+If there is no active pane, these commands do nothing.
+
+### Closing
 
 ```ts
 workspace.commands.run("pane.close", workspace);
@@ -101,122 +97,70 @@ workspace.commands.run("pane.close", workspace);
 Removes the active pane from the workspace. If there is no active pane or the
 active pane is the last remaining pane, the command does nothing.
 
-### `pane.resizeLeft`
+### Resizing
 
 ```ts
 workspace.commands.run("pane.resizeLeft", workspace, {
   deltaPx: 48,
 });
-```
-
-Resizes the active pane against the nearest left boundary. `deltaPx` defaults
-to `DEFAULT_PANE_RESIZE_DELTA_PX` when omitted.
-
-### `pane.resizeRight`
-
-```ts
 workspace.commands.run("pane.resizeRight", workspace, {
   deltaPx: 48,
 });
-```
-
-Resizes the active pane against the nearest right boundary. `deltaPx` defaults
-to `DEFAULT_PANE_RESIZE_DELTA_PX` when omitted.
-
-### `pane.resizeUp`
-
-```ts
 workspace.commands.run("pane.resizeUp", workspace, {
   deltaPx: 48,
 });
-```
-
-Resizes the active pane against the nearest upper boundary. `deltaPx` defaults
-to `DEFAULT_PANE_RESIZE_DELTA_PX` when omitted.
-
-### `pane.resizeDown`
-
-```ts
 workspace.commands.run("pane.resizeDown", workspace, {
   deltaPx: 48,
 });
 ```
 
-Resizes the active pane against the nearest lower boundary. `deltaPx` defaults
-to `DEFAULT_PANE_RESIZE_DELTA_PX` when omitted.
+Resizes the active pane against the nearest boundary in the requested
+direction:
 
-### `pane.focusLeft`
+- `pane.resizeLeft`: nearest left boundary.
+- `pane.resizeRight`: nearest right boundary.
+- `pane.resizeUp`: nearest upper boundary.
+- `pane.resizeDown`: nearest lower boundary.
+
+`deltaPx` defaults to `DEFAULT_PANE_RESIZE_DELTA_PX` when omitted. If there is
+no active pane or no matching boundary, these commands do nothing.
+
+### Moving Focus
 
 ```ts
 workspace.commands.run("pane.focusLeft", workspace);
-```
-
-Moves focus from the active pane to the nearest pane on the left. If there is
-no active pane or no pane in that direction, the command does nothing.
-
-### `pane.focusRight`
-
-```ts
 workspace.commands.run("pane.focusRight", workspace);
-```
-
-Moves focus from the active pane to the nearest pane on the right. If there is
-no active pane or no pane in that direction, the command does nothing.
-
-### `pane.focusUp`
-
-```ts
 workspace.commands.run("pane.focusUp", workspace);
-```
-
-Moves focus from the active pane to the nearest pane above it. If there is no
-active pane or no pane in that direction, the command does nothing.
-
-### `pane.focusDown`
-
-```ts
 workspace.commands.run("pane.focusDown", workspace);
 ```
 
-Moves focus from the active pane to the nearest pane below it. If there is no
-active pane or no pane in that direction, the command does nothing.
+Moves focus from the active pane to the nearest pane in the requested
+direction:
 
-### `pane.swapLeft`
+- `pane.focusLeft`: nearest pane on the left.
+- `pane.focusRight`: nearest pane on the right.
+- `pane.focusUp`: nearest pane above.
+- `pane.focusDown`: nearest pane below.
+
+If there is no active pane or no pane in that direction, these commands do
+nothing.
+
+### Swapping
 
 ```ts
 workspace.commands.run("pane.swapLeft", workspace);
-```
-
-Swaps the active pane with the nearest pane on the left while preserving layout
-slots and split sizes. If there is no active pane or no pane in that direction,
-the command does nothing.
-
-### `pane.swapRight`
-
-```ts
 workspace.commands.run("pane.swapRight", workspace);
-```
-
-Swaps the active pane with the nearest pane on the right while preserving
-layout slots and split sizes. If there is no active pane or no pane in that
-direction, the command does nothing.
-
-### `pane.swapUp`
-
-```ts
 workspace.commands.run("pane.swapUp", workspace);
-```
-
-Swaps the active pane with the nearest pane above it while preserving layout
-slots and split sizes. If there is no active pane or no pane in that direction,
-the command does nothing.
-
-### `pane.swapDown`
-
-```ts
 workspace.commands.run("pane.swapDown", workspace);
 ```
 
-Swaps the active pane with the nearest pane below it while preserving layout
-slots and split sizes. If there is no active pane or no pane in that direction,
-the command does nothing.
+Swaps the active pane with the nearest pane in the requested direction while
+preserving layout slots and split sizes:
+
+- `pane.swapLeft`: nearest pane on the left.
+- `pane.swapRight`: nearest pane on the right.
+- `pane.swapUp`: nearest pane above.
+- `pane.swapDown`: nearest pane below.
+
+If there is no active pane or no pane in that direction, these commands do
+nothing.

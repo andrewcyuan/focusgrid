@@ -40,8 +40,8 @@ split(paneId: PaneId, options: SplitPaneOptions): PaneId | null;
 Splits `paneId` and inserts a new pane on `options.side`. If
 `options.newPaneId` is omitted, Focusgrid generates one; the function returns
 the new pane id when the split succeeds and `null` when `paneId` does not
-exist. By default the new pane becomes active, unless
-`preserveActivePane: true` is provided.
+exist or `options.newPaneId` already belongs to another pane. By default the
+new pane becomes active, unless `preserveActivePane: true` is provided.
 
 ## `workspace.api.remove(paneId)`
 
