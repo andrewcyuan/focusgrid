@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PNPM_VERSION="10.25.0"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+COREPACK_TARBALL="$ROOT_DIR/.corepack/pnpm-$PNPM_VERSION.tgz"
+export COREPACK_HOME="${COREPACK_HOME:-$ROOT_DIR/.corepack/cache}"
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+if ! command -v corepack >/dev/null 2>&1; then
+  echo "corepack is required to run pnpm $PNPM_VERSION for this repo." >&2
+  exit 1
+fi
+
+if ! corepack pnpm --version >/dev/null 2>&1; then
+  if [[ ! -f "$COREPACK_TARBALL" ]]; then
+    cat >&2 <<EOF
+pnpm $PNPM_VERSION is not available in the local Corepack cache.
+
+From a normal terminal with network access, run:
+  corepack pack pnpm@$PNPM_VERSION -o .corepack/pnpm-$PNPM_VERSION.tgz
+
+Commit .corepack/pnpm-$PNPM_VERSION.tgz so Codex can install pnpm offline.
+EOF
+    exit 1
+  fi
+
+  corepack install -g --cache-only "$COREPACK_TARBALL" >/dev/null
+fi
+
+actual_version="$(corepack pnpm --version)"
+if [[ "$actual_version" != "$PNPM_VERSION" ]]; then
+  echo "Expected pnpm $PNPM_VERSION, but Corepack resolved pnpm $actual_version." >&2
+  echo "Try removing .corepack/cache and running ./scripts/pnpm again." >&2
+  exit 1
+fi
+
+exec corepack pnpm "$@"

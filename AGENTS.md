@@ -5,6 +5,7 @@ This is a web library with react bindings to make keyboard native interfaces in 
 ## Code practices
 
 - Always check before adding dependencies. This is a library so dependencies should be kept at a minimum
+- Use `./scripts/pnpm` instead of a global `pnpm` binary. The repo pins `pnpm@10.25.0`; the wrapper installs it from `.corepack/pnpm-10.25.0.tgz` into a repo-local Corepack cache so Codex sessions do not need network access to resolve the package manager.
 - Write tests in the test/ folder in each package. Heavily emphasize regression testing to make sure that bugs don't come back, since DOM / focus capture in the browser can be quite flaky. Assert where focus is. The goal of this library is to make focus deterministic enough to become the main mode of driving the app.
 - Do not add end-to-end tests for trivial playground-only persistence or UI state wiring unless it covers a real keyboard, focus, or DOM regression risk.
 

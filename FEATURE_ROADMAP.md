@@ -18,7 +18,6 @@ Incomplete but a good guide nonetheless
 - New component package; meant to be used inside a Pane
 - List (vertical or horizontal) with hooks for moveLeft moveRight moveUp moveDown (up and down are disabled for horizontal lists; and vice versa)
 - Not meant to be nested but take a list of child components
-- Retain their own cursor (simply an index). Defaults to 0 but you can provide a function that calculates the default if you want
 - Commands
   - moveUp
   - moveDown
@@ -33,7 +32,12 @@ Incomplete but a good guide nonetheless
   - moveToEnd
   - remove(index)
   - insert(index, component)
+  - swapForward(index)
+  - swapBackwards(index)
 - internal focus state enables us to change UI (for example, the selected row color) depending on if the KCL is focused or not!
+- Take in state + setter for active row
+- Take in function to map row to action: `(row) => void`
+
 
 ## Session support
 still debating on whether this matters or not...

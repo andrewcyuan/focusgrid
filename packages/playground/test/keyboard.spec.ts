@@ -1,4 +1,15 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function setTextareaSelection(
+  textarea: Locator,
+  selectionStart: number,
+  selectionEnd: number,
+) {
+  await textarea.evaluate((element, selection) => {
+    const textAreaElement = element as HTMLTextAreaElement;
+    textAreaElement.setSelectionRange(selection.start, selection.end);
+  }, { start: selectionStart, end: selectionEnd });
+}
 
 test("pane shortcuts are handled before focused textareas edit text", async ({
   page,
@@ -9,9 +20,7 @@ test("pane shortcuts are handled before focused textareas edit text", async ({
   await expect(alphaText).toBeFocused();
 
   await alphaText.fill("abcdef");
-  await alphaText.evaluate((element) => {
-    element.setSelectionRange(3, 3);
-  });
+  await setTextareaSelection(alphaText, 3, 3);
 
   await page.keyboard.press("Control+B");
   await page.keyboard.press("Shift+5");
@@ -29,9 +38,7 @@ test("invalid shortcut continuations are no-opped instead of typed", async ({
   await expect(alphaText).toBeFocused();
 
   await alphaText.fill("abcdef");
-  await alphaText.evaluate((element) => {
-    element.setSelectionRange(3, 3);
-  });
+  await setTextareaSelection(alphaText, 3, 3);
 
   await page.keyboard.press("Control+B");
   await page.keyboard.press("Z");
@@ -59,9 +66,7 @@ test("saved plus-style shortcuts are migrated before parsing", async ({ page }) 
   await expect(alphaText).toBeFocused();
 
   await alphaText.fill("abcdef");
-  await alphaText.evaluate((element) => {
-    element.setSelectionRange(3, 3);
-  });
+  await setTextareaSelection(alphaText, 3, 3);
 
   await page.keyboard.press("Control+B");
   await page.keyboard.press("Shift+5");
@@ -80,9 +85,7 @@ test("repeatable leader followers run without replaying the leader", async ({
   await expect(alphaText).toBeFocused();
 
   await alphaText.fill("abcdef");
-  await alphaText.evaluate((element) => {
-    element.setSelectionRange(3, 3);
-  });
+  await setTextareaSelection(alphaText, 3, 3);
 
   const initialBox = await alphaPane.boundingBox();
   expect(initialBox).not.toBeNull();
