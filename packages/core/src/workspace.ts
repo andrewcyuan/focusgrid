@@ -13,13 +13,19 @@ import {
   type WrapRootInSplitOptions,
 } from "./layout/operations";
 import { computeLayout } from "./layout/solver";
-import type { ComputedLayout, WorkspaceState } from "./state";
+import type { ComputedLayout, LayoutNode, PaneNode, WorkspaceState } from "./state";
 import type { PaneId } from "./layout/types";
 
 export type Listener = () => void;
 
+export type PaneDefaults = {
+  minWidth?: number;
+  minHeight?: number;
+};
+
 export type CreateWorkspaceOptions = {
   commands?: CommandRegistry;
+  paneDefaults?: PaneDefaults;
 };
 
 export type WorkspaceApi = {
@@ -35,10 +41,12 @@ export class Workspace {
   readonly api: WorkspaceApi;
   readonly commands: CommandRegistry;
   private state: WorkspaceState;
+  private readonly paneDefaults: PaneDefaults;
   private listeners = new Set<Listener>();
 
   constructor(initialState: WorkspaceState, options: CreateWorkspaceOptions = {}) {
-    this.state = initialState;
+    this.paneDefaults = options.paneDefaults ?? {};
+    this.state = applyPaneDefaultsToState(initialState, this.paneDefaults);
     this.commands = options.commands ?? createDefaultCommandRegistry();
     this.api = {
       split: (paneId, splitOptions) => {
@@ -53,6 +61,7 @@ export class Workspace {
       wrapRootInSplit: (wrapOptions) => {
         const newPaneId = wrapOptions.newPaneId ?? createId("pane");
         const next = wrapRootInSplit(this.state, {
+          ...this.paneDefaults,
           ...wrapOptions,
           newPaneId,
         });
@@ -110,4 +119,61 @@ export function createWorkspace(
   options?: CreateWorkspaceOptions,
 ): Workspace {
   return new Workspace(initialState, options);
+}
+
+function applyPaneDefaultsToState(
+  state: WorkspaceState,
+  paneDefaults: PaneDefaults,
+): WorkspaceState {
+  if (
+    paneDefaults.minWidth === undefined &&
+    paneDefaults.minHeight === undefined
+  ) {
+    return state;
+  }
+
+  const root = applyPaneDefaultsToNode(state.root, paneDefaults);
+
+  return root === state.root
+    ? state
+    : {
+        ...state,
+        root,
+      };
+}
+
+function applyPaneDefaultsToNode(
+  node: LayoutNode,
+  paneDefaults: PaneDefaults,
+): LayoutNode {
+  if (node.kind === "pane") {
+    return applyPaneDefaultsToPane(node, paneDefaults);
+  }
+
+  let changed = false;
+  const children = node.children.map((child) => {
+    const nextChild = applyPaneDefaultsToNode(child, paneDefaults);
+    changed ||= nextChild !== child;
+    return nextChild;
+  });
+
+  return changed ? { ...node, children } : node;
+}
+
+function applyPaneDefaultsToPane(
+  pane: PaneNode,
+  paneDefaults: PaneDefaults,
+): PaneNode {
+  const minWidth = pane.minWidth ?? paneDefaults.minWidth;
+  const minHeight = pane.minHeight ?? paneDefaults.minHeight;
+
+  if (minWidth === pane.minWidth && minHeight === pane.minHeight) {
+    return pane;
+  }
+
+  return {
+    ...pane,
+    minWidth,
+    minHeight,
+  };
 }

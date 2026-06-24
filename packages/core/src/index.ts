@@ -2,6 +2,7 @@ export { createWorkspace, Workspace } from "./workspace";
 export type {
   CreateWorkspaceOptions,
   Listener,
+  PaneDefaults,
   WorkspaceApi,
 } from "./workspace";
 

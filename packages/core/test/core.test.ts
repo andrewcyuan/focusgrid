@@ -118,6 +118,66 @@ describe("workspace", () => {
     expect(preserved.getState().activePaneId).toBe("editor");
   });
 
+  it("applies configured default minimum pane dimensions", () => {
+    const workspace = createWorkspace(
+      {
+        root: {
+          kind: "pane",
+          id: "node-1",
+          paneId: "editor",
+        },
+        activePaneId: "editor",
+        container: {
+          width: 1000,
+          height: 600,
+        },
+      },
+      {
+        paneDefaults: {
+          minWidth: 300,
+          minHeight: 200,
+        },
+      },
+    );
+
+    expect(workspace.getState().root).toMatchObject({
+      kind: "pane",
+      paneId: "editor",
+      minWidth: 300,
+      minHeight: 200,
+    });
+
+    expect(
+      workspace.api.split("editor", {
+        side: "right",
+        newPaneId: "terminal",
+      }),
+    ).toBe("terminal");
+    expect(workspace.getState().root).toMatchObject({
+      kind: "split",
+      children: [
+        { paneId: "editor", minWidth: 300, minHeight: 200 },
+        { paneId: "terminal", minWidth: 300, minHeight: 200 },
+      ],
+    });
+
+    expect(
+      workspace.api.resize("editor", { direction: "right", deltaPx: -400 }),
+    ).toBe(true);
+
+    const root = workspace.getState().root;
+    expect(root.kind).toBe("split");
+    expect(root.sizes[0]).toBeCloseTo(0.3);
+    expect(
+      workspace.api.resize("editor", { direction: "right", deltaPx: -1 }),
+    ).toBe(false);
+
+    const editorPane = workspace
+      .getComputedLayout()
+      .panes.find((pane) => pane.paneId === "editor");
+    expect(editorPane?.rect.width).toBeLessThan(500);
+  });
+
   it("wraps the whole root in a split through workspace.api", () => {
     const right = createWorkspace(initialState());
     expect(
@@ -175,6 +235,51 @@ describe("workspace", () => {
       kind: "split",
       direction: "vertical",
       children: [{ paneId: "search" }, { paneId: "editor" }],
+    });
+  });
+
+  it("uses pane defaults for wrapped panes unless wrap options override them", () => {
+    const defaulted = createWorkspace(initialState(), {
+      paneDefaults: {
+        minWidth: 240,
+        minHeight: 160,
+      },
+    });
+
+    expect(
+      defaulted.api.wrapRootInSplit({
+        side: "right",
+        newPaneId: "sidebar",
+      }),
+    ).toBe("sidebar");
+    expect(defaulted.getState().root).toMatchObject({
+      kind: "split",
+      children: [
+        { paneId: "editor", minWidth: 120, minHeight: 80 },
+        { paneId: "sidebar", minWidth: 240, minHeight: 160 },
+      ],
+    });
+
+    const overridden = createWorkspace(initialState(), {
+      paneDefaults: {
+        minWidth: 240,
+        minHeight: 160,
+      },
+    });
+
+    expect(
+      overridden.api.wrapRootInSplit({
+        side: "right",
+        newPaneId: "sidebar",
+        minWidth: 180,
+      }),
+    ).toBe("sidebar");
+    expect(overridden.getState().root).toMatchObject({
+      kind: "split",
+      children: [
+        { paneId: "editor", minWidth: 120, minHeight: 80 },
+        { paneId: "sidebar", minWidth: 180, minHeight: 160 },
+      ],
     });
   });
 

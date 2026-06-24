@@ -9,6 +9,13 @@ import { createWorkspace } from "@focusgrid/core";
 
 const workspace = createWorkspace(initialState);
 workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
+
+const workspaceWithMinimums = createWorkspace(initialState, {
+  paneDefaults: {
+    minWidth: 240,
+    minHeight: 160,
+  },
+});
 ```
 
 ## Shared types
@@ -18,6 +25,16 @@ type PaneId = string;
 
 type PaneSplitSide = "left" | "right" | "up" | "down";
 type PaneResizeDirection = "left" | "right" | "up" | "down";
+
+type PaneDefaults = {
+  minWidth?: number;
+  minHeight?: number;
+};
+
+type CreateWorkspaceOptions = {
+  commands?: CommandRegistry;
+  paneDefaults?: PaneDefaults;
+};
 
 type SplitPaneOptions = {
   side: PaneSplitSide;
@@ -39,6 +56,12 @@ type ResizePaneOptions = {
   deltaPx: number;
 };
 ```
+
+`paneDefaults` sets minimum dimensions for panes that do not already specify
+`minWidth` or `minHeight`. Defaults are applied to the initial layout, inherited
+by panes created through `workspace.api.split()`, and used for panes inserted
+through `workspace.api.wrapRootInSplit()` unless that call supplies explicit
+minimums.
 
 ## `workspace.api.split(paneId, options)`
 
