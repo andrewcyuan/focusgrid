@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   KeyRouter,
+  createDefaultPaneKeymap,
   createWorkspace,
+  defaultPaneShortcutActions,
   parseKeySequence,
   reducer,
   swapPaneInDirection,
@@ -1378,6 +1380,47 @@ function horizontalTargetWithStaleMemoryState(): WorkspaceState {
 }
 
 describe("keyboard", () => {
+  it("creates the default pane keymap from the exported shortcut actions", () => {
+    const keymap = createDefaultPaneKeymap();
+
+    expect(keymap).toHaveLength(defaultPaneShortcutActions.length);
+    expect(keymap).toContainEqual({
+      sequence: parseKeySequence("Ctrl-B %"),
+      command: "pane.splitRight",
+      args: undefined,
+      preventDefault: true,
+      repeat: undefined,
+    });
+    expect(keymap).toContainEqual({
+      sequence: parseKeySequence("Ctrl-B L"),
+      command: "pane.resizeRight",
+      args: { deltaPx: 48 },
+      preventDefault: true,
+      repeat: true,
+    });
+  });
+
+  it("applies default pane keymap overrides and omits invalid or empty bindings", () => {
+    const keymap = createDefaultPaneKeymap({
+      "split-right": "Ctrl-B R",
+      close: "",
+      "focus-left": "Ctrl+B",
+    });
+
+    expect(
+      keymap.find((binding) => binding.command === "pane.splitRight"),
+    ).toMatchObject({
+      sequence: parseKeySequence("Ctrl-B R"),
+      command: "pane.splitRight",
+    });
+    expect(keymap.some((binding) => binding.command === "pane.close")).toBe(
+      false,
+    );
+    expect(keymap.some((binding) => binding.command === "pane.focusLeft")).toBe(
+      false,
+    );
+  });
+
   it("parses multi-stroke shortcuts and matches them through the router", () => {
     const router = new KeyRouter([
       {

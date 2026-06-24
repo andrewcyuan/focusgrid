@@ -1,9 +1,9 @@
 import {
   createDefaultCommandRegistry,
+  createDefaultPaneKeymap,
   createWorkspace,
   collectPaneIds,
-  parseKeySequence,
-  type KeyBinding,
+  defaultPaneShortcutActions,
   type Workspace,
   type WorkspaceState,
 } from "@focusgrid/core";
@@ -17,15 +17,6 @@ import {
   type ComponentType,
 } from "react";
 
-type ShortcutAction = {
-  id: string;
-  label: string;
-  command: string;
-  defaultSequence: string;
-  args?: unknown;
-  repeat?: boolean;
-};
-
 type PaneComponentProps = {
   paneId: string;
   active: boolean;
@@ -33,107 +24,6 @@ type PaneComponentProps = {
 };
 
 const shortcutStorageKey = "focusgrid.playground.shortcuts";
-
-const shortcutActions: ShortcutAction[] = [
-  {
-    id: "split-right",
-    label: "Split right",
-    command: "pane.splitRight",
-    defaultSequence: "Ctrl-B %",
-  },
-  {
-    id: "split-down",
-    label: "Split down",
-    command: "pane.splitDown",
-    defaultSequence: "Ctrl-B \"",
-  },
-  {
-    id: "close",
-    label: "Close active",
-    command: "pane.close",
-    defaultSequence: "Ctrl-B X",
-  },
-  {
-    id: "focus-left",
-    label: "Focus left",
-    command: "pane.focusLeft",
-    defaultSequence: "Ctrl-B Left",
-  },
-  {
-    id: "focus-right",
-    label: "Focus right",
-    command: "pane.focusRight",
-    defaultSequence: "Ctrl-B Right",
-  },
-  {
-    id: "focus-up",
-    label: "Focus up",
-    command: "pane.focusUp",
-    defaultSequence: "Ctrl-B Up",
-  },
-  {
-    id: "focus-down",
-    label: "Focus down",
-    command: "pane.focusDown",
-    defaultSequence: "Ctrl-B Down",
-  },
-  {
-    id: "swap-left",
-    label: "Swap left",
-    command: "pane.swapLeft",
-    defaultSequence: "Ctrl-B Shift-Left",
-  },
-  {
-    id: "swap-right",
-    label: "Swap right",
-    command: "pane.swapRight",
-    defaultSequence: "Ctrl-B Shift-Right",
-  },
-  {
-    id: "swap-up",
-    label: "Swap up",
-    command: "pane.swapUp",
-    defaultSequence: "Ctrl-B Shift-Up",
-  },
-  {
-    id: "swap-down",
-    label: "Swap down",
-    command: "pane.swapDown",
-    defaultSequence: "Ctrl-B Shift-Down",
-  },
-  {
-    id: "resize-left",
-    label: "Resize left",
-    command: "pane.resizeLeft",
-    defaultSequence: "Ctrl-B H",
-    args: { deltaPx: 48 },
-    repeat: true,
-  },
-  {
-    id: "resize-right",
-    label: "Resize right",
-    command: "pane.resizeRight",
-    defaultSequence: "Ctrl-B L",
-    args: { deltaPx: 48 },
-    repeat: true,
-  },
-  {
-    id: "resize-up",
-    label: "Resize up",
-    command: "pane.resizeUp",
-    defaultSequence: "Ctrl-B K",
-    args: { deltaPx: 48 },
-    repeat: true,
-  },
-  {
-    id: "resize-down",
-    label: "Resize down",
-    command: "pane.resizeDown",
-    defaultSequence: "Ctrl-B J",
-    args: { deltaPx: 48 },
-    repeat: true,
-  },
-];
 
 function createInitialState(): WorkspaceState {
   return {
@@ -167,33 +57,12 @@ function createInitialState(): WorkspaceState {
   };
 }
 
-function createKeymap(shortcuts: Record<string, string>): KeyBinding[] {
-  return shortcutActions.flatMap((action) => {
-    const sequence = shortcuts[action.id]?.trim();
-
-    if (!sequence) {
-      return [];
-    }
-
-    try {
-      return [
-        {
-          sequence: parseKeySequence(sequence),
-          command: action.command,
-          args: action.args,
-          preventDefault: true,
-          repeat: action.repeat,
-        },
-      ];
-    } catch {
-      return [];
-    }
-  });
-}
-
 function createDefaultShortcuts(): Record<string, string> {
   return Object.fromEntries(
-    shortcutActions.map((action) => [action.id, action.defaultSequence]),
+    defaultPaneShortcutActions.map((action) => [
+      action.id,
+      action.defaultSequence,
+    ]),
   );
 }
 
@@ -250,14 +119,17 @@ function loadSavedShortcuts(): Record<string, string> {
       return defaults;
     }
 
-    return shortcutActions.reduce<Record<string, string>>((shortcuts, action) => {
-      const value = (parsed as Record<string, unknown>)[action.id];
-      shortcuts[action.id] =
-        typeof value === "string"
-          ? migrateSavedShortcutSyntax(value)
-          : action.defaultSequence;
-      return shortcuts;
-    }, {});
+    return defaultPaneShortcutActions.reduce<Record<string, string>>(
+      (shortcuts, action) => {
+        const value = (parsed as Record<string, unknown>)[action.id];
+        shortcuts[action.id] =
+          typeof value === "string"
+            ? migrateSavedShortcutSyntax(value)
+            : action.defaultSequence;
+        return shortcuts;
+      },
+      {},
+    );
   } catch {
     return defaults;
   }
@@ -283,7 +155,7 @@ const paneComponents: Record<string, ComponentType<PaneComponentProps>> = {
 export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts);
-  const keymap = useMemo(() => createKeymap(shortcuts), [shortcuts]);
+  const keymap = useMemo(() => createDefaultPaneKeymap(shortcuts), [shortcuts]);
 
   useEffect(() => {
     saveShortcuts(shortcuts);
@@ -338,7 +210,7 @@ function Sidebar({
       </div>
 
       <div className="ShortcutList">
-        {shortcutActions.map((action) => (
+        {defaultPaneShortcutActions.map((action) => (
           <label className="ShortcutBinder" key={action.id}>
             <span>{action.label}</span>
             <input

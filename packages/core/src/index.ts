@@ -41,6 +41,15 @@ export { deserializeWorkspace, serializeWorkspace } from "./layout/serialize";
 
 export { createKeyStroke, normalizeKeyName, strokeToId } from "./keyboard/normalize";
 export { parseKeySequence, parseKeyStroke } from "./keyboard/parser";
+export {
+  createDefaultPaneKeymap,
+  defaultPaneShortcutActions,
+} from "./keyboard/default-pane-keymap";
+export type {
+  DefaultPaneCommand,
+  PaneShortcutAction,
+  PaneShortcutId,
+} from "./keyboard/default-pane-keymap";
 export { createTrie, KeyRouter } from "./keyboard/trie";
 export type { KeyRouterOptions } from "./keyboard/trie";
 export type {

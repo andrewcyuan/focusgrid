@@ -5,6 +5,7 @@ import type {
 } from "../layout/types";
 import { findPaneInDirection } from "../layout/operations";
 import type { Workspace } from "../workspace";
+import type { DefaultPaneCommand } from "../keyboard/default-pane-keymap";
 import type { CommandHandler } from "./types";
 
 export const DEFAULT_PANE_RESIZE_DELTA_PX = 24;
@@ -85,7 +86,7 @@ export function createDefaultCommandRegistry(): CommandRegistry {
 
 function registerPaneFocusCommand(
   commands: CommandRegistry,
-  name: string,
+  name: DefaultPaneCommand,
   direction: PaneFocusDirection,
 ): void {
   commands.register(name, ({ workspace, state }) => {
@@ -102,7 +103,7 @@ function registerPaneFocusCommand(
 
 function registerPaneSwapCommand(
   commands: CommandRegistry,
-  name: string,
+  name: DefaultPaneCommand,
   direction: PaneSwapDirection,
 ): void {
   commands.register(name, ({ workspace, state }) => {
@@ -119,7 +120,7 @@ function registerPaneSwapCommand(
 
 function registerPaneResizeCommand(
   commands: CommandRegistry,
-  name: string,
+  name: DefaultPaneCommand,
   direction: PaneResizeDirection,
 ): void {
   commands.register<PaneResizeCommandArgs>(name, ({ workspace, state }, args) => {
