@@ -1,5 +1,9 @@
 import { createId } from "../utils/ids";
-import type { PaneFocusDirection, PaneResizeDirection } from "../layout/types";
+import type {
+  PaneFocusDirection,
+  PaneResizeDirection,
+  PaneSwapDirection,
+} from "../layout/types";
 import type { Workspace } from "../workspace";
 import type { CommandHandler } from "./types";
 
@@ -84,6 +88,10 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   registerPaneFocusCommand(commands, "pane.focusRight", "right");
   registerPaneFocusCommand(commands, "pane.focusUp", "up");
   registerPaneFocusCommand(commands, "pane.focusDown", "down");
+  registerPaneSwapCommand(commands, "pane.swapLeft", "left");
+  registerPaneSwapCommand(commands, "pane.swapRight", "right");
+  registerPaneSwapCommand(commands, "pane.swapUp", "up");
+  registerPaneSwapCommand(commands, "pane.swapDown", "down");
 
   return commands;
 }
@@ -99,6 +107,23 @@ function registerPaneFocusCommand(
 
     workspace.dispatch({
       type: "pane.focusDirection",
+      paneId: active,
+      direction,
+    });
+  });
+}
+
+function registerPaneSwapCommand(
+  commands: CommandRegistry,
+  name: string,
+  direction: PaneSwapDirection,
+): void {
+  commands.register(name, ({ workspace, state }) => {
+    const active = state.activePaneId;
+    if (!active) return;
+
+    workspace.dispatch({
+      type: "pane.swapDirection",
       paneId: active,
       direction,
     });

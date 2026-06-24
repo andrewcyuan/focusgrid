@@ -4,6 +4,7 @@ import type {
   PaneFocusDirection,
   PaneId,
   PaneResizeDirection,
+  PaneSwapDirection,
   WorkspaceState,
 } from "./types";
 import {
@@ -13,6 +14,7 @@ import {
   resizeHandle,
   resizePane,
   splitPane,
+  swapPaneInDirection,
   swapPanes,
 } from "./operations";
 
@@ -37,6 +39,11 @@ export type WorkspaceAction =
       newPaneId: PaneId;
     }
   | { type: "pane.swap"; firstPaneId: PaneId; secondPaneId: PaneId }
+  | {
+      type: "pane.swapDirection";
+      paneId: PaneId;
+      direction: PaneSwapDirection;
+    }
   | { type: "pane.close"; paneId: PaneId }
   | {
       type: "handle.resize";
@@ -81,6 +88,9 @@ export function reducer(
 
     case "pane.swap":
       return swapPanes(state, action.firstPaneId, action.secondPaneId);
+
+    case "pane.swapDirection":
+      return swapPaneInDirection(state, action.paneId, action.direction);
 
     case "pane.close":
       return closePane(state, action.paneId);

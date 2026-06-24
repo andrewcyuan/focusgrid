@@ -78,6 +78,30 @@ const shortcutActions: ShortcutAction[] = [
     defaultSequence: "Ctrl-B Down",
   },
   {
+    id: "swap-left",
+    label: "Swap left",
+    command: "pane.swapLeft",
+    defaultSequence: "Ctrl-B Shift-Left",
+  },
+  {
+    id: "swap-right",
+    label: "Swap right",
+    command: "pane.swapRight",
+    defaultSequence: "Ctrl-B Shift-Right",
+  },
+  {
+    id: "swap-up",
+    label: "Swap up",
+    command: "pane.swapUp",
+    defaultSequence: "Ctrl-B Shift-Up",
+  },
+  {
+    id: "swap-down",
+    label: "Swap down",
+    command: "pane.swapDown",
+    defaultSequence: "Ctrl-B Shift-Down",
+  },
+  {
     id: "resize-left",
     label: "Resize left",
     command: "pane.resizeLeft",

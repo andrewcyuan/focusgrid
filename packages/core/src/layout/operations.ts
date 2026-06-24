@@ -10,6 +10,7 @@ import type {
   PaneFocusDirection,
   PaneId,
   PaneResizeDirection,
+  PaneSwapDirection,
   PaneNode,
   Rect,
   SplitNode,
@@ -69,18 +70,38 @@ export function focusPaneInDirection(
   paneId: PaneId,
   direction: PaneFocusDirection,
 ): WorkspaceState {
+  const targetPaneId = findDirectionalTargetPane(state, paneId, direction);
+
+  if (!targetPaneId) {
+    return state;
+  }
+
+  return focusPane(
+    {
+      ...state,
+      root: markFocusedPanePath(state.root, paneId),
+    },
+    targetPaneId,
+  );
+}
+
+function findDirectionalTargetPane(
+  state: WorkspaceState,
+  paneId: PaneId,
+  direction: PaneFocusDirection,
+): PaneId | null {
   const index = buildLayoutIndex(state.root);
   const paneNode = index.paneNodeByPaneId.get(paneId);
 
   if (!paneNode) {
-    return state;
+    return null;
   }
 
   const layout = computeLayout(state);
   const activePane = layout.panes.find((pane) => pane.paneId === paneId);
 
   if (!activePane) {
-    return state;
+    return null;
   }
 
   let currentId = paneNode.id;
@@ -98,23 +119,17 @@ export function focusPaneInDirection(
       );
 
       if (!targetPaneId) {
-        return state;
+        return null;
       }
 
-      return focusPane(
-        {
-          ...state,
-          root: markFocusedPanePath(state.root, paneId),
-        },
-        targetPaneId,
-      );
+      return targetPaneId;
     }
 
     currentId = parent.id;
     parent = index.parentByNodeId.get(currentId) ?? null;
   }
 
-  return state;
+  return null;
 }
 
 export function splitPane(
@@ -233,6 +248,20 @@ export function swapPanes(
       ? markFocusedPanePath(nextRoot, state.activePaneId)
       : nextRoot,
   };
+}
+
+export function swapPaneInDirection(
+  state: WorkspaceState,
+  paneId: PaneId,
+  direction: PaneSwapDirection,
+): WorkspaceState {
+  const targetPaneId = findDirectionalTargetPane(state, paneId, direction);
+
+  if (!targetPaneId) {
+    return state;
+  }
+
+  return swapPanes(state, paneId, targetPaneId);
 }
 
 export function resizeHandle(

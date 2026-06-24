@@ -4,6 +4,7 @@ import {
   createWorkspace,
   parseKeySequence,
   reducer,
+  swapPaneInDirection,
   swapPanes,
   type WorkspaceState,
 } from "../src";
@@ -144,11 +145,100 @@ describe("workspace", () => {
     expect(next.root.lastFocusedChildId).toBe("left-node");
   });
 
+  it("swaps panes with the direct horizontal and vertical directional neighbors", () => {
+    const horizontal = reducer(horizontalSplitState(), {
+      type: "pane.swapDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(horizontal.activePaneId).toBe("left");
+    expect(horizontal.root.kind).toBe("split");
+    expect(horizontal.root.children[0]).toMatchObject({
+      id: "left-node",
+      paneId: "right",
+    });
+    expect(horizontal.root.children[1]).toMatchObject({
+      id: "right-node",
+      paneId: "left",
+    });
+
+    const vertical = reducer(verticalSplitState(), {
+      type: "pane.swapDirection",
+      paneId: "bottom",
+      direction: "up",
+    });
+
+    expect(vertical.activePaneId).toBe("bottom");
+    expect(vertical.root.kind).toBe("split");
+    expect(vertical.root.children[0]).toMatchObject({
+      id: "top-node",
+      paneId: "bottom",
+    });
+    expect(vertical.root.children[1]).toMatchObject({
+      id: "bottom-node",
+      paneId: "top",
+    });
+  });
+
+  it("directional swap uses the same nested target as directional focus", () => {
+    const state = verticalMiddleTrifoldState();
+    const focused = reducer(state, {
+      type: "pane.focusDirection",
+      paneId: "left",
+      direction: "right",
+    });
+    const swapped = swapPaneInDirection(state, "left", "right");
+
+    expect(focused.activePaneId).toBe("middle-bottom");
+    expect(swapped.activePaneId).toBe("middle-bottom");
+    expect(swapped.root.kind).toBe("split");
+
+    const middle = swapped.root.children[1]!;
+    expect(middle.kind).toBe("split");
+    expect(middle.children[0]).toMatchObject({
+      id: "middle-top-node",
+      paneId: "middle-top",
+    });
+    expect(middle.children[1]).toMatchObject({
+      id: "middle-bottom-node",
+      paneId: "left",
+    });
+    expect(swapped.root.children[0]).toMatchObject({
+      id: "left-node",
+      paneId: "middle-bottom",
+    });
+  });
+
+  it("directional swap preserves split structure and sizes", () => {
+    const next = reducer(nestedDirectionalFocusState(), {
+      type: "pane.swapDirection",
+      paneId: "left",
+      direction: "right",
+    });
+
+    expect(next.root.kind).toBe("split");
+    expect(next.root).toMatchObject({
+      id: "root",
+      direction: "horizontal",
+      sizes: [0.5, 0.5],
+    });
+
+    const rightSplit = next.root.children[1]!;
+    expect(rightSplit.kind).toBe("split");
+    expect(rightSplit).toMatchObject({
+      id: "right-split",
+      direction: "vertical",
+      sizes: [0.25, 0.75],
+    });
+  });
+
   it("returns the same state when panes cannot be swapped", () => {
     const state = horizontalSplitState();
 
     expect(swapPanes(state, "left", "left")).toBe(state);
     expect(swapPanes(state, "left", "missing")).toBe(state);
+    expect(swapPaneInDirection(state, "left", "up")).toBe(state);
     expect(
       reducer(state, {
         type: "pane.swap",
@@ -652,6 +742,18 @@ describe("workspace", () => {
     expect(workspace.commands.run("pane.focusRight", workspace)).toBe(true);
 
     expect(workspace.getState().activePaneId).toBe("right");
+  });
+
+  it("runs default pane directional swap commands against the active pane", () => {
+    const workspace = createWorkspace(horizontalSplitState());
+
+    expect(workspace.commands.run("pane.swapRight", workspace)).toBe(true);
+
+    const state = workspace.getState();
+    expect(state.activePaneId).toBe("left");
+    expect(state.root.kind).toBe("split");
+    expect(state.root.children[0]).toMatchObject({ paneId: "right" });
+    expect(state.root.children[1]).toMatchObject({ paneId: "left" });
   });
 });
 

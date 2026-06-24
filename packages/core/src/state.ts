@@ -10,6 +10,7 @@ export type {
   PaneId,
   PaneNode,
   PaneResizeDirection,
+  PaneSwapDirection,
   Rect,
   SplitNode,
   WorkspaceState,

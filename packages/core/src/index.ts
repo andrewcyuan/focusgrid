@@ -19,6 +19,7 @@ export {
   resizeHandle,
   resizePane,
   splitPane,
+  swapPaneInDirection,
   swapPanes,
 } from "./layout/operations";
 export { reducer } from "./layout/reducer";
@@ -51,6 +52,7 @@ export type {
   PaneId,
   PaneNode,
   PaneResizeDirection,
+  PaneSwapDirection,
   Rect,
   SplitNode,
   WorkspaceState,

@@ -29,6 +29,38 @@ test("pane shortcuts are handled before focused textareas edit text", async ({
   await expect(page.locator(".TextPane")).toHaveCount(3);
 });
 
+test("directional swap shortcuts move the active pane from a focused textarea", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const alphaPane = page.locator('[data-pane-id="alpha"]');
+  const betaPane = page.locator('[data-pane-id="beta"]');
+  const alphaText = alphaPane.locator("textarea");
+  await expect(alphaText).toBeFocused();
+
+  await alphaText.fill("abcdef");
+  await setTextareaSelection(alphaText, 3, 3);
+
+  const initialAlphaBox = await alphaPane.boundingBox();
+  const initialBetaBox = await betaPane.boundingBox();
+  expect(initialAlphaBox).not.toBeNull();
+  expect(initialBetaBox).not.toBeNull();
+  expect(initialAlphaBox!.x).toBeLessThan(initialBetaBox!.x);
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Shift+ArrowRight");
+
+  await expect(alphaText).toHaveValue("abcdef");
+  await expect(alphaText).toBeFocused();
+  await expect(alphaPane).toHaveAttribute("data-active", "true");
+  await expect.poll(async () => {
+    const alphaBox = await alphaPane.boundingBox();
+    const betaBox = await betaPane.boundingBox();
+    return (alphaBox?.x ?? 0) > (betaBox?.x ?? 0);
+  }).toBe(true);
+});
+
 test("invalid shortcut continuations are no-opped instead of typed", async ({
   page,
 }) => {
