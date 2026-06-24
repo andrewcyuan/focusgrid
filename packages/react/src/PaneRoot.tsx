@@ -1,7 +1,13 @@
-import { useEffect, useRef, type ReactNode } from "react";
-import type { KeyBinding } from "@focusgrid/core";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import type { ComputedPane, KeyBinding, PaneId } from "@focusgrid/core";
 import { WorkspaceDomController } from "@focusgrid/dom";
 import { useComputedLayout, useWorkspace } from "./hooks";
+import {
+  createPaneMap,
+  diffPaneLifecycle,
+  type PaneCloseEvent,
+  type PaneLayoutChangeEvent,
+} from "./lifecycle";
 import { PaneView } from "./PaneView";
 import { ResizeHandle } from "./ResizeHandle";
 
@@ -9,11 +15,22 @@ export type PaneRootProps = {
   renderPane: (paneId: string) => ReactNode;
   keymap?: KeyBinding[];
   className?: string;
+  onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
+  onPaneClose?: (event: PaneCloseEvent) => void;
 };
 
-export function PaneRoot({ renderPane, keymap, className }: PaneRootProps) {
+export function PaneRoot({
+  renderPane,
+  keymap,
+  className,
+  onPaneLayoutChange,
+  onPaneClose,
+}: PaneRootProps) {
   const workspace = useWorkspace();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const previousPaneMapRef = useRef<Map<PaneId, ComputedPane> | null>(
+    null,
+  );
   const layout = useComputedLayout();
 
   useEffect(() => {
@@ -28,6 +45,34 @@ export function PaneRoot({ renderPane, keymap, className }: PaneRootProps) {
     controller.mount();
     return () => controller.destroy();
   }, [workspace, keymap]);
+
+  useLayoutEffect(() => {
+    const currentPaneMap = createPaneMap(layout.panes);
+    const previousPaneMap = previousPaneMapRef.current;
+
+    if (!previousPaneMap) {
+      previousPaneMapRef.current = currentPaneMap;
+      return;
+    }
+
+    const diff = diffPaneLifecycle(previousPaneMap, currentPaneMap);
+
+    for (const change of diff.layoutChanges) {
+      onPaneLayoutChange?.({
+        ...change,
+        workspace,
+      });
+    }
+
+    for (const closed of diff.closedPanes) {
+      onPaneClose?.({
+        ...closed,
+        workspace,
+      });
+    }
+
+    previousPaneMapRef.current = currentPaneMap;
+  }, [layout.panes, onPaneClose, onPaneLayoutChange, workspace]);
 
   const rootClassName = className
     ? `FocusgridPaneRoot ${className}`
