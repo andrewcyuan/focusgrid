@@ -11,8 +11,8 @@ import {
 import {
   type PaneComponent,
   type PaneComponentProps,
-  PaneProvider,
-  PaneRoot,
+  FocusGridProvider,
+  FocusGrid,
   usePaneWorkspace,
   useWorkspaceState,
   type PaneRenderContext,
@@ -77,7 +77,7 @@ export function App() {
   }, [shortcuts]);
 
   return (
-    <PaneProvider workspace={workspace}>
+    <FocusGridProvider workspace={workspace}>
       <div className="AppShell" data-sidebar-open={sidebarOpen}>
         {sidebarOpen ? (
           <Sidebar
@@ -97,8 +97,8 @@ export function App() {
             workspace={workspace}
             onToggleSidebar={() => setSidebarOpen((open) => !open)}
           />
-          <PaneRoot
-            className="PlaygroundPaneRoot"
+          <FocusGrid
+            className="PlaygroundFocusGrid"
             keymap={keymap}
             renderPane={(ctx) => {
               return <PaneSlot ctx={ctx} />;
@@ -106,7 +106,7 @@ export function App() {
           />
         </main>
       </div>
-    </PaneProvider>
+    </FocusGridProvider>
   );
 }
 

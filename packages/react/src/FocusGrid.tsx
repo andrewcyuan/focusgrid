@@ -12,7 +12,7 @@ import { PaneView } from "./PaneView";
 import { ResizeHandle } from "./ResizeHandle";
 import type { PaneRenderContext } from "./PaneView";
 
-export type PaneRootProps = {
+export type FocusGridProps = {
   renderPane: (ctx: PaneRenderContext) => ReactNode;
   keymap?: KeyBinding[];
   className?: string;
@@ -20,13 +20,13 @@ export type PaneRootProps = {
   onPaneClose?: (event: PaneCloseEvent) => void;
 };
 
-export function PaneRoot({
+export function FocusGrid({
   renderPane,
   keymap,
   className,
   onPaneLayoutChange,
   onPaneClose,
-}: PaneRootProps) {
+}: FocusGridProps) {
   const workspace = useWorkspace();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const previousPaneMapRef = useRef<Map<PaneId, ComputedPane> | null>(
@@ -76,8 +76,8 @@ export function PaneRoot({
   }, [layout.panes, onPaneClose, onPaneLayoutChange, workspace]);
 
   const rootClassName = className
-    ? `FocusgridPaneRoot ${className}`
-    : "FocusgridPaneRoot";
+    ? `FocusgridFocusGrid ${className}`
+    : "FocusgridFocusGrid";
 
   return (
     <div ref={rootRef} className={rootClassName}>

@@ -2,8 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { createWorkspace, type WorkspaceState } from "@focusgrid/core";
 import {
-  PaneProvider,
-  PaneRoot,
+  FocusGridProvider,
+  FocusGrid,
   usePaneWorkspace,
   type PaneRenderContext,
 } from "../src/index";
@@ -42,14 +42,14 @@ describe("pane render context", () => {
     const contexts: PaneRenderContext[] = [];
 
     renderToStaticMarkup(
-      <PaneProvider workspace={workspace}>
-        <PaneRoot
+      <FocusGridProvider workspace={workspace}>
+        <FocusGrid
           renderPane={(ctx) => {
             contexts.push(ctx);
             return <span>{ctx.paneId}</span>;
           }}
         />
-      </PaneProvider>,
+      </FocusGridProvider>,
     );
 
     expect(contexts).toEqual([
@@ -76,9 +76,9 @@ describe("pane render context", () => {
       workspaceFromHook = workspace;
 
       return (
-        <PaneProvider workspace={workspace}>
-          <PaneRoot renderPane={(ctx) => <span>{ctx.paneId}</span>} />
-        </PaneProvider>
+        <FocusGridProvider workspace={workspace}>
+          <FocusGrid renderPane={(ctx) => <span>{ctx.paneId}</span>} />
+        </FocusGridProvider>
       );
     }
 

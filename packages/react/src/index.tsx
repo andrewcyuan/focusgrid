@@ -1,8 +1,8 @@
-export { PaneProvider } from "./PaneProvider";
-export type { PaneProviderProps } from "./PaneProvider";
+export { FocusGridProvider } from "./FocusGridProvider";
+export type { FocusGridProviderProps } from "./FocusGridProvider";
 
-export { PaneRoot } from "./PaneRoot";
-export type { PaneRootProps } from "./PaneRoot";
+export { FocusGrid } from "./FocusGrid";
+export type { FocusGridProps } from "./FocusGrid";
 export type { PaneCloseEvent, PaneLayoutChangeEvent } from "./lifecycle";
 
 export { PaneView } from "./PaneView";

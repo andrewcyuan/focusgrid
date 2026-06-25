@@ -6,7 +6,7 @@ import {
   type Workspace,
   type WorkspaceState,
 } from "@focusgrid/core";
-import { PaneWorkspaceContext } from "./PaneProvider";
+import { FocusGridWorkspaceContext } from "./FocusGridProvider";
 
 export function usePaneWorkspace(
   createInitialState: () => WorkspaceState,
@@ -22,10 +22,10 @@ export function usePaneWorkspace(
 }
 
 export function useWorkspace(): Workspace {
-  const workspace = useContext(PaneWorkspaceContext);
+  const workspace = useContext(FocusGridWorkspaceContext);
 
   if (!workspace) {
-    throw new Error("useWorkspace must be used inside <PaneProvider>");
+    throw new Error("useWorkspace must be used inside <FocusGridProvider>");
   }
 
   return workspace;

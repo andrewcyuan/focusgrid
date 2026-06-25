@@ -27,7 +27,7 @@ browser event / command
   -> core layout operation returns new WorkspaceState
   -> workspace listeners fire
   -> React useSyncExternalStore updates
-  -> PaneRoot recomputes layout
+  -> FocusGrid recomputes layout
   -> PaneView rerenders with new rect style
 ```
 
@@ -120,17 +120,17 @@ handling and resize observation together.
 
 The React package owns the public rendering API.
 
-The current public render API is in `packages/react/src/PaneRoot.tsx`:
+The current public render API is in `packages/react/src/FocusGrid.tsx`:
 
 ```ts
-export type PaneRootProps = {
+export type FocusGridProps = {
   renderPane: (paneId: string) => ReactNode;
   keymap?: KeyBinding[];
   className?: string;
 };
 ```
 
-`PaneRoot` reads the computed layout:
+`FocusGrid` reads the computed layout:
 
 ```ts
 const layout = useComputedLayout();
@@ -174,7 +174,7 @@ If the goal is to let clients pass both an initial `render()` and a callback
 that runs when layout changes, the files to start with are:
 
 ```txt
-packages/react/src/PaneRoot.tsx
+packages/react/src/FocusGrid.tsx
 packages/react/src/PaneView.tsx
 packages/react/src/hooks.ts
 ```
@@ -193,7 +193,7 @@ type PaneRenderContext = {
   workspace: Workspace;
 };
 
-type PaneRootProps = {
+type FocusGridProps = {
   renderPane: (ctx: PaneRenderContext) => ReactNode;
   onPaneLayoutChange?: (ctx: PaneRenderContext) => void;
   keymap?: KeyBinding[];
@@ -262,7 +262,7 @@ already owns rerendering. The callback is really a layout notification hook.
 For client rendering behavior, start in:
 
 ```txt
-packages/react/src/PaneRoot.tsx
+packages/react/src/FocusGrid.tsx
 packages/react/src/PaneView.tsx
 ```
 
@@ -285,7 +285,7 @@ packages/dom/src/pointer-resize.ts
 The shortest mental model is:
 
 ```txt
-PaneRoot renders from useComputedLayout()
+FocusGrid renders from useComputedLayout()
 useComputedLayout() subscribes to Workspace
 Workspace.api methods are the state transition gate
 layout operations change tree/container/sizes

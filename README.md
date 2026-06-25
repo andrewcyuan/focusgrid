@@ -69,7 +69,7 @@ console.log(workspace.getComputedLayout());
 
 ```tsx
 import { createWorkspace } from "@focusgrid/core";
-import { PaneProvider, PaneRoot } from "@focusgrid/react";
+import { FocusGridProvider, FocusGrid } from "@focusgrid/react";
 import type { ComponentType } from "react";
 import "@focusgrid/react/styles.css";
 
@@ -118,14 +118,14 @@ const workspace = createWorkspace({
 
 export function App() {
   return (
-    <PaneProvider workspace={workspace}>
-      <PaneRoot
+    <FocusGridProvider workspace={workspace}>
+      <FocusGrid
         renderPane={({ paneId }) => {
           const Component = panes[paneId];
           return Component ? <Component /> : <EmptyPane paneId={paneId} />;
         }}
       />
-    </PaneProvider>
+    </FocusGridProvider>
   );
 }
 ```
