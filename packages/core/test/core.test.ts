@@ -21,6 +21,7 @@ import {
   swapPanes,
   validateKeySequenceInput,
   wrapRootInSplit,
+  type PaneFocusDirection,
   type WorkspaceState,
 } from "../src";
 
@@ -39,6 +40,17 @@ function initialState(): WorkspaceState {
       height: 600,
     },
   };
+}
+
+function focusDirection(
+  workspace: ReturnType<typeof createWorkspace>,
+  paneId: string,
+  direction: PaneFocusDirection,
+): boolean {
+  const next = focusPaneInDirection(workspace.getState(), paneId, direction);
+  const target = next.activePaneId;
+
+  return target !== null && workspace.api.focus(target);
 }
 
 describe("workspace", () => {
@@ -382,9 +394,9 @@ describe("workspace", () => {
 
   it("accepts option-shaped operations for split, root wrap, and resize", () => {
     const split = splitPane(initialState(), "editor", {
-        side: "left",
-        newPaneId: "nav",
-        preserveActivePane: true,
+      side: "left",
+      newPaneId: "nav",
+      preserveActivePane: true,
     });
 
     expect(split.activePaneId).toBe("editor");
@@ -395,8 +407,8 @@ describe("workspace", () => {
     });
 
     const wrapped = wrapRootInSplit(initialState(), {
-        side: "down",
-        newPaneId: "console",
+      side: "down",
+      newPaneId: "console",
     });
 
     expect(wrapped.activePaneId).toBe("console");
@@ -407,8 +419,8 @@ describe("workspace", () => {
     });
 
     const resized = resizePane(horizontalSplitState(), "left", {
-        direction: "right",
-        deltaPx: 100,
+      direction: "right",
+      deltaPx: 100,
     });
 
     expect(resized.root.kind).toBe("split");
@@ -455,14 +467,7 @@ describe("workspace", () => {
     workspace.api.focus("middle-top");
     expect(workspace.api.remove("middle-top")).toBe(true);
 
-    const target = focusPaneInDirection(
-      workspace.getState(),
-      "left",
-      "right",
-    ).activePaneId;
-    if (target) {
-      workspace.api.focus(target);
-    }
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("middle-bottom");
   });
@@ -880,9 +885,7 @@ describe("workspace", () => {
       },
     });
 
-    workspace.dispatch({
-      type: "pane.resize",
-      paneId: "left",
+    workspace.api.resize("left", {
       direction: "right",
       deltaPx: 300,
     });
@@ -896,9 +899,7 @@ describe("workspace", () => {
   it("uses the target split axis size for nested handle resize", () => {
     const workspace = createWorkspace(nestedHandleState());
 
-    workspace.dispatch({
-      type: "handle.resize",
-      splitId: "inner",
+    workspace.api.resizeHandle("inner", {
       index: 0,
       deltaPx: 24,
       snapshotSizes: [0.5, 0.5],
@@ -911,6 +912,42 @@ describe("workspace", () => {
     expect(inner.kind).toBe("split");
     expect(inner.sizes[0]).toBeCloseTo(0.596774);
     expect(inner.sizes[1]).toBeCloseTo(0.403226);
+  });
+
+  it("refits nested split sizes when resizing a parent handle", () => {
+    const workspace = createWorkspace(nestedHandleWithPinnedChildState());
+    const before = workspace.getComputedLayout().panes;
+    const beforeOne = before.find((pane) => pane.paneId === "one")!;
+    const beforeTwo = before.find((pane) => pane.paneId === "two")!;
+    const beforeThree = before.find((pane) => pane.paneId === "three")!;
+
+    expect(beforeTwo.rect.width).toBeGreaterThanOrEqual(180);
+
+    expect(
+      workspace.api.resizeHandle("root", {
+        index: 0,
+        deltaPx: -100,
+        snapshotSizes: [0.75, 0.25],
+      }),
+    ).toBe(true);
+
+    const root = workspace.getState().root;
+    expect(root.kind).toBe("split");
+    expect(root.sizes[0]).toBeCloseTo(0.673077);
+    expect(root.sizes[1]).toBeCloseTo(0.326923);
+
+    const inner = root.children[0]!;
+    expect(inner.kind).toBe("split");
+
+    const after = workspace.getComputedLayout().panes;
+    const afterOne = after.find((pane) => pane.paneId === "one")!;
+    const afterTwo = after.find((pane) => pane.paneId === "two")!;
+    const afterThree = after.find((pane) => pane.paneId === "three")!;
+
+    expect(afterThree.rect.width).toBeGreaterThan(beforeThree.rect.width);
+    expect(afterTwo.rect.width).toBeGreaterThanOrEqual(180);
+    expect(afterTwo.rect.width).toBeGreaterThanOrEqual(beforeTwo.rect.width - 20);
+    expect(afterOne.rect.width).toBeLessThan(beforeOne.rect.width);
   });
 
   it("runs default pane resize commands against the active pane", () => {
@@ -1018,19 +1055,11 @@ describe("workspace", () => {
   it("focuses horizontally adjacent panes", () => {
     const workspace = createWorkspace(horizontalSplitState());
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("right");
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "right",
-      direction: "left",
-    });
+    focusDirection(workspace, "right", "left");
 
     expect(workspace.getState().activePaneId).toBe("left");
   });
@@ -1038,19 +1067,11 @@ describe("workspace", () => {
   it("focuses vertically adjacent panes", () => {
     const workspace = createWorkspace(verticalSplitState());
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "bottom",
-      direction: "up",
-    });
+    focusDirection(workspace, "bottom", "up");
 
     expect(workspace.getState().activePaneId).toBe("top");
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "top",
-      direction: "down",
-    });
+    focusDirection(workspace, "top", "down");
 
     expect(workspace.getState().activePaneId).toBe("bottom");
   });
@@ -1058,11 +1079,7 @@ describe("workspace", () => {
   it("chooses the closest edge pane in a nested directional sibling", () => {
     const workspace = createWorkspace(nestedDirectionalFocusState());
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("lower-right");
   });
@@ -1070,37 +1087,15 @@ describe("workspace", () => {
   it("remembers the last focused pane inside an ambiguous directional split", () => {
     const workspace = createWorkspace(verticalMiddleTrifoldState());
 
-    workspace.dispatch({
-      type: "pane.focus",
-      paneId: "middle-top",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "middle-top",
-      direction: "left",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    workspace.api.focus("middle-top");
+    focusDirection(workspace, "middle-top", "left");
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("middle-top");
 
-    workspace.dispatch({
-      type: "pane.focus",
-      paneId: "middle-bottom",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "middle-bottom",
-      direction: "right",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "right",
-      direction: "left",
-    });
+    workspace.api.focus("middle-bottom");
+    focusDirection(workspace, "middle-bottom", "right");
+    focusDirection(workspace, "right", "left");
 
     expect(workspace.getState().activePaneId).toBe("middle-bottom");
   });
@@ -1108,11 +1103,7 @@ describe("workspace", () => {
   it("keeps the closest entering edge ahead of remembered split focus", () => {
     const workspace = createWorkspace(horizontalTargetWithStaleMemoryState());
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("near");
   });
@@ -1120,19 +1111,9 @@ describe("workspace", () => {
   it("ignores stale split focus memory after a remembered pane is closed", () => {
     const workspace = createWorkspace(verticalMiddleTrifoldState());
 
-    workspace.dispatch({
-      type: "pane.focus",
-      paneId: "middle-top",
-    });
-    workspace.dispatch({
-      type: "pane.close",
-      paneId: "middle-top",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    workspace.api.focus("middle-top");
+    workspace.api.remove("middle-top");
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("middle-bottom");
   });
@@ -1140,22 +1121,12 @@ describe("workspace", () => {
   it("marks a newly split pane as focused in split memory", () => {
     const workspace = createWorkspace(verticalMiddleTrifoldState());
 
-    workspace.dispatch({
-      type: "pane.split",
-      paneId: "middle-top",
-      direction: "vertical",
+    workspace.api.split("middle-top", {
+      side: "down",
       newPaneId: "middle-top-bottom",
     });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "middle-top-bottom",
-      direction: "left",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    focusDirection(workspace, "middle-top-bottom", "left");
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("middle-top-bottom");
   });
@@ -1163,37 +1134,20 @@ describe("workspace", () => {
   it("uses nested split memory when geometry would pick another pane in the branch", () => {
     const workspace = createWorkspace(verticalMiddleTrifoldState());
 
-    workspace.dispatch({
-      type: "pane.split",
-      paneId: "middle-top",
-      direction: "vertical",
+    workspace.api.split("middle-top", {
+      side: "down",
       newPaneId: "middle-top-bottom",
     });
-    workspace.dispatch({
-      type: "pane.focus",
-      paneId: "middle-top",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "middle-top",
-      direction: "left",
-    });
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    workspace.api.focus("middle-top");
+    focusDirection(workspace, "middle-top", "left");
+    focusDirection(workspace, "left", "right");
 
     expect(workspace.getState().activePaneId).toBe("middle-top");
   });
 
   it("returns the same state when no directional sibling matches", () => {
     const state = horizontalSplitState();
-    const next = reducer(state, {
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "left",
-    });
+    const next = focusPaneInDirection(state, "left", "left");
 
     expect(next).toBe(state);
     expect(next.activePaneId).toBe("left");
@@ -1394,6 +1348,50 @@ function nestedHandleState(): WorkspaceState {
     activePaneId: "inner-left",
     container: {
       width: 1000,
+      height: 600,
+    },
+  };
+}
+
+function nestedHandleWithPinnedChildState(): WorkspaceState {
+  return {
+    root: {
+      kind: "split",
+      id: "root",
+      direction: "horizontal",
+      sizes: [0.75, 0.25],
+      children: [
+        {
+          kind: "split",
+          id: "inner",
+          direction: "horizontal",
+          sizes: [0.8, 0.2],
+          children: [
+            {
+              kind: "pane",
+              id: "one-node",
+              paneId: "one",
+              minWidth: 180,
+            },
+            {
+              kind: "pane",
+              id: "two-node",
+              paneId: "two",
+              minWidth: 180,
+            },
+          ],
+        },
+        {
+          kind: "pane",
+          id: "three-node",
+          paneId: "three",
+          minWidth: 180,
+        },
+      ],
+    },
+    activePaneId: "three",
+    container: {
+      width: 1300,
       height: 600,
     },
   };

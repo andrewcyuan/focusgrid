@@ -25,3 +25,7 @@ This is a web library with react bindings to make keyboard native interfaces in 
   . Test both the pure normalizer and the browser interaction.
 - Prefer capture-phase listeners for global workspace shortcuts that must run before focused inputs. If the contract says textboxes cannot swallow workspace shortcuts, the DOM layer should observe `keydown` in capture phase and call `preventDefault()`/`stopPropagation()` for pending and matched shortcuts.
 - Keep temporary diagnostics out of the final tree. Remove console logs, browser event dumps, screenshots, traces, and generated `test-results` artifacts after the regression test passes.
+
+## Past mistakes
+
+Record past mistakes in PAST_MISTAKES.md. 1-2 sentence description, then patterns to recognize that class of problems in the future.

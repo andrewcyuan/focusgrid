@@ -57,10 +57,8 @@ const workspace = createWorkspace({
   },
 });
 
-workspace.dispatch({
-  type: "pane.split",
-  paneId: "main",
-  direction: "horizontal",
+workspace.api.split("main", {
+  side: "right",
   newPaneId: "terminal",
 });
 

@@ -204,7 +204,7 @@ describe("KeyboardListener resize batching", () => {
     vi.useFakeTimers();
 
     const workspace = createWorkspace(workspaceState());
-    const dispatch = vi.spyOn(workspace, "dispatch");
+    const resize = vi.spyOn(workspace.api, "resize");
     let onKey: ((event: KeyboardEvent) => void) | null = null;
     const root = {
       addEventListener: vi.fn((_, listener: EventListener) => {
@@ -227,14 +227,12 @@ describe("KeyboardListener resize batching", () => {
     onKey?.(keydownEvent("H"));
     onKey?.(keydownEvent("H"));
 
-    expect(dispatch).not.toHaveBeenCalled();
+    expect(resize).not.toHaveBeenCalled();
 
     vi.runOnlyPendingTimers();
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "pane.resize",
-      paneId: "left",
+    expect(resize).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledWith("left", {
       direction: "right",
       deltaPx: 30,
     });
@@ -278,7 +276,7 @@ describe("PointerResizeController batching", () => {
     vi.useFakeTimers();
 
     const workspace = createWorkspace(workspaceState());
-    const dispatch = vi.spyOn(workspace, "dispatch");
+    const resize = vi.spyOn(workspace.api, "resizeHandle");
     const controller = new PointerResizeController(workspace);
     const handle = resizeHandle();
 
@@ -287,14 +285,12 @@ describe("PointerResizeController batching", () => {
     controller.updateResize(pointerEvent({ pointerId: 1, clientX: 130 }));
     controller.updateResize(pointerEvent({ pointerId: 1, clientX: 160 }));
 
-    expect(dispatch).not.toHaveBeenCalled();
+    expect(resize).not.toHaveBeenCalled();
 
     vi.runOnlyPendingTimers();
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "handle.resize",
-      splitId: "root",
+    expect(resize).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledWith("root", {
       index: 0,
       deltaPx: 60,
       snapshotSizes: [0.5, 0.5],
@@ -305,7 +301,7 @@ describe("PointerResizeController batching", () => {
     vi.useFakeTimers();
 
     const workspace = createWorkspace(workspaceState());
-    const dispatch = vi.spyOn(workspace, "dispatch");
+    const resize = vi.spyOn(workspace.api, "resizeHandle");
     const controller = new PointerResizeController(workspace);
     const handle = resizeHandle();
 
@@ -313,10 +309,8 @@ describe("PointerResizeController batching", () => {
     controller.updateResize(pointerEvent({ pointerId: 1, clientX: 145 }));
     controller.endResize(pointerEvent({ pointerId: 1, clientX: 145 }));
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "handle.resize",
-      splitId: "root",
+    expect(resize).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledWith("root", {
       index: 0,
       deltaPx: 45,
       snapshotSizes: [0.5, 0.5],
@@ -324,7 +318,7 @@ describe("PointerResizeController batching", () => {
 
     vi.runOnlyPendingTimers();
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledTimes(1);
   });
 
   it("registers document-level drag listeners when a drag starts", () => {
@@ -357,7 +351,7 @@ describe("PointerResizeController batching", () => {
     vi.useFakeTimers();
 
     const workspace = createWorkspace(workspaceState());
-    const dispatch = vi.spyOn(workspace, "dispatch");
+    const resize = vi.spyOn(workspace.api, "resizeHandle");
     const controller = new PointerResizeController(workspace);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -369,14 +363,12 @@ describe("PointerResizeController batching", () => {
     );
     listeners.get("pointermove")?.(pointerEvent({ pointerId: 1, clientX: 150 }));
 
-    expect(dispatch).not.toHaveBeenCalled();
+    expect(resize).not.toHaveBeenCalled();
 
     vi.runOnlyPendingTimers();
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "handle.resize",
-      splitId: "root",
+    expect(resize).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledWith("root", {
       index: 0,
       deltaPx: 50,
       snapshotSizes: [0.5, 0.5],
@@ -387,7 +379,7 @@ describe("PointerResizeController batching", () => {
     vi.useFakeTimers();
 
     const workspace = createWorkspace(workspaceState());
-    const dispatch = vi.spyOn(workspace, "dispatch");
+    const resize = vi.spyOn(workspace.api, "resizeHandle");
     const controller = new PointerResizeController(workspace);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -400,10 +392,8 @@ describe("PointerResizeController batching", () => {
     listeners.get("pointermove")?.(pointerEvent({ pointerId: 1, clientX: 140 }));
     listeners.get("pointerup")?.(pointerEvent({ pointerId: 1, clientX: 140 }));
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "handle.resize",
-      splitId: "root",
+    expect(resize).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledWith("root", {
       index: 0,
       deltaPx: 40,
       snapshotSizes: [0.5, 0.5],
@@ -426,14 +416,14 @@ describe("PointerResizeController batching", () => {
 
     vi.runOnlyPendingTimers();
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledTimes(1);
   });
 
   it("cleans up pointer cancel without leaving a pending frame", () => {
     vi.useFakeTimers();
 
     const workspace = createWorkspace(workspaceState());
-    const dispatch = vi.spyOn(workspace, "dispatch");
+    const resize = vi.spyOn(workspace.api, "resizeHandle");
     const controller = new PointerResizeController(workspace);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -446,21 +436,21 @@ describe("PointerResizeController batching", () => {
     listeners.get("pointermove")?.(pointerEvent({ pointerId: 1, clientX: 125 }));
     listeners.get("pointercancel")?.(pointerEvent({ pointerId: 1, clientX: 125 }));
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledTimes(1);
     expect(ownerDocument.removeEventListener).toHaveBeenCalledTimes(3);
     expect(target.releasePointerCapture).toHaveBeenCalledWith(1);
     expect(listeners.size).toBe(0);
 
     vi.runOnlyPendingTimers();
 
-    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(resize).toHaveBeenCalledTimes(1);
   });
 
   it("keeps document listeners active when pointer capture is unavailable", () => {
     vi.useFakeTimers();
 
     const workspace = createWorkspace(workspaceState());
-    const dispatch = vi.spyOn(workspace, "dispatch");
+    const resize = vi.spyOn(workspace.api, "resizeHandle");
     const controller = new PointerResizeController(workspace);
     const { ownerDocument, listeners } = pointerDocument();
     const target = { ownerDocument } as Element;
@@ -474,9 +464,7 @@ describe("PointerResizeController batching", () => {
 
     vi.runOnlyPendingTimers();
 
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "handle.resize",
-      splitId: "root",
+    expect(resize).toHaveBeenCalledWith("root", {
       index: 0,
       deltaPx: 35,
       snapshotSizes: [0.5, 0.5],

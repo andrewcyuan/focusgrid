@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",
-    "test": "vitest run",
+    "test": "vitest run --config ../../vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },

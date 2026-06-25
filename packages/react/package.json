@@ -19,7 +19,7 @@
   },
   "scripts": {
     "build": "tsup src/index.tsx --format esm,cjs --dts --external react --external react-dom --external @focusgrid/core --external @focusgrid/dom && cp src/styles.css dist/styles.css",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },

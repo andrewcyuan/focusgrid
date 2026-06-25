@@ -23,17 +23,17 @@ The main update path is:
 
 ```txt
 browser event / command
-  -> workspace.dispatch(action)
-  -> core reducer returns new WorkspaceState
+  -> workspace.api method
+  -> core layout operation returns new WorkspaceState
   -> workspace listeners fire
   -> React useSyncExternalStore updates
   -> PaneRoot recomputes layout
   -> PaneView rerenders with new rect style
 ```
 
-The center of the system is `Workspace.dispatch()` in
-`packages/core/src/workspace.ts`. It runs the reducer, stores the new state, and
-notifies subscribers when the state object changes.
+The center of the system is `Workspace.api` in
+`packages/core/src/workspace.ts`. API methods run layout operations, store the
+new state, and notify subscribers when the state object changes.
 
 ## Core Package
 
@@ -64,14 +64,16 @@ split
 A `SplitNode` stores proportional `sizes`, not pixel rectangles. Pixel
 rectangles are derived later from the current container size.
 
-The reducer is in `packages/core/src/layout/reducer.ts`. The main actions are:
+The layout operations are in `packages/core/src/layout/operations.ts`. The main
+workspace API operations are:
 
 ```txt
-container.setSize
-pane.focus
-pane.split
-pane.close
-handle.resize
+setContainerSize
+focus
+split
+remove
+resize
+resizeHandle
 ```
 
 Actual pixel layout is computed on demand in
@@ -269,7 +271,6 @@ For why layout changed, trace backward through:
 ```txt
 packages/react/src/hooks.ts
 packages/core/src/workspace.ts
-packages/core/src/layout/reducer.ts
 packages/core/src/layout/operations.ts
 packages/core/src/layout/solver.ts
 ```
@@ -286,8 +287,8 @@ The shortest mental model is:
 ```txt
 PaneRoot renders from useComputedLayout()
 useComputedLayout() subscribes to Workspace
-Workspace.dispatch() is the only state transition gate
-reducer() changes tree/container/sizes
+Workspace.api methods are the state transition gate
+layout operations change tree/container/sizes
 computeLayout() converts tree/sizes/container into pixel rects
 PaneView applies those rects and renders client content
 ```
