@@ -1,5 +1,7 @@
 # KCL implementation plan
 
+KCL (keyboard controllable list) is a web library to make it easy to build keyboard-controlled lists for things like command palettes, file trees, etc. This library abstracts away the annoying parts of keyboard shortcut binding, handling DOM focus and ARIA so that clients can simply define the components and actions they want to happen.
+
 New paradigm:
 KCL owns the active index / cursor.
 Cell actions (defined by the client) taken are effected on the active cell at that moment.
@@ -81,3 +83,17 @@ type KCLProps<T> = {
   selectDefaultIndex={() => 0} // just use the first one
   />
 ```
+
+## Package responsibilities
+
+KCL should keep as much behavior as possible in `kcl-core` and `kcl-dom`.
+`kcl-core` owns framework-agnostic state, typed command surfaces, keymap/action
+contracts, and list behavior. `kcl-dom` owns browser-specific concerns like DOM
+focus, keyboard event capture, ARIA wiring, and translating browser events into
+the core SDK.
+
+Framework packages such as `kcl-react` should be thin bindings over those typed
+SDKs. They should adapt framework lifecycle and rendering APIs to the core and
+DOM packages, without becoming the place where KCL behavior lives. This keeps it
+straightforward to add another web framework binding later, such as
+`kcl-svelte`, by reusing the same strongly typed core and DOM contracts.
