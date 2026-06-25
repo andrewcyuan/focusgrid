@@ -1,5 +1,5 @@
 {
-  "name": "@focusgrid/kcl",
+  "name": "@focusgrid/kcl-dom",
   "version": "0.0.1",
   "type": "module",
   "sideEffects": false,
@@ -14,12 +14,13 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --external @focusgrid/shortcut-engine",
+    "build": "tsup src/index.ts --format esm,cjs --dts --external @focusgrid/kcl --external @focusgrid/shortcut-engine",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@focusgrid/kcl": "workspace:*",
     "@focusgrid/shortcut-engine": "workspace:*"
   },
   "devDependencies": {

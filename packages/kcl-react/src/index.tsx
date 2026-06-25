@@ -1,19 +1,174 @@
-import type { ReactNode } from "react";
-import type { KclOrientation } from "@focusgrid/kcl";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import {
+  KCLController,
+  createKCLController,
+  type KCLActionBinding,
+  type KCLCellContext,
+  type KCLControllerState,
+  type KCLOrientation,
+} from "@focusgrid/kcl";
+import { KCLDomController } from "@focusgrid/kcl-dom";
 
-export type KeyboardControlledListItemContext<Item> = {
-  item: Item;
-  index: number;
-  active: boolean;
-  focused: boolean;
+export type KeyboardControlledListProps<T> = {
+  controller: KCLController;
+  keymap: readonly KCLActionBinding<T>[];
+  direction: KCLOrientation;
+  renderCell: (ctx: KCLCellContext<T>) => ReactNode;
+  dataList: readonly T[];
+  selectDefaultIndex?: (dataList: readonly T[] | undefined) => number;
+  className?: string;
 };
 
-export type KeyboardControlledListProps<Item> = {
-  items: readonly Item[];
-  activeIndex: number;
-  onActiveIndexChange: (index: number) => void;
-  orientation?: KclOrientation;
-  renderItem: (ctx: KeyboardControlledListItemContext<Item>) => ReactNode;
-};
+export function KeyboardControlledList<T>({
+  controller,
+  keymap,
+  direction,
+  renderCell,
+  dataList,
+  selectDefaultIndex,
+  className,
+}: KeyboardControlledListProps<T>) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const domControllerRef = useRef<KCLDomController<T> | null>(null);
+  const state = useKCLControllerState(controller);
+  const rootId = useMemo(() => createRootId(), []);
 
-export type { KclMoveCommand, KclOrientation } from "@focusgrid/kcl";
+  useEffect(() => {
+    controller.api.setOrientation(direction);
+  }, [controller, direction]);
+
+  useEffect(() => {
+    controller.api.setItemCount(dataList.length, (itemCount) => {
+      if (!selectDefaultIndex) {
+        return 0;
+      }
+
+      return selectDefaultIndex(dataList.slice(0, itemCount));
+    });
+  }, [controller, dataList, selectDefaultIndex]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+
+    if (!root) {
+      return;
+    }
+
+    const domController = new KCLDomController(controller, root, {
+      keymap,
+      dataList,
+      rootId,
+    });
+
+    domController.mount();
+    domControllerRef.current = domController;
+
+    return () => {
+      domController.destroy();
+      domControllerRef.current = null;
+    };
+  }, [controller, rootId]);
+
+  useEffect(() => {
+    domControllerRef.current?.update({ keymap, dataList, rootId });
+  }, [keymap, dataList, rootId]);
+
+  const rootClassName = className
+    ? `KCLKeyboardControlledList ${className}`
+    : "KCLKeyboardControlledList";
+
+  return (
+    <div ref={rootRef} id={rootId} className={rootClassName}>
+      {dataList.map((data, index) => {
+        const rowProps = domControllerRef.current?.getRowProps(index) ?? {
+          id: `${rootId}-row-${index}`,
+          role: "option" as const,
+          "aria-selected": state.activeIndex === index ? "true" : "false",
+          tabIndex: -1,
+          onPointerDown: (event: Pick<PointerEvent, "preventDefault">) =>
+            event.preventDefault(),
+          onClick: () => {
+            controller.api.setActiveIndex(index);
+          },
+          onDoubleClick: () => undefined,
+        };
+
+        return (
+          <div
+            key={index}
+            id={rowProps.id}
+            role={rowProps.role}
+            aria-selected={rowProps["aria-selected"]}
+            tabIndex={rowProps.tabIndex}
+            data-kcl-row-index={index}
+            data-active={state.activeIndex === index}
+            onPointerDown={(event) => rowProps.onPointerDown(event.nativeEvent)}
+            onClick={rowProps.onClick}
+            onDoubleClick={rowProps.onDoubleClick}
+          >
+            {renderCell(controller.getCellContext(index, data))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function useKCLController(
+  options?: Parameters<typeof createKCLController>[0],
+): KCLController {
+  const ref = useRef<KCLController | null>(null);
+
+  if (!ref.current) {
+    ref.current = createKCLController(options);
+  }
+
+  return ref.current;
+}
+
+export function useKCLControllerState(
+  controller: KCLController,
+): KCLControllerState {
+  return useSyncExternalStore(
+    (listener) => controller.subscribe(listener),
+    () => controller.getState(),
+    () => controller.getState(),
+  );
+}
+
+let nextRootId = 0;
+
+function createRootId(): string {
+  nextRootId += 1;
+  return `kcl-${nextRootId}`;
+}
+
+export type {
+  KCLActionBinding,
+  KCLCellAction,
+  KCLCellContext,
+  KCLCommandAction,
+  KCLCommandArgs,
+  KCLCommandName,
+  KCLController,
+  KCLControllerApi,
+  KCLControllerOptions,
+  KCLControllerState,
+  KCLMoveDirection,
+  KCLOrientation,
+  KCLShortcutId,
+  KCLShortcutOverrides,
+  KCLShortcutValues,
+} from "@focusgrid/kcl";
+export {
+  createDefaultKCLKeymap,
+  createDefaultKCLShortcuts,
+  createKCLController,
+  defaultKCLShortcutActions,
+} from "@focusgrid/kcl";

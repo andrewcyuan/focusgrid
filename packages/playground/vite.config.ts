@@ -5,6 +5,24 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: "react/jsx-runtime",
+        replacement: fileURLToPath(
+          new URL("./node_modules/react/jsx-runtime.js", import.meta.url),
+        ),
+      },
+      {
+        find: "react/jsx-dev-runtime",
+        replacement: fileURLToPath(
+          new URL("./node_modules/react/jsx-dev-runtime.js", import.meta.url),
+        ),
+      },
+      {
+        find: "react",
+        replacement: fileURLToPath(
+          new URL("./node_modules/react/index.js", import.meta.url),
+        ),
+      },
+      {
         find: "@focusgrid/react/styles.css",
         replacement: fileURLToPath(
           new URL("../focusgrid-react/src/styles.css", import.meta.url),
@@ -38,6 +56,12 @@ export default defineConfig({
         find: "@focusgrid/kcl",
         replacement: fileURLToPath(
           new URL("../kcl-core/src/index.ts", import.meta.url),
+        ),
+      },
+      {
+        find: "@focusgrid/kcl-dom",
+        replacement: fileURLToPath(
+          new URL("../kcl-dom/src/index.ts", import.meta.url),
         ),
       },
       {

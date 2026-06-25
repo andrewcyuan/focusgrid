@@ -97,3 +97,7 @@ SDKs. They should adapt framework lifecycle and rendering APIs to the core and
 DOM packages, without becoming the place where KCL behavior lives. This keeps it
 straightforward to add another web framework binding later, such as
 `kcl-svelte`, by reusing the same strongly typed core and DOM contracts.
+
+## Playground
+
+Make `/kcl` route on playground which is a copy of the main playground, but with KCLs with some sample actions instead of textboxes. And the sidebar panel will have different settings to control the KCLs.

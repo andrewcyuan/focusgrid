@@ -179,3 +179,91 @@ test("horizontal pointer resize continues after dragging outside the handle", as
     .poll(async () => (await alphaPane.boundingBox())?.width ?? 0)
     .toBeGreaterThan(initialBox!.width + 80);
 });
+
+test("KCL route keeps focus on the list root and moves active row with arrows", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  await expect(alphaList).toBeFocused();
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-0$/);
+
+  await page.keyboard.press("ArrowDown");
+
+  await expect(alphaList).toBeFocused();
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-1$/);
+  await expect(
+    page.locator('[data-kcl-pane-id="alpha"] [role="option"]').nth(1),
+  ).toHaveAttribute("aria-selected", "true");
+});
+
+test("KCL Enter toggles the active todo without moving DOM focus into rows", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const firstRow = page
+    .locator('[data-kcl-pane-id="alpha"] [role="option"]')
+    .first();
+  const checkbox = firstRow.locator('input[type="checkbox"]');
+
+  await expect(alphaList).toBeFocused();
+  await expect(checkbox).not.toBeChecked();
+
+  await page.keyboard.press("Enter");
+
+  await expect(alphaList).toBeFocused();
+  await expect(checkbox).toBeChecked();
+  await expect(firstRow.locator(".KCLTodoRow")).toHaveAttribute(
+    "data-checked",
+    "true",
+  );
+});
+
+test("KCL pointer selection focuses the list and activates rows on double click", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
+  const thirdRow = rows.nth(2);
+  const thirdCheckbox = thirdRow.locator('input[type="checkbox"]');
+
+  await thirdRow.click();
+  await expect(alphaList).toBeFocused();
+  await expect(thirdRow).toHaveAttribute("aria-selected", "true");
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
+  await expect(thirdCheckbox).not.toBeChecked();
+
+  await thirdRow.dblclick();
+  await expect(alphaList).toBeFocused();
+  await expect(thirdCheckbox).toBeChecked();
+});
+
+test("KCL route exposes FocusGrid shortcuts and pane shortcuts work while list is focused", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  await expect(page.getByRole("heading", { name: "KCL rows" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "FocusGrid panes" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Split right")).toHaveValue("Ctrl-B %");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  await expect(alphaList).toBeFocused();
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Shift+5");
+
+  await expect(page.locator(".KCLPane")).toHaveCount(3);
+
+  const activeList = page.locator('.KCLPane[data-active="true"] [role="listbox"]');
+  await expect(activeList).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(activeList).toHaveAttribute("aria-activedescendant", /row-1$/);
+});

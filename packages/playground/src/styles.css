@@ -70,6 +70,24 @@ textarea {
   gap: 14px;
 }
 
+.SidebarSection {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.SidebarSection:first-of-type {
+  margin-top: 0;
+}
+
+.SidebarSection h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .ShortcutBinder {
   display: grid;
   gap: 6px;
@@ -164,6 +182,19 @@ textarea {
   gap: 12px;
 }
 
+.ToolbarLink {
+  color: #244f9e;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ToolbarMode {
+  color: #2c3548;
+  font-size: 13px;
+  font-weight: 650;
+}
+
 .PlaygroundFocusGrid {
   background: #e5eaf3;
 }
@@ -202,4 +233,58 @@ textarea {
   outline: none;
   color: #172033;
   padding: 12px;
+}
+
+.KCLPane {
+  background: #fbfcff;
+}
+
+.KCLKeyboardControlledList {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  outline: none;
+  overflow: auto;
+  padding: 10px;
+}
+
+.KCLKeyboardControlledList:focus {
+  box-shadow: inset 0 0 0 2px #2b6de8;
+}
+
+.KCLKeyboardControlledList [role="option"] {
+  border: 1px solid #d6dce8;
+  border-radius: 6px;
+  background: white;
+}
+
+.KCLKeyboardControlledList [role="option"][aria-selected="true"] {
+  border-color: #2b6de8;
+  background: #edf4ff;
+}
+
+.KCLTodoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 10px;
+  color: #172033;
+}
+
+.KCLTodoRow input {
+  flex: 0 0 auto;
+}
+
+.KCLTodoRow span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.KCLTodoRow[data-checked="true"] span {
+  color: #6d7483;
+  text-decoration: line-through;
 }

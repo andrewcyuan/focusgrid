@@ -17,6 +17,15 @@ import {
   type PaneRenderContext,
 } from "@focusgrid/react";
 import {
+  createDefaultKCLKeymap,
+  createDefaultKCLShortcuts,
+  defaultKCLShortcutActions,
+  KeyboardControlledList,
+  useKCLController,
+  type KCLShortcutId,
+  type KCLShortcutValues,
+} from "@focusgrid/kcl-react";
+import {
   useEffect,
   useMemo,
   useRef,
@@ -24,6 +33,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
+import { createInitialTodos, toggleTodo, type TodoItem } from "./kcl-todos";
 
 function createInitialState(): FocusGridControllerState {
   return {
@@ -63,6 +73,14 @@ const paneComponents: Record<string, PaneComponent> = {
 };
 
 export function App() {
+  return window.location.pathname === "/kcl" ? (
+    <KCLPlayground />
+  ) : (
+    <FocusGridPlayground />
+  );
+}
+
+function FocusGridPlayground() {
   const controller = useFocusGridController(createInitialState);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
@@ -108,6 +126,62 @@ export function App() {
   );
 }
 
+function KCLPlayground() {
+  const controller = useFocusGridController(createInitialState);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [kclShortcuts, setKclShortcuts] = useState(createDefaultKCLShortcuts());
+  const [focusGridShortcuts, setFocusGridShortcuts] = useState(
+    loadSavedShortcuts(),
+  );
+  const focusGridKeymap = useMemo(
+    () => createDefaultPaneKeymap({ overrides: focusGridShortcuts }),
+    [focusGridShortcuts],
+  );
+
+  useEffect(() => {
+    saveShortcuts(focusGridShortcuts);
+  }, [focusGridShortcuts]);
+
+  return (
+    <div className="AppShell" data-sidebar-open={sidebarOpen}>
+      {sidebarOpen ? (
+        <KCLSidebar
+          kclShortcuts={kclShortcuts}
+          focusGridShortcuts={focusGridShortcuts}
+          onKCLShortcutChange={(id, sequence) => {
+            setKclShortcuts((current) => ({
+              ...current,
+              [id]: sequence,
+            }));
+          }}
+          onFocusGridShortcutChange={(id, sequence) => {
+            setFocusGridShortcuts((current) => ({
+              ...current,
+              [id]: sequence,
+            }));
+          }}
+        />
+      ) : null}
+
+      <main className="ControllerShell">
+        <KCLToolbar
+          sidebarOpen={sidebarOpen}
+          controller={controller}
+          onToggleSidebar={() => setSidebarOpen((open) => !open)}
+        />
+        <FocusGrid
+          controller={controller}
+          keymap={focusGridKeymap}
+          className="PlaygroundFocusGrid"
+          renderPane={(ctx) => {
+            return <KCLTodoPane {...ctx} shortcuts={kclShortcuts} />;
+          }}
+        />
+      </main>
+    </div>
+  );
+}
+
 function Sidebar({
   shortcuts,
   onShortcutChange,
@@ -135,6 +209,63 @@ function Sidebar({
             />
           </label>
         ))}
+      </div>
+    </aside>
+  );
+}
+
+function KCLSidebar({
+  kclShortcuts,
+  focusGridShortcuts,
+  onKCLShortcutChange,
+  onFocusGridShortcutChange,
+}: {
+  kclShortcuts: KCLShortcutValues;
+  focusGridShortcuts: PaneShortcutValues;
+  onKCLShortcutChange: (id: KCLShortcutId, sequence: string) => void;
+  onFocusGridShortcutChange: (id: PaneShortcutId, sequence: string) => void;
+}) {
+  return (
+    <aside className="Sidebar">
+      <div className="SidebarHeader">
+        <h1>Focusgrid KCL</h1>
+        <span>Pane and list shortcuts</span>
+      </div>
+
+      <div className="SidebarSection">
+        <h2>KCL rows</h2>
+        <div className="ShortcutList">
+          {defaultKCLShortcutActions.map((action) => (
+            <label className="ShortcutBinder" key={action.id}>
+              <span>{action.label}</span>
+              <input
+                value={kclShortcuts[action.id] ?? ""}
+                spellCheck={false}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  onKCLShortcutChange(action.id, event.target.value);
+                }}
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="SidebarSection">
+        <h2>FocusGrid panes</h2>
+        <div className="ShortcutList">
+          {defaultPaneShortcutActions.map((action) => (
+            <label className="ShortcutBinder" key={action.id}>
+              <span>{action.label}</span>
+              <input
+                value={focusGridShortcuts[action.id] ?? ""}
+                spellCheck={false}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  onFocusGridShortcutChange(action.id, event.target.value);
+                }}
+              />
+            </label>
+          ))}
+        </div>
       </div>
     </aside>
   );
@@ -230,6 +361,38 @@ function Toolbar({
   );
 }
 
+function KCLToolbar({
+  sidebarOpen,
+  controller,
+  onToggleSidebar,
+}: {
+  sidebarOpen: boolean;
+  controller: FocusGridController;
+  onToggleSidebar: () => void;
+}) {
+  const state = useControllerState(controller);
+
+  return (
+    <header className="Toolbar">
+      <button type="button" onClick={onToggleSidebar}>
+        {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+      </button>
+      <div className="ToolbarActions">
+        <a className="ToolbarLink" href="/">
+          FocusGrid
+        </a>
+        <span className="ToolbarMode">KCL todo lists</span>
+      </div>
+      <div className="ToolbarMeta">
+        <span>Active: {state.activePaneId ?? "none"}</span>
+        <span>
+          Root: {state.container.width} x {state.container.height}
+        </span>
+      </div>
+    </header>
+  );
+}
+
 function PaneSlot({ ctx }: { ctx: PaneRenderContext }) {
   const Component = paneComponents[ctx.paneId] ?? TextPane;
 
@@ -259,6 +422,68 @@ function TextPane({ paneId, active, controller }: PaneComponentProps) {
         onFocus={() => {
           controller.api.focus(paneId);
         }}
+      />
+    </section>
+  );
+}
+
+function KCLTodoPane({
+  paneId,
+  active,
+  controller,
+  shortcuts,
+}: PaneComponentProps & { shortcuts: KCLShortcutValues }) {
+  const [todos, setTodos] = useState(() => createInitialTodos(paneId));
+  const kclController = useKCLController({
+    itemCount: todos.length,
+    orientation: "vertical",
+  });
+  const paneRef = useRef<HTMLElement | null>(null);
+  const keymap = useMemo(
+    () =>
+      createDefaultKCLKeymap<TodoItem>({
+        overrides: shortcuts,
+        onActivate: (ctx) => {
+          setTodos((current) => toggleTodo(current, ctx.index));
+        },
+      }),
+    [shortcuts],
+  );
+
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+
+    controller.api.focus(paneId);
+    const list = paneRef.current?.querySelector<HTMLElement>(
+      ".KCLKeyboardControlledList",
+    );
+    list?.focus();
+  }, [active, controller, paneId]);
+
+  return (
+    <section
+      ref={paneRef}
+      className="TextPane KCLPane"
+      data-active={active}
+      data-kcl-pane-id={paneId}
+    >
+      <div className="TextPaneHeader">
+        <strong>{paneId}</strong>
+        <span>{active ? "focused" : "idle"}</span>
+      </div>
+      <KeyboardControlledList
+        controller={kclController}
+        keymap={keymap}
+        direction="vertical"
+        dataList={todos}
+        renderCell={(ctx) => (
+          <label className="KCLTodoRow" data-checked={ctx.data.checked}>
+            <input type="checkbox" readOnly checked={ctx.data.checked} />
+            <span>{ctx.data.label}</span>
+          </label>
+        )}
       />
     </section>
   );
