@@ -1,5 +1,3 @@
-import type { PaneId } from "../state";
-
 export type KeyStroke = {
   key: string;
   ctrl: boolean;
@@ -10,23 +8,23 @@ export type KeyStroke = {
 
 export type KeySequence = KeyStroke[];
 
-export type ShortcutContext = {
-  activePaneId: PaneId | null;
-  activePaneType?: string;
-  inputFocused: boolean;
-  mode: "normal" | "insert" | "resize";
-};
-
-export type KeyBinding = {
+export type ShortcutBinding<
+  TContext = unknown,
+  TAction extends string = string,
+  TArgs = unknown,
+> = {
   sequence: KeySequence;
-  command: string;
-  args?: unknown;
-  when?: (ctx: ShortcutContext) => boolean;
+  action: TAction;
+  args?: TArgs;
+  when?: (ctx: TContext) => boolean;
   preventDefault?: boolean;
   repeat?: boolean;
 };
 
-export type KeyMatchResult =
+export type ShortcutMatchResult<
+  TAction extends string = string,
+  TArgs = unknown,
+> =
   | {
       matched: false;
       pending: boolean;
@@ -35,7 +33,7 @@ export type KeyMatchResult =
   | {
       matched: true;
       pending: false;
-      command: string;
-      args?: unknown;
+      action: TAction;
+      args?: TArgs;
       preventDefault: boolean;
     };

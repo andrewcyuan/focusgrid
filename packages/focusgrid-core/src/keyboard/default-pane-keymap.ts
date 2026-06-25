@@ -1,5 +1,20 @@
-import type { KeyBinding } from "./keymap";
-import { validateKeySequenceInput } from "./parser";
+import {
+  validateKeySequenceInput,
+  type ShortcutBinding,
+} from "@focusgrid/shortcut-engine";
+import type { PaneId } from "../state";
+
+export type ShortcutContext = {
+  activePaneId: PaneId | null;
+  activePaneType?: string;
+  inputFocused: boolean;
+  mode: "normal" | "insert" | "resize";
+};
+
+export type KeyBinding<
+  TAction extends string = string,
+  TArgs = unknown,
+> = ShortcutBinding<ShortcutContext, TAction, TArgs>;
 
 export type DefaultPaneCommand =
   | "pane.splitRight"
@@ -148,7 +163,7 @@ export function createDefaultPaneShortcuts(): PaneShortcutValues {
 
 export function createDefaultPaneKeymap(
   options: CreateDefaultPaneKeymapOptions = {},
-): KeyBinding[] {
+): KeyBinding<DefaultPaneCommand>[] {
   const shortcuts = options.overrides ?? {};
 
   return defaultPaneShortcutActions.flatMap((action) => {
@@ -169,7 +184,7 @@ export function createDefaultPaneKeymap(
     return [
       {
         sequence: validation.sequence,
-        command: action.command,
+        action: action.command,
         args,
         preventDefault: true,
         repeat,

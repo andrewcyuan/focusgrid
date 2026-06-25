@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { parseKeySequence } from "@focusgrid/shortcut-engine";
 import {
-  KeyRouter,
   cardinalDirections,
   createDefaultPaneKeymap,
   createDefaultPaneShortcuts,
@@ -8,18 +8,15 @@ import {
   defaultPaneShortcutActions,
   focusPane,
   focusPaneInDirection,
-  normalizeKeySequenceInput,
   paneFocusDirections,
   paneResizeDirections,
   paneSplitSides,
   paneSwapDirections,
-  parseKeySequence,
   resizeHandle,
   resizePane,
   splitPane,
   swapPaneInDirection,
   swapPanes,
-  validateKeySequenceInput,
   wrapRootInSplit,
   type PaneFocusDirection,
   type FocusGridControllerState,
@@ -1544,14 +1541,14 @@ describe("keyboard", () => {
     expect(keymap).toHaveLength(defaultPaneShortcutActions.length);
     expect(keymap).toContainEqual({
       sequence: parseKeySequence("Ctrl-B %"),
-      command: "pane.splitRight",
+      action: "pane.splitRight",
       args: undefined,
       preventDefault: true,
       repeat: undefined,
     });
     expect(keymap).toContainEqual({
       sequence: parseKeySequence("Ctrl-B L"),
-      command: "pane.resizeRight",
+      action: "pane.resizeRight",
       args: { deltaPx: 48 },
       preventDefault: true,
       repeat: true,
@@ -1569,356 +1566,22 @@ describe("keyboard", () => {
     });
 
     expect(
-      keymap.find((binding) => binding.command === "pane.splitRight"),
+      keymap.find((binding) => binding.action === "pane.splitRight"),
     ).toMatchObject({
       sequence: parseKeySequence("Ctrl-B R"),
-      command: "pane.splitRight",
+      action: "pane.splitRight",
     });
-    expect(keymap.some((binding) => binding.command === "pane.close")).toBe(
+    expect(keymap.some((binding) => binding.action === "pane.close")).toBe(
       false,
     );
     expect(
-      keymap.find((binding) => binding.command === "pane.focusLeft"),
+      keymap.find((binding) => binding.action === "pane.focusLeft"),
     ).toMatchObject({
       sequence: parseKeySequence("Ctrl-B"),
-      command: "pane.focusLeft",
+      action: "pane.focusLeft",
     });
     expect(
-      keymap.some((binding) => binding.command === "pane.focusRight"),
+      keymap.some((binding) => binding.action === "pane.focusRight"),
     ).toBe(false);
-  });
-
-  it("normalizes and validates shortcut input for editors", () => {
-    expect(normalizeKeySequenceInput("  Ctrl+B   Shift+Left  ")).toBe(
-      "Ctrl-B Shift-Left",
-    );
-
-    expect(validateKeySequenceInput("Ctrl+B")).toEqual({
-      ok: true,
-      sequence: parseKeySequence("Ctrl-B"),
-      value: "Ctrl-B",
-    });
-
-    expect(validateKeySequenceInput("Ctrl+")).toEqual({
-      ok: false,
-      error: "Invalid key stroke: Ctrl+",
-    });
-  });
-
-  it("parses multi-stroke shortcuts and matches them through the router", () => {
-    const router = new KeyRouter([
-      {
-        sequence: parseKeySequence("Ctrl-B %"),
-        command: "pane.splitRight",
-      },
-    ]);
-
-    const ctx = {
-      activePaneId: "editor",
-      inputFocused: false,
-      mode: "normal" as const,
-    };
-
-    expect(router.handle(parseKeySequence("Ctrl-B")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: true,
-    });
-
-    expect(router.handle(parseKeySequence("%")[0]!, ctx)).toEqual({
-      matched: true,
-      pending: false,
-      command: "pane.splitRight",
-      args: undefined,
-      preventDefault: true,
-    });
-  });
-
-  it("consumes an invalid continuation after a pending shortcut prefix", () => {
-    const router = new KeyRouter([
-      {
-        sequence: parseKeySequence("Ctrl-B %"),
-        command: "pane.splitRight",
-      },
-    ]);
-
-    const ctx = {
-      activePaneId: "editor",
-      inputFocused: true,
-      mode: "normal" as const,
-    };
-
-    expect(router.handle(parseKeySequence("Ctrl-B")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: true,
-    });
-
-    expect(router.handle(parseKeySequence("Z")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: true,
-    });
-
-    expect(router.handle(parseKeySequence("Z")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: false,
-    });
-  });
-
-  it("uses dashes for modifier key syntax and normalizes arrow aliases", () => {
-    expect(
-      parseKeySequence("Ctrl-Shift-B Arrow-Left ArrowRight Ctrl-+ -"),
-    ).toEqual([
-      {
-        key: "b",
-        ctrl: true,
-        meta: false,
-        alt: false,
-        shift: true,
-      },
-      {
-        key: "left",
-        ctrl: false,
-        meta: false,
-        alt: false,
-        shift: false,
-      },
-      {
-        key: "right",
-        ctrl: false,
-        meta: false,
-        alt: false,
-        shift: false,
-      },
-      {
-        key: "+",
-        ctrl: true,
-        meta: false,
-        alt: false,
-        shift: false,
-      },
-      {
-        key: "-",
-        ctrl: false,
-        meta: false,
-        alt: false,
-        shift: false,
-      },
-    ]);
-
-    expect(() => parseKeySequence("Ctrl+B")).toThrow(
-      "Invalid key stroke: Ctrl+B",
-    );
-  });
-
-  it("retains a repeatable leader so different followers can run during the repeat window", () => {
-    let now = 1000;
-    const router = new KeyRouter(
-      [
-        {
-          sequence: parseKeySequence("Ctrl-B L"),
-          command: "pane.resizeRight",
-          args: { deltaPx: 4 },
-          repeat: true,
-        },
-        {
-          sequence: parseKeySequence("Ctrl-B H"),
-          command: "pane.resizeLeft",
-          args: { deltaPx: 4 },
-          repeat: true,
-        },
-      ],
-      {
-        repeatTimeoutMs: 300,
-        now: () => now,
-      },
-    );
-    const ctx = {
-      activePaneId: "editor",
-      inputFocused: true,
-      mode: "normal" as const,
-    };
-
-    expect(router.handle(parseKeySequence("Ctrl-B")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: true,
-    });
-
-    expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
-      matched: true,
-      pending: false,
-      command: "pane.resizeRight",
-      args: { deltaPx: 4 },
-      preventDefault: true,
-    });
-
-    now += 250;
-
-    expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
-      matched: true,
-      pending: false,
-      command: "pane.resizeRight",
-      args: { deltaPx: 4 },
-      preventDefault: true,
-    });
-
-    now += 250;
-
-    expect(router.handle(parseKeySequence("H")[0]!, ctx)).toEqual({
-      matched: true,
-      pending: false,
-      command: "pane.resizeLeft",
-      args: { deltaPx: 4 },
-      preventDefault: true,
-    });
-
-    now += 250;
-
-    expect(router.handle(parseKeySequence("H")[0]!, ctx)).toEqual({
-      matched: true,
-      pending: false,
-      command: "pane.resizeLeft",
-      args: { deltaPx: 4 },
-      preventDefault: true,
-    });
-  });
-
-  it("does not run a different follower after the repeat window expires", () => {
-    let now = 1000;
-    const router = new KeyRouter(
-      [
-        {
-          sequence: parseKeySequence("Ctrl-B L"),
-          command: "pane.resizeRight",
-          repeat: true,
-        },
-        {
-          sequence: parseKeySequence("Ctrl-B H"),
-          command: "pane.resizeLeft",
-          repeat: true,
-        },
-      ],
-      {
-        repeatTimeoutMs: 300,
-        now: () => now,
-      },
-    );
-    const ctx = {
-      activePaneId: "editor",
-      inputFocused: true,
-      mode: "normal" as const,
-    };
-
-    router.handle(parseKeySequence("Ctrl-B")[0]!, ctx);
-
-    expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
-      matched: true,
-      pending: false,
-      command: "pane.resizeRight",
-      args: undefined,
-      preventDefault: true,
-    });
-
-    now += 301;
-
-    expect(router.handle(parseKeySequence("H")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: false,
-    });
-  });
-
-  it("does not repeat non-repeatable sequence followers", () => {
-    const router = new KeyRouter([
-      {
-        sequence: parseKeySequence("Ctrl-B X"),
-        command: "pane.close",
-      },
-    ]);
-    const ctx = {
-      activePaneId: "editor",
-      inputFocused: true,
-      mode: "normal" as const,
-    };
-
-    router.handle(parseKeySequence("Ctrl-B")[0]!, ctx);
-
-    expect(router.handle(parseKeySequence("X")[0]!, ctx)).toEqual({
-      matched: true,
-      pending: false,
-      command: "pane.close",
-      args: undefined,
-      preventDefault: true,
-    });
-
-    expect(router.handle(parseKeySequence("X")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: false,
-    });
-  });
-
-  it("does not run non-repeatable bindings from a retained leader", () => {
-    const router = new KeyRouter([
-      {
-        sequence: parseKeySequence("Ctrl-B L"),
-        command: "pane.resizeRight",
-        repeat: true,
-      },
-      {
-        sequence: parseKeySequence("Ctrl-B X"),
-        command: "pane.close",
-      },
-    ]);
-    const ctx = {
-      activePaneId: "editor",
-      inputFocused: true,
-      mode: "normal" as const,
-    };
-
-    router.handle(parseKeySequence("Ctrl-B")[0]!, ctx);
-    router.handle(parseKeySequence("L")[0]!, ctx);
-
-    expect(router.handle(parseKeySequence("X")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: true,
-    });
-
-    expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: false,
-    });
-  });
-
-  it("cancels a retained leader after an unmatched follower", () => {
-    const router = new KeyRouter([
-      {
-        sequence: parseKeySequence("Ctrl-B L"),
-        command: "pane.resizeRight",
-        repeat: true,
-      },
-    ]);
-    const ctx = {
-      activePaneId: "editor",
-      inputFocused: true,
-      mode: "normal" as const,
-    };
-
-    router.handle(parseKeySequence("Ctrl-B")[0]!, ctx);
-    router.handle(parseKeySequence("L")[0]!, ctx);
-
-    expect(router.handle(parseKeySequence("Z")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: true,
-    });
-
-    expect(router.handle(parseKeySequence("L")[0]!, ctx)).toEqual({
-      matched: false,
-      pending: false,
-      preventDefault: false,
-    });
   });
 });

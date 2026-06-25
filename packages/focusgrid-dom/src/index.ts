@@ -1,7 +1,8 @@
 export { FocusGridDomController } from "./controller";
 export type { FocusGridDomControllerOptions } from "./controller";
 
-export { KeyboardListener, normalizeKeyboardEvent } from "./keyboard-listener";
+export { normalizeKeyboardEvent } from "@focusgrid/shortcut-engine";
+export { KeyboardListener } from "./keyboard-listener";
 export type { KeyboardListenerOptions } from "./keyboard-listener";
 
 export { PointerResizeController } from "./pointer-resize";

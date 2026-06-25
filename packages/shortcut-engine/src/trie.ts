@@ -1,14 +1,17 @@
 import { strokeToId } from "./normalize";
 import type {
-  KeyBinding,
-  KeyMatchResult,
   KeyStroke,
-  ShortcutContext,
+  ShortcutBinding,
+  ShortcutMatchResult,
 } from "./keymap";
 
-export type KeyTrieNode = {
-  binding?: KeyBinding;
-  children: Map<string, KeyTrieNode>;
+export type KeyTrieNode<
+  TContext = unknown,
+  TAction extends string = string,
+  TArgs = unknown,
+> = {
+  binding?: ShortcutBinding<TContext, TAction, TArgs>;
+  children: Map<string, KeyTrieNode<TContext, TAction, TArgs>>;
 };
 
 export type KeyRouterOptions = {
@@ -18,14 +21,21 @@ export type KeyRouterOptions = {
 
 const DEFAULT_REPEAT_TIMEOUT_MS = 500;
 
-export class KeyRouter {
-  private readonly root: KeyTrieNode;
-  private current: KeyTrieNode;
-  private repeat: RepeatPrefix | null = null;
+export class KeyRouter<
+  TContext = unknown,
+  TAction extends string = string,
+  TArgs = unknown,
+> {
+  private readonly root: KeyTrieNode<TContext, TAction, TArgs>;
+  private current: KeyTrieNode<TContext, TAction, TArgs>;
+  private repeat: RepeatPrefix<TContext, TAction, TArgs> | null = null;
   private readonly repeatTimeoutMs: number;
   private readonly now: () => number;
 
-  constructor(bindings: KeyBinding[], options: KeyRouterOptions = {}) {
+  constructor(
+    bindings: ShortcutBinding<TContext, TAction, TArgs>[],
+    options: KeyRouterOptions = {},
+  ) {
     this.root = createTrie(bindings);
     this.current = this.root;
     this.repeatTimeoutMs = options.repeatTimeoutMs ?? DEFAULT_REPEAT_TIMEOUT_MS;
@@ -37,7 +47,10 @@ export class KeyRouter {
     this.repeat = null;
   }
 
-  handle(stroke: KeyStroke, ctx: ShortcutContext): KeyMatchResult {
+  handle(
+    stroke: KeyStroke,
+    ctx: TContext,
+  ): ShortcutMatchResult<TAction, TArgs> {
     const id = strokeToId(stroke);
     const wasPending = this.current !== this.root;
 
@@ -71,7 +84,7 @@ export class KeyRouter {
       return {
         matched: true,
         pending: false,
-        command: binding.command,
+        action: binding.action,
         args: binding.args,
         preventDefault: binding.preventDefault ?? true,
       };
@@ -83,7 +96,10 @@ export class KeyRouter {
     };
   }
 
-  private matchRepeat(id: string, ctx: ShortcutContext): KeyMatchResult | null {
+  private matchRepeat(
+    id: string,
+    ctx: TContext,
+  ): ShortcutMatchResult<TAction, TArgs> | null {
     if (!this.repeat) {
       return null;
     }
@@ -115,13 +131,13 @@ export class KeyRouter {
     return {
       matched: true,
       pending: false,
-      command: binding.command,
+      action: binding.action,
       args: binding.args,
       preventDefault: binding.preventDefault ?? true,
     };
   }
 
-  private setRepeat(binding: KeyBinding): void {
+  private setRepeat(binding: ShortcutBinding<TContext, TAction, TArgs>): void {
     if (!binding.repeat || binding.sequence.length !== 2) {
       this.repeat = null;
       return;
@@ -143,13 +159,23 @@ export class KeyRouter {
   }
 }
 
-type RepeatPrefix = {
-  node: KeyTrieNode;
+type RepeatPrefix<
+  TContext = unknown,
+  TAction extends string = string,
+  TArgs = unknown,
+> = {
+  node: KeyTrieNode<TContext, TAction, TArgs>;
   expiresAt: number;
 };
 
-export function createTrie(bindings: KeyBinding[]): KeyTrieNode {
-  const root: KeyTrieNode = {
+export function createTrie<
+  TContext = unknown,
+  TAction extends string = string,
+  TArgs = unknown,
+>(
+  bindings: ShortcutBinding<TContext, TAction, TArgs>[],
+): KeyTrieNode<TContext, TAction, TArgs> {
+  const root: KeyTrieNode<TContext, TAction, TArgs> = {
     children: new Map(),
   };
 

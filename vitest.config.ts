@@ -8,6 +8,7 @@ export default defineConfig({
   root: process.cwd(),
   resolve: {
     alias: {
+      "@focusgrid/shortcut-engine": resolve(repoRoot, "packages/shortcut-engine/src/index.ts"),
       "@focusgrid/core": resolve(repoRoot, "packages/focusgrid-core/src/index.ts"),
       "@focusgrid/dom": resolve(repoRoot, "packages/focusgrid-dom/src/index.ts"),
       "@focusgrid/react": resolve(repoRoot, "packages/focusgrid-react/src/index.tsx"),

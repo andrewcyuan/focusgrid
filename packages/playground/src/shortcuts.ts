@@ -1,9 +1,9 @@
 import {
   createDefaultPaneShortcuts,
   defaultPaneShortcutActions,
-  normalizeKeySequenceInput,
   type PaneShortcutValues,
 } from "@focusgrid/core";
+import { normalizeKeySequenceInput } from "@focusgrid/shortcut-engine";
 
 const shortcutStorageKey = "focusgrid.playground.shortcuts";
 

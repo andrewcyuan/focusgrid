@@ -126,8 +126,8 @@ describe("pane render context", () => {
     const controller = createFocusGridController(state());
     const keymap: KeyBinding[] = [
       {
-        sequence: "x",
-        command: "pane.close",
+        sequence: [],
+        action: "pane.close",
       },
     ];
 

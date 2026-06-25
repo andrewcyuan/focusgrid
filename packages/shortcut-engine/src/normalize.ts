@@ -3,10 +3,6 @@ import type { KeyStroke } from "./keymap";
 const MODIFIER_ORDER = ["ctrl", "meta", "alt", "shift"] as const;
 
 export function normalizeKeyName(key: string): string {
-  if (key.length === 1) {
-    return key.toLowerCase();
-  }
-
   const aliases: Record<string, string> = {
     " ": "space",
     esc: "escape",
@@ -26,7 +22,16 @@ export function normalizeKeyName(key: string): string {
   };
 
   const lowered = key.toLowerCase();
-  return aliases[lowered] ?? lowered;
+
+  if (aliases[lowered]) {
+    return aliases[lowered];
+  }
+
+  if (key.length === 1) {
+    return lowered;
+  }
+
+  return lowered;
 }
 
 export function strokeToId(stroke: KeyStroke): string {

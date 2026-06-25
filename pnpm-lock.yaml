@@ -31,6 +31,10 @@ importers:
         version: 2.1.9(@types/node@22.20.0)
 
   packages/focusgrid-core:
+    dependencies:
+      '@focusgrid/shortcut-engine':
+        specifier: workspace:*
+        version: link:../shortcut-engine
     devDependencies:
       vitest:
         specifier: ^2.1.8
@@ -41,6 +45,9 @@ importers:
       '@focusgrid/core':
         specifier: workspace:*
         version: link:../focusgrid-core
+      '@focusgrid/shortcut-engine':
+        specifier: workspace:*
+        version: link:../shortcut-engine
 
   packages/focusgrid-react:
     dependencies:
@@ -64,7 +71,7 @@ importers:
         specifier: ^18.3.5
         version: 18.3.7(@types/react@18.3.31)
 
-  packages/kcl:
+  packages/kcl-core:
     devDependencies:
       vitest:
         specifier: ^2.1.8
@@ -74,7 +81,7 @@ importers:
     dependencies:
       '@focusgrid/kcl':
         specifier: workspace:*
-        version: link:../kcl
+        version: link:../kcl-core
       react:
         specifier: '>=18'
         version: 18.3.1
@@ -97,6 +104,9 @@ importers:
       '@focusgrid/react':
         specifier: workspace:*
         version: link:../focusgrid-react
+      '@focusgrid/shortcut-engine':
+        specifier: workspace:*
+        version: link:../shortcut-engine
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -119,6 +129,12 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+
+  packages/shortcut-engine:
+    devDependencies:
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.0)
 
 packages:
 

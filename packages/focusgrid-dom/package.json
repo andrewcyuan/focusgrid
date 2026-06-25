@@ -14,12 +14,13 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --external @focusgrid/core",
+    "build": "tsup src/index.ts --format esm,cjs --dts --external @focusgrid/core --external @focusgrid/shortcut-engine",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@focusgrid/core": "workspace:*"
+    "@focusgrid/core": "workspace:*",
+    "@focusgrid/shortcut-engine": "workspace:*"
   }
 }

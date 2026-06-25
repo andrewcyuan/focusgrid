@@ -11,6 +11,12 @@ export default defineConfig({
         ),
       },
       {
+        find: "@focusgrid/shortcut-engine",
+        replacement: fileURLToPath(
+          new URL("../shortcut-engine/src/index.ts", import.meta.url),
+        ),
+      },
+      {
         find: "@focusgrid/core",
         replacement: fileURLToPath(
           new URL("../focusgrid-core/src/index.ts", import.meta.url),

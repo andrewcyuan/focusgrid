@@ -1,12 +1,15 @@
 import {
   DEFAULT_PANE_RESIZE_DELTA_PX,
-  KeyRouter,
-  createKeyStroke,
   type KeyBinding,
-  type KeyStroke,
   type PaneResizeDirection,
   type FocusGridController,
+  type ShortcutContext,
 } from "@focusgrid/core";
+import {
+  KeyRouter,
+  isModifierOnlyKey,
+  normalizeKeyboardEvent,
+} from "@focusgrid/shortcut-engine";
 import { isEditableTarget } from "./focus";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
@@ -16,7 +19,7 @@ export type KeyboardListenerOptions = {
 };
 
 export class KeyboardListener {
-  private readonly router: KeyRouter;
+  private readonly router: KeyRouter<ShortcutContext>;
   private readonly mode: "normal" | "insert" | "resize";
   private mounted = false;
   private pendingResizeFrame: FrameRequest | null = null;
@@ -50,11 +53,11 @@ export class KeyboardListener {
       event.stopPropagation();
     }
 
-    if (this.scheduleResizeCommand(result.command, result.args)) {
+    if (this.scheduleResizeCommand(result.action, result.args)) {
       return;
     }
 
-    this.controller.commands.run(result.command, this.controller, result.args);
+    this.controller.commands.run(result.action, this.controller, result.args);
   };
 
   constructor(
@@ -160,62 +163,4 @@ function getResizeDeltaPx(args: unknown): number {
   }
 
   return DEFAULT_PANE_RESIZE_DELTA_PX;
-}
-
-export function normalizeKeyboardEvent(event: KeyboardEvent): KeyStroke {
-  const key = normalizeEventKey(event);
-
-  return createKeyStroke({
-    key,
-    ctrl: event.ctrlKey,
-    meta: event.metaKey,
-    alt: event.altKey,
-    shift: event.shiftKey && !isShiftProducedSymbol(key),
-  });
-}
-
-function normalizeEventKey(event: KeyboardEvent): string {
-  if (event.shiftKey && event.key.length === 1) {
-    return SHIFTED_KEY_BY_BASE_KEY[event.key] ?? event.key;
-  }
-
-  return event.key;
-}
-
-function isShiftProducedSymbol(key: string): boolean {
-  return key.length === 1 && key.toLowerCase() === key.toUpperCase();
-}
-
-const SHIFTED_KEY_BY_BASE_KEY: Record<string, string> = {
-  "`": "~",
-  "1": "!",
-  "2": "@",
-  "3": "#",
-  "4": "$",
-  "5": "%",
-  "6": "^",
-  "7": "&",
-  "8": "*",
-  "9": "(",
-  "0": ")",
-  "-": "_",
-  "=": "+",
-  "[": "{",
-  "]": "}",
-  "\\": "|",
-  ";": ":",
-  "'": "\"",
-  ",": "<",
-  ".": ">",
-  "/": "?",
-};
-
-function isModifierOnlyKey(key: string): boolean {
-  return (
-    key === "Alt" ||
-    key === "AltGraph" ||
-    key === "Control" ||
-    key === "Meta" ||
-    key === "Shift"
-  );
 }

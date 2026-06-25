@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createFocusGridController,
-  parseKeySequence,
   type ComputedHandle,
   type FocusGridControllerState,
 } from "@focusgrid/core";
-import { KeyboardListener, normalizeKeyboardEvent } from "../src/keyboard-listener";
+import {
+  normalizeKeyboardEvent,
+  parseKeySequence,
+} from "@focusgrid/shortcut-engine";
+import { KeyboardListener } from "../src/keyboard-listener";
 import { PointerResizeController } from "../src/pointer-resize";
 
 function keyboardEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
@@ -216,7 +219,7 @@ describe("KeyboardListener resize batching", () => {
       keymap: [
         {
           sequence: parseKeySequence("H"),
-          command: "pane.resizeRight",
+          action: "pane.resizeRight",
           args: { deltaPx: 10 },
         },
       ],
@@ -256,7 +259,7 @@ describe("KeyboardListener resize batching", () => {
       keymap: [
         {
           sequence: parseKeySequence("X"),
-          command: "pane.close",
+          action: "pane.close",
         },
       ],
     });

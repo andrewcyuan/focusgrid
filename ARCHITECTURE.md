@@ -4,8 +4,10 @@ Focusgrid is split into three packages:
 
 ```txt
 @focusgrid/core
-  Pure TypeScript. Owns state, layout operations, commands, keyboard parsing,
-  and geometry.
+  Pure TypeScript. Owns state, layout operations, commands, and geometry.
+
+@focusgrid/shortcut-engine
+  Pure TypeScript. Owns key parsing, event normalization, and shortcut routing.
 
 @focusgrid/dom
   Browser adapter. Owns KeyboardEvent, PointerEvent, ResizeObserver, and DOM
@@ -16,7 +18,8 @@ Focusgrid is split into three packages:
   rendering helpers.
 ```
 
-Core does not import DOM or React. DOM imports core. React imports core and DOM.
+Core imports shortcut-engine but not DOM or React. DOM imports core and
+shortcut-engine. React imports core and DOM.
 
 ## Runtime Flow
 

@@ -49,14 +49,25 @@ export {
   serializeFocusGridControllerState,
 } from "./layout/serialize";
 
-export { createKeyStroke, normalizeKeyName, strokeToId } from "./keyboard/normalize";
 export {
+  createKeyStroke,
+  normalizeKeyName,
+  strokeToId,
   normalizeKeySequenceInput,
   parseKeySequence,
   parseKeyStroke,
+  createTrie,
+  KeyRouter,
   validateKeySequenceInput,
-} from "./keyboard/parser";
-export type { KeySequenceValidationResult } from "./keyboard/parser";
+} from "@focusgrid/shortcut-engine";
+export type {
+  KeyRouterOptions,
+  KeySequence,
+  KeySequenceValidationResult,
+  KeyStroke,
+  ShortcutBinding,
+  ShortcutMatchResult,
+} from "@focusgrid/shortcut-engine";
 export {
   createDefaultPaneKeymap,
   createDefaultPaneShortcuts,
@@ -69,16 +80,9 @@ export type {
   PaneShortcutId,
   PaneShortcutOverrides,
   PaneShortcutValues,
-} from "./keyboard/default-pane-keymap";
-export { createTrie, KeyRouter } from "./keyboard/trie";
-export type { KeyRouterOptions } from "./keyboard/trie";
-export type {
   KeyBinding,
-  KeyMatchResult,
-  KeySequence,
-  KeyStroke,
   ShortcutContext,
-} from "./keyboard/keymap";
+} from "./keyboard/default-pane-keymap";
 
 export type {
   ComputedHandle,
