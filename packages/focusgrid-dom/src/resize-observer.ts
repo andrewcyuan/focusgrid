@@ -1,10 +1,10 @@
-import type { Workspace } from "@focusgrid/core";
+import type { FocusGridController } from "@focusgrid/core";
 
 export class RootResizeObserver {
   private resizeObserver?: ResizeObserver;
 
   constructor(
-    private readonly workspace: Workspace,
+    private readonly controller: FocusGridController,
     private readonly rootEl: HTMLElement,
   ) {}
 
@@ -32,6 +32,6 @@ export class RootResizeObserver {
   }
 
   private dispatchSize(width: number, height: number): void {
-    this.workspace.api.setContainerSize(Math.floor(width), Math.floor(height));
+    this.controller.api.setContainerSize(Math.floor(width), Math.floor(height));
   }
 }

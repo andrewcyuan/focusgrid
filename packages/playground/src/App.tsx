@@ -5,16 +5,15 @@ import {
   paneSplitSides,
   type PaneShortcutId,
   type PaneShortcutValues,
-  type Workspace,
-  type WorkspaceState,
+  type FocusGridController,
+  type FocusGridControllerState,
 } from "@focusgrid/core";
 import {
   type PaneComponent,
   type PaneComponentProps,
-  FocusGridProvider,
   FocusGrid,
-  useFocusGridWorkspace,
-  useWorkspaceState,
+  useControllerState,
+  useFocusGridController,
   type PaneRenderContext,
 } from "@focusgrid/react";
 import {
@@ -26,7 +25,7 @@ import {
 } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
 
-function createInitialState(): WorkspaceState {
+function createInitialState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -64,7 +63,7 @@ const paneComponents: Record<string, PaneComponent> = {
 };
 
 export function App() {
-  const workspace = useFocusGridWorkspace(createInitialState);
+  const controller = useFocusGridController(createInitialState);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
@@ -77,35 +76,35 @@ export function App() {
   }, [shortcuts]);
 
   return (
-    <FocusGridProvider workspace={workspace} keymap={keymap}>
-      <div className="AppShell" data-sidebar-open={sidebarOpen}>
-        {sidebarOpen ? (
-          <Sidebar
-            shortcuts={shortcuts}
-            onShortcutChange={(id, sequence) => {
-              setShortcuts((current) => ({
-                ...current,
-                [id]: sequence,
-              }));
-            }}
-          />
-        ) : null}
+    <div className="AppShell" data-sidebar-open={sidebarOpen}>
+      {sidebarOpen ? (
+        <Sidebar
+          shortcuts={shortcuts}
+          onShortcutChange={(id, sequence) => {
+            setShortcuts((current) => ({
+              ...current,
+              [id]: sequence,
+            }));
+          }}
+        />
+      ) : null}
 
-        <main className="WorkspaceShell">
-          <Toolbar
-            sidebarOpen={sidebarOpen}
-            workspace={workspace}
-            onToggleSidebar={() => setSidebarOpen((open) => !open)}
-          />
-          <FocusGrid
-            className="PlaygroundFocusGrid"
-            renderPane={(ctx) => {
-              return <PaneSlot ctx={ctx} />;
-            }}
-          />
-        </main>
-      </div>
-    </FocusGridProvider>
+      <main className="ControllerShell">
+        <Toolbar
+          sidebarOpen={sidebarOpen}
+          controller={controller}
+          onToggleSidebar={() => setSidebarOpen((open) => !open)}
+        />
+        <FocusGrid
+          controller={controller}
+          keymap={keymap}
+          className="PlaygroundFocusGrid"
+          renderPane={(ctx) => {
+            return <PaneSlot ctx={ctx} />;
+          }}
+        />
+      </main>
+    </div>
   );
 }
 
@@ -143,14 +142,14 @@ function Sidebar({
 
 function Toolbar({
   sidebarOpen,
-  workspace,
+  controller,
   onToggleSidebar,
 }: {
   sidebarOpen: boolean;
-  workspace: Workspace;
+  controller: FocusGridController;
   onToggleSidebar: () => void;
 }) {
-  const state = useWorkspaceState();
+  const state = useControllerState(controller);
   const paneIds = useMemo(() => collectPaneIds(state.root), [state.root]);
   const swapTargets = useMemo(
     () => paneIds.filter((paneId) => paneId !== state.activePaneId),
@@ -178,7 +177,7 @@ function Toolbar({
               key={side}
               type="button"
               onClick={() => {
-                workspace.api.wrapRootInSplit({
+                controller.api.wrapRootInSplit({
                   side,
                   minWidth:
                     side === "left" || side === "right" ? 180 : undefined,
@@ -215,7 +214,7 @@ function Toolbar({
               return;
             }
 
-            workspace.api.swap(activePaneId, swapTargetId);
+            controller.api.swap(activePaneId, swapTargetId);
           }}
         >
           Swap
@@ -237,7 +236,7 @@ function PaneSlot({ ctx }: { ctx: PaneRenderContext }) {
   return <Component {...ctx} />;
 }
 
-function TextPane({ paneId, active, workspace }: PaneComponentProps) {
+function TextPane({ paneId, active, controller }: PaneComponentProps) {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -258,7 +257,7 @@ function TextPane({ paneId, active, workspace }: PaneComponentProps) {
         ref={inputRef}
         defaultValue={`This is pane "${paneId}". Focus this textbox to focus its pane.`}
         onFocus={() => {
-          workspace.api.focus(paneId);
+          controller.api.focus(paneId);
         }}
       />
     </section>

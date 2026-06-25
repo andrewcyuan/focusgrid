@@ -12,7 +12,8 @@ Focusgrid is split into three packages:
   focus behavior.
 
 @focusgrid/react
-  Thin React wrapper. Owns context, hooks, refs, and rendering helpers.
+  Thin React wrapper. Owns component instance wiring, hooks, refs, and
+  rendering helpers.
 ```
 
 Core does not import DOM or React. DOM imports core. React imports core and DOM.
@@ -23,16 +24,16 @@ The main update path is:
 
 ```txt
 browser event / command
-  -> workspace.api method
-  -> core layout operation returns new WorkspaceState
-  -> workspace listeners fire
+  -> controller.api method
+  -> core layout operation returns new FocusGridControllerState
+  -> controller listeners fire
   -> React useSyncExternalStore updates
   -> FocusGrid recomputes layout
   -> PaneView rerenders with new rect style
 ```
 
-The center of the system is `Workspace.api` in
-`packages/focusgrid-core/src/workspace.ts`. API methods run layout operations, store the
+The center of the system is `FocusGridController.api` in
+`packages/focusgrid-core/src/controller.ts`. API methods run layout operations, store the
 new state, and notify subscribers when the state object changes.
 
 ## Core Package
@@ -40,7 +41,7 @@ new state, and notify subscribers when the state object changes.
 The persistent state shape lives in `packages/focusgrid-core/src/layout/types.ts`:
 
 ```ts
-type WorkspaceState = {
+type FocusGridControllerState = {
   root: LayoutNode;
   activePaneId: PaneId | null;
   container: {
@@ -65,7 +66,7 @@ A `SplitNode` stores proportional `sizes`, not pixel rectangles. Pixel
 rectangles are derived later from the current container size.
 
 The layout operations are in `packages/focusgrid-core/src/layout/operations.ts`. The main
-workspace API operations are:
+controller API operations are:
 
 ```txt
 setContainerSize
@@ -93,14 +94,14 @@ panes.
 ## DOM Package
 
 The DOM package does not render panes. It only listens to browser events and
-dispatches workspace actions.
+dispatches controller actions.
 
 Root size changes come from `packages/focusgrid-dom/src/resize-observer.ts`:
 
 ```txt
 ResizeObserver fires
   -> dispatch container.setSize
-  -> workspace updates
+  -> controller updates
   -> React rerenders layout
 ```
 
@@ -120,49 +121,53 @@ handling and resize observation together.
 
 The React package owns the public rendering API.
 
-`FocusGridProvider` owns the workspace context and the default keymap shared by
-descendant grids:
-
-```ts
-export type FocusGridProviderProps = {
-  workspace: Workspace;
-  keymap?: KeyBinding[];
-  children: ReactNode;
-};
-```
-
-The current public render API is in `packages/focusgrid-react/src/FocusGrid.tsx`:
+`FocusGrid` is the React instance boundary. Each rendered grid receives its
+own `FocusGridController` and optional keymap directly:
 
 ```ts
 export type FocusGridProps = {
-  renderPane: (paneId: string) => ReactNode;
-  overrideKeymap?: KeyBinding[];
+  controller: FocusGridController;
+  keymap?: KeyBinding[];
+  renderPane: (ctx: PaneRenderContext) => ReactNode;
   className?: string;
+  onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
+  onPaneClose?: (event: PaneCloseEvent) => void;
 };
 ```
 
-`FocusGrid` reads the computed layout:
+There is no provider or React context in this package. Hooks that need state or
+layout take the controller explicitly:
 
 ```ts
-const layout = useComputedLayout();
+const layout = useControllerLayout(controller);
 ```
 
 Then it renders every computed pane:
 
 ```tsx
 {layout.panes.map((pane) => (
-  <PaneView key={pane.paneId} pane={pane} renderPane={renderPane} />
+  <PaneView
+    key={pane.paneId}
+    controller={controller}
+    pane={pane}
+    renderPane={renderPane}
+  />
 ))}
 ```
 
 The subscription is in `packages/focusgrid-react/src/hooks.ts`. `useSyncExternalStore`
-subscribes to `workspace.subscribe()`, so any successful dispatch causes React
+subscribes to `controller.subscribe()`, so any successful dispatch causes React
 to update.
 
 The content render call is in `packages/focusgrid-react/src/PaneView.tsx`:
 
 ```tsx
-{renderPane(pane.paneId)}
+{renderPane({
+  paneId: pane.paneId,
+  rect: pane.rect,
+  active: pane.active,
+  controller,
+})}
 ```
 
 The layout rect is applied as inline style in the same component:
@@ -175,98 +180,26 @@ const style = {
   height: pane.rect.height,
 };
 ```
-
-Today, clients do not get explicit layout data in `renderPane`, but their React
-subtree rerenders whenever layout changes because `PaneView` rerenders.
-
-## Adding Render And Layout-Change Callbacks
-
-If the goal is to let clients pass both an initial `render()` and a callback
-that runs when layout changes, the files to start with are:
-
-```txt
-packages/focusgrid-react/src/FocusGrid.tsx
-packages/focusgrid-react/src/PaneView.tsx
-packages/focusgrid-react/src/hooks.ts
-```
-
-This likely does not belong in `core`. Core already exposes layout. It also
-probably does not belong in `dom`, unless the API should support a non-React
-imperative renderer.
-
-A pragmatic React API would be:
+Lifecycle events are emitted from `FocusGrid` after comparing the previous and
+current computed pane maps:
 
 ```ts
-type PaneRenderContext = {
-  paneId: string;
-  rect: Rect;
-  active: boolean;
-  workspace: Workspace;
+type PaneLayoutChangeEvent = {
+  pane: ComputedPane;
+  previousPane: ComputedPane;
+  controller: FocusGridController;
 };
 
-type FocusGridProps = {
-  renderPane: (ctx: PaneRenderContext) => ReactNode;
-  onPaneLayoutChange?: (ctx: PaneRenderContext) => void;
-  overrideKeymap?: KeyBinding[];
-  className?: string;
+type PaneCloseEvent = {
+  paneId: PaneId;
+  previousPane: ComputedPane;
+  controller: FocusGridController;
 };
 ```
 
-`renderPane` would return React content. `onPaneLayoutChange` would perform
+`renderPane` returns React content. `onPaneLayoutChange` can perform
 imperative side effects after layout changes, such as calling `.layout()` on a
 Monaco editor, terminal, canvas, or other embedded widget.
-
-In `PaneView`, the shape would be:
-
-```ts
-useLayoutEffect(() => {
-  onPaneLayoutChange?.({
-    paneId: pane.paneId,
-    rect: pane.rect,
-    active: pane.active,
-    workspace,
-  });
-}, [
-  onPaneLayoutChange,
-  pane.paneId,
-  pane.rect.x,
-  pane.rect.y,
-  pane.rect.width,
-  pane.rect.height,
-  pane.active,
-  workspace,
-]);
-```
-
-Then the render call would change from:
-
-```tsx
-{renderPane(pane.paneId)}
-```
-
-to:
-
-```tsx
-{renderPane({
-  paneId: pane.paneId,
-  rect: pane.rect,
-  active: pane.active,
-  workspace,
-})}
-```
-
-The distinction matters:
-
-```txt
-renderPane
-  returns React content
-
-onPaneLayoutChange
-  tells imperative embedded content that its pane rect changed
-```
-
-The name `onPaneLayoutChange` is clearer than `rerenderPane`, because React
-already owns rerendering. The callback is really a layout notification hook.
 
 ## Where To Look When Debugging
 
@@ -281,7 +214,7 @@ For why layout changed, trace backward through:
 
 ```txt
 packages/focusgrid-react/src/hooks.ts
-packages/focusgrid-core/src/workspace.ts
+packages/focusgrid-core/src/controller.ts
 packages/focusgrid-core/src/layout/operations.ts
 packages/focusgrid-core/src/layout/solver.ts
 ```
@@ -296,9 +229,9 @@ packages/focusgrid-dom/src/pointer-resize.ts
 The shortest mental model is:
 
 ```txt
-FocusGrid renders from useComputedLayout()
-useComputedLayout() subscribes to Workspace
-Workspace.api methods are the state transition gate
+FocusGrid renders from useControllerLayout(controller)
+useControllerLayout(controller) subscribes to FocusGridController
+FocusGridController.api methods are the state transition gate
 layout operations change tree/container/sizes
 computeLayout() converts tree/sizes/container into pixel rects
 PaneView applies those rects and renders client content

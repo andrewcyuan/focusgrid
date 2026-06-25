@@ -4,7 +4,7 @@ import type {
   PaneSwapDirection,
 } from "../layout/types";
 import { findPaneInDirection } from "../layout/operations";
-import type { Workspace } from "../workspace";
+import type { FocusGridController } from "../controller";
 import type { DefaultPaneCommand } from "../keyboard/default-pane-keymap";
 import type { CommandHandler } from "./types";
 
@@ -25,7 +25,7 @@ export class CommandRegistry {
     };
   }
 
-  run(name: string, workspace: Workspace, args?: unknown): boolean {
+  run(name: string, controller: FocusGridController, args?: unknown): boolean {
     const handler = this.commands.get(name);
 
     if (!handler) {
@@ -34,8 +34,8 @@ export class CommandRegistry {
 
     handler(
       {
-        workspace,
-        state: workspace.getState(),
+        controller,
+        state: controller.getState(),
       },
       args,
     );
@@ -47,25 +47,25 @@ export class CommandRegistry {
 export function createDefaultCommandRegistry(): CommandRegistry {
   const commands = new CommandRegistry();
 
-  commands.register("pane.splitRight", ({ workspace, state }) => {
+  commands.register("pane.splitRight", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.api.split(active, { side: "right" });
+    controller.api.split(active, { side: "right" });
   });
 
-  commands.register("pane.splitDown", ({ workspace, state }) => {
+  commands.register("pane.splitDown", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.api.split(active, { side: "down" });
+    controller.api.split(active, { side: "down" });
   });
 
-  commands.register("pane.close", ({ workspace, state }) => {
+  commands.register("pane.close", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.api.remove(active);
+    controller.api.remove(active);
   });
 
   registerPaneResizeCommand(commands, "pane.resizeLeft", "left");
@@ -89,15 +89,15 @@ function registerPaneFocusCommand(
   name: DefaultPaneCommand,
   direction: PaneFocusDirection,
 ): void {
-  commands.register(name, ({ workspace, state }) => {
+  commands.register(name, ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    const target = findPaneInDirection(workspace.getState(), active, direction);
+    const target = findPaneInDirection(controller.getState(), active, direction);
 
     if (!target) return;
 
-    workspace.api.focus(target);
+    controller.api.focus(target);
   });
 }
 
@@ -106,15 +106,15 @@ function registerPaneSwapCommand(
   name: DefaultPaneCommand,
   direction: PaneSwapDirection,
 ): void {
-  commands.register(name, ({ workspace, state }) => {
+  commands.register(name, ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    const target = findPaneInDirection(workspace.getState(), active, direction);
+    const target = findPaneInDirection(controller.getState(), active, direction);
 
     if (!target) return;
 
-    workspace.api.swap(active, target);
+    controller.api.swap(active, target);
   });
 }
 
@@ -123,11 +123,11 @@ function registerPaneResizeCommand(
   name: DefaultPaneCommand,
   direction: PaneResizeDirection,
 ): void {
-  commands.register<PaneResizeCommandArgs>(name, ({ workspace, state }, args) => {
+  commands.register<PaneResizeCommandArgs>(name, ({ controller, state }, args) => {
     const active = state.activePaneId;
     if (!active) return;
 
-    workspace.api.resize(active, {
+    controller.api.resize(active, {
       direction,
       deltaPx: args?.deltaPx ?? DEFAULT_PANE_RESIZE_DELTA_PX,
     });

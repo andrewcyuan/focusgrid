@@ -1,5 +1,5 @@
-export { WorkspaceDomController } from "./controller";
-export type { WorkspaceDomControllerOptions } from "./controller";
+export { FocusGridDomController } from "./controller";
+export type { FocusGridDomControllerOptions } from "./controller";
 
 export { KeyboardListener, normalizeKeyboardEvent } from "./keyboard-listener";
 export type { KeyboardListenerOptions } from "./keyboard-listener";

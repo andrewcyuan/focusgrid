@@ -15,5 +15,5 @@ export type {
   PaneSwapDirection,
   Rect,
   SplitNode,
-  WorkspaceState,
+  FocusGridControllerState,
 } from "./layout/types";

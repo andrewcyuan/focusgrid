@@ -13,7 +13,7 @@ import {
   type WrapRootInSplitOptions,
 } from "./layout/operations";
 import { computeLayout } from "./layout/solver";
-import type { ComputedLayout, LayoutNode, PaneNode, WorkspaceState } from "./state";
+import type { ComputedLayout, LayoutNode, PaneNode, FocusGridControllerState } from "./state";
 import type { NodeId, PaneId } from "./layout/types";
 
 export type Listener = () => void;
@@ -23,12 +23,12 @@ export type PaneDefaults = {
   minHeight?: number;
 };
 
-export type CreateWorkspaceOptions = {
+export type CreateFocusGridControllerOptions = {
   commands?: CommandRegistry;
   paneDefaults?: PaneDefaults;
 };
 
-export type WorkspaceApi = {
+export type FocusGridControllerApi = {
   split(paneId: PaneId, options: SplitPaneOptions): PaneId | null;
   wrapRootInSplit(options: WrapRootInSplitOptions): PaneId | null;
   remove(paneId: PaneId): boolean;
@@ -45,14 +45,14 @@ export type ResizeHandleOptions = {
   snapshotSizes?: number[];
 };
 
-export class Workspace {
-  readonly api: WorkspaceApi;
+export class FocusGridController {
+  readonly api: FocusGridControllerApi;
   readonly commands: CommandRegistry;
-  private state: WorkspaceState;
+  private state: FocusGridControllerState;
   private readonly paneDefaults: PaneDefaults;
   private listeners = new Set<Listener>();
 
-  constructor(initialState: WorkspaceState, options: CreateWorkspaceOptions = {}) {
+  constructor(initialState: FocusGridControllerState, options: CreateFocusGridControllerOptions = {}) {
     this.paneDefaults = options.paneDefaults ?? {};
     this.state = applyPaneDefaultsToState(initialState, this.paneDefaults);
     this.commands = options.commands ?? createDefaultCommandRegistry();
@@ -111,7 +111,7 @@ export class Workspace {
     };
   }
 
-  getState(): WorkspaceState {
+  getState(): FocusGridControllerState {
     return this.state;
   }
 
@@ -119,7 +119,7 @@ export class Workspace {
     return computeLayout(this.state);
   }
 
-  private commit(next: WorkspaceState): boolean {
+  private commit(next: FocusGridControllerState): boolean {
     if (next === this.state) {
       return false;
     }
@@ -142,17 +142,17 @@ export class Workspace {
   }
 }
 
-export function createWorkspace(
-  initialState: WorkspaceState,
-  options?: CreateWorkspaceOptions,
-): Workspace {
-  return new Workspace(initialState, options);
+export function createFocusGridController(
+  initialState: FocusGridControllerState,
+  options?: CreateFocusGridControllerOptions,
+): FocusGridController {
+  return new FocusGridController(initialState, options);
 }
 
 function applyPaneDefaultsToState(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneDefaults: PaneDefaults,
-): WorkspaceState {
+): FocusGridControllerState {
   if (
     paneDefaults.minWidth === undefined &&
     paneDefaults.minHeight === undefined

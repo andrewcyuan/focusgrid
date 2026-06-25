@@ -4,7 +4,7 @@ import {
   cardinalDirections,
   createDefaultPaneKeymap,
   createDefaultPaneShortcuts,
-  createWorkspace,
+  createFocusGridController,
   defaultPaneShortcutActions,
   focusPane,
   focusPaneInDirection,
@@ -22,10 +22,10 @@ import {
   validateKeySequenceInput,
   wrapRootInSplit,
   type PaneFocusDirection,
-  type WorkspaceState,
+  type FocusGridControllerState,
 } from "../src";
 
-function initialState(): WorkspaceState {
+function initialState(): FocusGridControllerState {
   return {
     root: {
       kind: "pane",
@@ -43,24 +43,24 @@ function initialState(): WorkspaceState {
 }
 
 function focusDirection(
-  workspace: ReturnType<typeof createWorkspace>,
+  controller: ReturnType<typeof createFocusGridController>,
   paneId: string,
   direction: PaneFocusDirection,
 ): boolean {
-  const next = focusPaneInDirection(workspace.getState(), paneId, direction);
+  const next = focusPaneInDirection(controller.getState(), paneId, direction);
   const target = next.activePaneId;
 
-  return target !== null && workspace.api.focus(target);
+  return target !== null && controller.api.focus(target);
 }
 
-describe("workspace", () => {
+describe("controller", () => {
   it("splits panes and computes rectangles", () => {
-    const workspace = createWorkspace(initialState());
+    const controller = createFocusGridController(initialState());
 
-    workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
+    controller.api.split("editor", { side: "right", newPaneId: "terminal" });
 
-    const state = workspace.getState();
-    const layout = workspace.getComputedLayout();
+    const state = controller.getState();
+    const layout = controller.getComputedLayout();
 
     expect(state.root.kind).toBe("split");
     expect(state.activePaneId).toBe("terminal");
@@ -71,8 +71,8 @@ describe("workspace", () => {
     );
   });
 
-  it("exposes scriptable split placement through workspace.api", () => {
-    const right = createWorkspace(initialState());
+  it("exposes scriptable split placement through controller.api", () => {
+    const right = createFocusGridController(initialState());
     expect(
       right.api.split("editor", {
         side: "right",
@@ -86,7 +86,7 @@ describe("workspace", () => {
       children: [{ paneId: "editor" }, { paneId: "terminal" }],
     });
 
-    const left = createWorkspace(initialState());
+    const left = createFocusGridController(initialState());
     expect(left.api.split("editor", { side: "left", newPaneId: "nav" })).toBe(
       "nav",
     );
@@ -96,7 +96,7 @@ describe("workspace", () => {
       children: [{ paneId: "nav" }, { paneId: "editor" }],
     });
 
-    const down = createWorkspace(initialState());
+    const down = createFocusGridController(initialState());
     expect(
       down.api.split("editor", { side: "down", newPaneId: "console" }),
     ).toBe("console");
@@ -106,7 +106,7 @@ describe("workspace", () => {
       children: [{ paneId: "editor" }, { paneId: "console" }],
     });
 
-    const up = createWorkspace(initialState());
+    const up = createFocusGridController(initialState());
     expect(up.api.split("editor", { side: "up", newPaneId: "search" })).toBe(
       "search",
     );
@@ -118,7 +118,7 @@ describe("workspace", () => {
   });
 
   it("returns generated split pane ids and can preserve the active pane", () => {
-    const generated = createWorkspace(initialState());
+    const generated = createFocusGridController(initialState());
     const newPaneId = generated.api.split("editor", { side: "right" });
 
     expect(newPaneId).toEqual(expect.stringMatching(/^pane-/));
@@ -127,7 +127,7 @@ describe("workspace", () => {
       generated.getComputedLayout().panes.map((pane) => pane.paneId),
     ).toContain(newPaneId);
 
-    const preserved = createWorkspace(initialState());
+    const preserved = createFocusGridController(initialState());
     expect(
       preserved.api.split("editor", {
         side: "right",
@@ -139,7 +139,7 @@ describe("workspace", () => {
   });
 
   it("applies configured default minimum pane dimensions", () => {
-    const workspace = createWorkspace(
+    const controller = createFocusGridController(
       {
         root: {
           kind: "pane",
@@ -160,7 +160,7 @@ describe("workspace", () => {
       },
     );
 
-    expect(workspace.getState().root).toMatchObject({
+    expect(controller.getState().root).toMatchObject({
       kind: "pane",
       paneId: "editor",
       minWidth: 300,
@@ -168,12 +168,12 @@ describe("workspace", () => {
     });
 
     expect(
-      workspace.api.split("editor", {
+      controller.api.split("editor", {
         side: "right",
         newPaneId: "terminal",
       }),
     ).toBe("terminal");
-    expect(workspace.getState().root).toMatchObject({
+    expect(controller.getState().root).toMatchObject({
       kind: "split",
       children: [
         { paneId: "editor", minWidth: 300, minHeight: 200 },
@@ -182,24 +182,24 @@ describe("workspace", () => {
     });
 
     expect(
-      workspace.api.resize("editor", { direction: "right", deltaPx: -400 }),
+      controller.api.resize("editor", { direction: "right", deltaPx: -400 }),
     ).toBe(true);
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.3);
     expect(
-      workspace.api.resize("editor", { direction: "right", deltaPx: -1 }),
+      controller.api.resize("editor", { direction: "right", deltaPx: -1 }),
     ).toBe(false);
 
-    const editorPane = workspace
+    const editorPane = controller
       .getComputedLayout()
       .panes.find((pane) => pane.paneId === "editor");
     expect(editorPane?.rect.width).toBeLessThan(500);
   });
 
-  it("wraps the whole root in a split through workspace.api", () => {
-    const right = createWorkspace(initialState());
+  it("wraps the whole root in a split through controller.api", () => {
+    const right = createFocusGridController(initialState());
     expect(
       right.api.wrapRootInSplit({
         side: "right",
@@ -227,7 +227,7 @@ describe("workspace", () => {
       ],
     });
 
-    const left = createWorkspace(initialState());
+    const left = createFocusGridController(initialState());
     expect(left.api.wrapRootInSplit({ side: "left", newPaneId: "nav" })).toBe(
       "nav",
     );
@@ -237,7 +237,7 @@ describe("workspace", () => {
       children: [{ paneId: "nav" }, { paneId: "editor" }],
     });
 
-    const down = createWorkspace(initialState());
+    const down = createFocusGridController(initialState());
     expect(
       down.api.wrapRootInSplit({ side: "down", newPaneId: "console" }),
     ).toBe("console");
@@ -247,7 +247,7 @@ describe("workspace", () => {
       children: [{ paneId: "editor" }, { paneId: "console" }],
     });
 
-    const up = createWorkspace(initialState());
+    const up = createFocusGridController(initialState());
     expect(up.api.wrapRootInSplit({ side: "up", newPaneId: "search" })).toBe(
       "search",
     );
@@ -259,7 +259,7 @@ describe("workspace", () => {
   });
 
   it("uses pane defaults for wrapped panes unless wrap options override them", () => {
-    const defaulted = createWorkspace(initialState(), {
+    const defaulted = createFocusGridController(initialState(), {
       paneDefaults: {
         minWidth: 240,
         minHeight: 160,
@@ -280,7 +280,7 @@ describe("workspace", () => {
       ],
     });
 
-    const overridden = createWorkspace(initialState(), {
+    const overridden = createFocusGridController(initialState(), {
       paneDefaults: {
         minWidth: 240,
         minHeight: 160,
@@ -304,18 +304,18 @@ describe("workspace", () => {
   });
 
   it("wraps an existing split root as one child and can preserve active focus", () => {
-    const workspace = createWorkspace(horizontalSplitState());
-    const oldRoot = workspace.getState().root;
+    const controller = createFocusGridController(horizontalSplitState());
+    const oldRoot = controller.getState().root;
 
     expect(
-      workspace.api.wrapRootInSplit({
+      controller.api.wrapRootInSplit({
         side: "left",
         newPaneId: "activity",
         preserveActivePane: true,
       }),
     ).toBe("activity");
 
-    const state = workspace.getState();
+    const state = controller.getState();
     expect(state.activePaneId).toBe("left");
     expect(state.root).toMatchObject({
       kind: "split",
@@ -326,7 +326,7 @@ describe("workspace", () => {
   });
 
   it("returns generated root wrapper pane ids and preserves state on duplicates", () => {
-    const generated = createWorkspace(initialState());
+    const generated = createFocusGridController(initialState());
     const newPaneId = generated.api.wrapRootInSplit({ side: "right" });
 
     expect(newPaneId).toEqual(expect.stringMatching(/^pane-/));
@@ -335,7 +335,7 @@ describe("workspace", () => {
       generated.getComputedLayout().panes.map((pane) => pane.paneId),
     ).toContain(newPaneId);
 
-    const duplicatePaneId = createWorkspace(horizontalSplitState());
+    const duplicatePaneId = createFocusGridController(horizontalSplitState());
     const beforeDuplicatePaneId = duplicatePaneId.getState();
 
     expect(
@@ -347,8 +347,8 @@ describe("workspace", () => {
     expect(duplicatePaneId.getState()).toBe(beforeDuplicatePaneId);
   });
 
-  it("returns null and preserves state when workspace.api.split cannot split", () => {
-    const missingTarget = createWorkspace(initialState());
+  it("returns null and preserves state when controller.api.split cannot split", () => {
+    const missingTarget = createFocusGridController(initialState());
     const beforeMissingTarget = missingTarget.getState();
 
     expect(
@@ -359,7 +359,7 @@ describe("workspace", () => {
     ).toBeNull();
     expect(missingTarget.getState()).toBe(beforeMissingTarget);
 
-    const duplicatePaneId = createWorkspace(horizontalSplitState());
+    const duplicatePaneId = createFocusGridController(horizontalSplitState());
     const beforeDuplicatePaneId = duplicatePaneId.getState();
 
     expect(
@@ -372,20 +372,20 @@ describe("workspace", () => {
   });
 
   it("splits when there is no active pane without inventing focus memory", () => {
-    const workspace = createWorkspace({
+    const controller = createFocusGridController({
       ...initialState(),
       activePaneId: null,
     });
 
     expect(
-      workspace.api.split("editor", {
+      controller.api.split("editor", {
         side: "right",
         newPaneId: "terminal",
         preserveActivePane: true,
       }),
     ).toBe("terminal");
-    expect(workspace.getState().activePaneId).toBeNull();
-    expect(workspace.getState().root).toMatchObject({
+    expect(controller.getState().activePaneId).toBeNull();
+    expect(controller.getState().root).toMatchObject({
       kind: "split",
       direction: "horizontal",
       children: [{ paneId: "editor" }, { paneId: "terminal" }],
@@ -428,17 +428,17 @@ describe("workspace", () => {
   });
 
   it("closes a pane and collapses a single-child split", () => {
-    const workspace = createWorkspace(initialState());
+    const controller = createFocusGridController(initialState());
 
-    workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
-    workspace.api.remove("terminal");
+    controller.api.split("editor", { side: "right", newPaneId: "terminal" });
+    controller.api.remove("terminal");
 
-    expect(workspace.getState().root.kind).toBe("pane");
-    expect(workspace.getState().activePaneId).toBe("editor");
+    expect(controller.getState().root.kind).toBe("pane");
+    expect(controller.getState().activePaneId).toBe("editor");
   });
 
-  it("exposes scriptable pane removal through workspace.api", () => {
-    const removeActive = createWorkspace(horizontalSplitState());
+  it("exposes scriptable pane removal through controller.api", () => {
+    const removeActive = createFocusGridController(horizontalSplitState());
 
     expect(removeActive.api.remove("left")).toBe(true);
     expect(removeActive.getState().root).toMatchObject({
@@ -447,33 +447,33 @@ describe("workspace", () => {
     });
     expect(removeActive.getState().activePaneId).toBe("right");
 
-    const removeInactive = createWorkspace(horizontalSplitState());
+    const removeInactive = createFocusGridController(horizontalSplitState());
     expect(removeInactive.api.remove("right")).toBe(true);
     expect(removeInactive.getState().activePaneId).toBe("left");
 
-    const missing = createWorkspace(horizontalSplitState());
+    const missing = createFocusGridController(horizontalSplitState());
     const beforeMissing = missing.getState();
     expect(missing.api.remove("missing")).toBe(false);
     expect(missing.getState()).toBe(beforeMissing);
 
-    const last = createWorkspace(initialState());
+    const last = createFocusGridController(initialState());
     expect(last.api.remove("editor")).toBe(false);
     expect(last.getState().activePaneId).toBe("editor");
   });
 
   it("removes nested panes without preserving stale directional focus memory", () => {
-    const workspace = createWorkspace(verticalMiddleTrifoldState());
+    const controller = createFocusGridController(verticalMiddleTrifoldState());
 
-    workspace.api.focus("middle-top");
-    expect(workspace.api.remove("middle-top")).toBe(true);
+    controller.api.focus("middle-top");
+    expect(controller.api.remove("middle-top")).toBe(true);
 
-    focusDirection(workspace, "left", "right");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("middle-bottom");
+    expect(controller.getState().activePaneId).toBe("middle-bottom");
   });
 
   it("swaps pane content while preserving layout slots", () => {
-    const workspace = createWorkspace({
+    const controller = createFocusGridController({
       root: {
         kind: "split",
         id: "root",
@@ -503,9 +503,9 @@ describe("workspace", () => {
       },
     });
 
-    workspace.api.swap("left", "right");
+    controller.api.swap("left", "right");
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes).toEqual([0.25, 0.75]);
 
@@ -526,19 +526,19 @@ describe("workspace", () => {
       data: { title: "Left" },
     });
 
-    const layout = workspace.getComputedLayout();
+    const layout = controller.getComputedLayout();
     const leftPane = layout.panes.find((pane) => pane.paneId === "left");
     const rightPane = layout.panes.find((pane) => pane.paneId === "right");
     expect(leftPane?.active).toBe(true);
     expect(leftPane!.rect.x).toBeGreaterThan(rightPane!.rect.x);
   });
 
-  it("exposes scriptable pane swapping through workspace.api", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+  it("exposes scriptable pane swapping through controller.api", () => {
+    const controller = createFocusGridController(horizontalSplitState());
 
-    expect(workspace.api.swap("left", "right")).toBe(true);
-    expect(workspace.getState().activePaneId).toBe("left");
-    expect(workspace.getState().root).toMatchObject({
+    expect(controller.api.swap("left", "right")).toBe(true);
+    expect(controller.getState().activePaneId).toBe("left");
+    expect(controller.getState().root).toMatchObject({
       kind: "split",
       sizes: [0.5, 0.5],
       children: [
@@ -547,24 +547,24 @@ describe("workspace", () => {
       ],
     });
 
-    expect(workspace.api.swap("left", "left")).toBe(false);
-    expect(workspace.api.swap("left", "missing")).toBe(false);
+    expect(controller.api.swap("left", "left")).toBe(false);
+    expect(controller.api.swap("left", "missing")).toBe(false);
   });
 
-  it("returns false and preserves state when workspace.api.swap cannot swap", () => {
-    const samePane = createWorkspace(horizontalSplitState());
+  it("returns false and preserves state when controller.api.swap cannot swap", () => {
+    const samePane = createFocusGridController(horizontalSplitState());
     const beforeSamePane = samePane.getState();
 
     expect(samePane.api.swap("left", "left")).toBe(false);
     expect(samePane.getState()).toBe(beforeSamePane);
 
-    const firstMissing = createWorkspace(horizontalSplitState());
+    const firstMissing = createFocusGridController(horizontalSplitState());
     const beforeFirstMissing = firstMissing.getState();
 
     expect(firstMissing.api.swap("missing", "right")).toBe(false);
     expect(firstMissing.getState()).toBe(beforeFirstMissing);
 
-    const bothMissing = createWorkspace(horizontalSplitState());
+    const bothMissing = createFocusGridController(horizontalSplitState());
     const beforeBothMissing = bothMissing.getState();
 
     expect(bothMissing.api.swap("missing-a", "missing-b")).toBe(false);
@@ -665,62 +665,62 @@ describe("workspace", () => {
   });
 
   it("resizes a handle from a snapshot", () => {
-    const workspace = createWorkspace(initialState());
+    const controller = createFocusGridController(initialState());
 
-    workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
+    controller.api.split("editor", { side: "right", newPaneId: "terminal" });
 
-    const split = workspace.getState().root;
+    const split = controller.getState().root;
     expect(split.kind).toBe("split");
 
-    workspace.api.resizeHandle(split.id, {
+    controller.api.resizeHandle(split.id, {
       index: 0,
       deltaPx: 100,
       snapshotSizes: [0.5, 0.5],
     });
 
-    const next = workspace.getState().root;
+    const next = controller.getState().root;
     expect(next.kind).toBe("split");
     expect(next.sizes[0]).toBeCloseTo(0.6);
     expect(next.sizes[1]).toBeCloseTo(0.4);
   });
 
   it("resizes a pane horizontally toward an adjacent pane", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+    const controller = createFocusGridController(horizontalSplitState());
 
-    workspace.api.resize("left", {
+    controller.api.resize("left", {
       direction: "right",
       deltaPx: 100,
     });
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.6);
     expect(root.sizes[1]).toBeCloseTo(0.4);
   });
 
   it("resizes a pane vertically toward an adjacent pane", () => {
-    const workspace = createWorkspace(verticalSplitState());
+    const controller = createFocusGridController(verticalSplitState());
 
-    workspace.api.resize("bottom", {
+    controller.api.resize("bottom", {
       direction: "up",
       deltaPx: 60,
     });
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.4);
     expect(root.sizes[1]).toBeCloseTo(0.6);
   });
 
   it("uses the nearest matching ancestor boundary for pane resize", () => {
-    const workspace = createWorkspace(nestedHorizontalState());
+    const controller = createFocusGridController(nestedHorizontalState());
 
-    workspace.api.resize("middle", {
+    controller.api.resize("middle", {
       direction: "right",
       deltaPx: 100,
     });
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes).toEqual([0.5, 0.5]);
 
@@ -861,7 +861,7 @@ describe("workspace", () => {
   });
 
   it("clamps pane resize to adjacent minimum sizes", () => {
-    const workspace = createWorkspace({
+    const controller = createFocusGridController({
       ...horizontalSplitState(),
       root: {
         kind: "split",
@@ -885,27 +885,27 @@ describe("workspace", () => {
       },
     });
 
-    workspace.api.resize("left", {
+    controller.api.resize("left", {
       direction: "right",
       deltaPx: 300,
     });
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.6);
     expect(root.sizes[1]).toBeCloseTo(0.4);
   });
 
   it("uses the target split axis size for nested handle resize", () => {
-    const workspace = createWorkspace(nestedHandleState());
+    const controller = createFocusGridController(nestedHandleState());
 
-    workspace.api.resizeHandle("inner", {
+    controller.api.resizeHandle("inner", {
       index: 0,
       deltaPx: 24,
       snapshotSizes: [0.5, 0.5],
     });
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
 
     const inner = root.children[0]!;
@@ -915,8 +915,8 @@ describe("workspace", () => {
   });
 
   it("refits nested split sizes when resizing a parent handle", () => {
-    const workspace = createWorkspace(nestedHandleWithPinnedChildState());
-    const before = workspace.getComputedLayout().panes;
+    const controller = createFocusGridController(nestedHandleWithPinnedChildState());
+    const before = controller.getComputedLayout().panes;
     const beforeOne = before.find((pane) => pane.paneId === "one")!;
     const beforeTwo = before.find((pane) => pane.paneId === "two")!;
     const beforeThree = before.find((pane) => pane.paneId === "three")!;
@@ -924,14 +924,14 @@ describe("workspace", () => {
     expect(beforeTwo.rect.width).toBeGreaterThanOrEqual(180);
 
     expect(
-      workspace.api.resizeHandle("root", {
+      controller.api.resizeHandle("root", {
         index: 0,
         deltaPx: -100,
         snapshotSizes: [0.75, 0.25],
       }),
     ).toBe(true);
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.673077);
     expect(root.sizes[1]).toBeCloseTo(0.326923);
@@ -939,7 +939,7 @@ describe("workspace", () => {
     const inner = root.children[0]!;
     expect(inner.kind).toBe("split");
 
-    const after = workspace.getComputedLayout().panes;
+    const after = controller.getComputedLayout().panes;
     const afterOne = after.find((pane) => pane.paneId === "one")!;
     const afterTwo = after.find((pane) => pane.paneId === "two")!;
     const afterThree = after.find((pane) => pane.paneId === "three")!;
@@ -951,34 +951,34 @@ describe("workspace", () => {
   });
 
   it("runs default pane resize commands against the active pane", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+    const controller = createFocusGridController(horizontalSplitState());
 
     expect(
-      workspace.commands.run("pane.resizeRight", workspace, { deltaPx: 48 }),
+      controller.commands.run("pane.resizeRight", controller, { deltaPx: 48 }),
     ).toBe(true);
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.548);
     expect(root.sizes[1]).toBeCloseTo(0.452);
   });
 
-  it("exposes scriptable pane resize and focus through workspace.api", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+  it("exposes scriptable pane resize and focus through controller.api", () => {
+    const controller = createFocusGridController(horizontalSplitState());
 
     expect(
-      workspace.api.resize("left", { direction: "right", deltaPx: 100 }),
+      controller.api.resize("left", { direction: "right", deltaPx: 100 }),
     ).toBe(true);
-    expect(workspace.api.focus("right")).toBe(true);
-    expect(workspace.getState().activePaneId).toBe("right");
-    expect(workspace.api.focus("missing")).toBe(false);
+    expect(controller.api.focus("right")).toBe(true);
+    expect(controller.getState().activePaneId).toBe("right");
+    expect(controller.api.focus("missing")).toBe(false);
     expect(
-      workspace.api.resize("missing", { direction: "right", deltaPx: 100 }),
+      controller.api.resize("missing", { direction: "right", deltaPx: 100 }),
     ).toBe(false);
   });
 
-  it("returns false and preserves state for no-op workspace.api.resize calls", () => {
-    const zeroDelta = createWorkspace(horizontalSplitState());
+  it("returns false and preserves state for no-op controller.api.resize calls", () => {
+    const zeroDelta = createFocusGridController(horizontalSplitState());
     const beforeZeroDelta = zeroDelta.getState();
 
     expect(
@@ -986,7 +986,7 @@ describe("workspace", () => {
     ).toBe(false);
     expect(zeroDelta.getState()).toBe(beforeZeroDelta);
 
-    const noBoundary = createWorkspace(horizontalSplitState());
+    const noBoundary = createFocusGridController(horizontalSplitState());
     const beforeNoBoundary = noBoundary.getState();
 
     expect(
@@ -994,7 +994,7 @@ describe("workspace", () => {
     ).toBe(false);
     expect(noBoundary.getState()).toBe(beforeNoBoundary);
 
-    const zeroContainer = createWorkspace({
+    const zeroContainer = createFocusGridController({
       ...horizontalSplitState(),
       container: {
         width: 0,
@@ -1009,41 +1009,41 @@ describe("workspace", () => {
     expect(zeroContainer.getState()).toBe(beforeZeroContainer);
   });
 
-  it("treats negative workspace.api.resize deltas as inverse movement", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+  it("treats negative controller.api.resize deltas as inverse movement", () => {
+    const controller = createFocusGridController(horizontalSplitState());
 
     expect(
-      workspace.api.resize("left", { direction: "right", deltaPx: -100 }),
+      controller.api.resize("left", { direction: "right", deltaPx: -100 }),
     ).toBe(true);
 
-    const root = workspace.getState().root;
+    const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.4);
     expect(root.sizes[1]).toBeCloseTo(0.6);
   });
 
-  it("keeps directional focus command-only instead of exposing it on workspace.api", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+  it("keeps directional focus command-only instead of exposing it on controller.api", () => {
+    const controller = createFocusGridController(horizontalSplitState());
 
-    expect("focusDirection" in workspace.api).toBe(false);
-    expect(workspace.commands.run("pane.focusRight", workspace)).toBe(true);
-    expect(workspace.getState().activePaneId).toBe("right");
+    expect("focusDirection" in controller.api).toBe(false);
+    expect(controller.commands.run("pane.focusRight", controller)).toBe(true);
+    expect(controller.getState().activePaneId).toBe("right");
   });
 
-  it("returns false and preserves state for no-op workspace.api.focus calls", () => {
-    const alreadyFocused = createWorkspace(initialState());
+  it("returns false and preserves state for no-op controller.api.focus calls", () => {
+    const alreadyFocused = createFocusGridController(initialState());
     const beforeAlreadyFocused = alreadyFocused.getState();
 
     expect(alreadyFocused.api.focus("editor")).toBe(false);
     expect(alreadyFocused.getState()).toBe(beforeAlreadyFocused);
 
-    const missing = createWorkspace(initialState());
+    const missing = createFocusGridController(initialState());
     const beforeMissing = missing.getState();
 
     expect(missing.api.focus("missing")).toBe(false);
     expect(missing.getState()).toBe(beforeMissing);
 
-    const noActivePane = createWorkspace({
+    const noActivePane = createFocusGridController({
       ...initialState(),
       activePaneId: null,
     });
@@ -1053,96 +1053,96 @@ describe("workspace", () => {
   });
 
   it("focuses horizontally adjacent panes", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+    const controller = createFocusGridController(horizontalSplitState());
 
-    focusDirection(workspace, "left", "right");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("right");
+    expect(controller.getState().activePaneId).toBe("right");
 
-    focusDirection(workspace, "right", "left");
+    focusDirection(controller, "right", "left");
 
-    expect(workspace.getState().activePaneId).toBe("left");
+    expect(controller.getState().activePaneId).toBe("left");
   });
 
   it("focuses vertically adjacent panes", () => {
-    const workspace = createWorkspace(verticalSplitState());
+    const controller = createFocusGridController(verticalSplitState());
 
-    focusDirection(workspace, "bottom", "up");
+    focusDirection(controller, "bottom", "up");
 
-    expect(workspace.getState().activePaneId).toBe("top");
+    expect(controller.getState().activePaneId).toBe("top");
 
-    focusDirection(workspace, "top", "down");
+    focusDirection(controller, "top", "down");
 
-    expect(workspace.getState().activePaneId).toBe("bottom");
+    expect(controller.getState().activePaneId).toBe("bottom");
   });
 
   it("chooses the closest edge pane in a nested directional sibling", () => {
-    const workspace = createWorkspace(nestedDirectionalFocusState());
+    const controller = createFocusGridController(nestedDirectionalFocusState());
 
-    focusDirection(workspace, "left", "right");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("lower-right");
+    expect(controller.getState().activePaneId).toBe("lower-right");
   });
 
   it("remembers the last focused pane inside an ambiguous directional split", () => {
-    const workspace = createWorkspace(verticalMiddleTrifoldState());
+    const controller = createFocusGridController(verticalMiddleTrifoldState());
 
-    workspace.api.focus("middle-top");
-    focusDirection(workspace, "middle-top", "left");
-    focusDirection(workspace, "left", "right");
+    controller.api.focus("middle-top");
+    focusDirection(controller, "middle-top", "left");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("middle-top");
+    expect(controller.getState().activePaneId).toBe("middle-top");
 
-    workspace.api.focus("middle-bottom");
-    focusDirection(workspace, "middle-bottom", "right");
-    focusDirection(workspace, "right", "left");
+    controller.api.focus("middle-bottom");
+    focusDirection(controller, "middle-bottom", "right");
+    focusDirection(controller, "right", "left");
 
-    expect(workspace.getState().activePaneId).toBe("middle-bottom");
+    expect(controller.getState().activePaneId).toBe("middle-bottom");
   });
 
   it("keeps the closest entering edge ahead of remembered split focus", () => {
-    const workspace = createWorkspace(horizontalTargetWithStaleMemoryState());
+    const controller = createFocusGridController(horizontalTargetWithStaleMemoryState());
 
-    focusDirection(workspace, "left", "right");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("near");
+    expect(controller.getState().activePaneId).toBe("near");
   });
 
   it("ignores stale split focus memory after a remembered pane is closed", () => {
-    const workspace = createWorkspace(verticalMiddleTrifoldState());
+    const controller = createFocusGridController(verticalMiddleTrifoldState());
 
-    workspace.api.focus("middle-top");
-    workspace.api.remove("middle-top");
-    focusDirection(workspace, "left", "right");
+    controller.api.focus("middle-top");
+    controller.api.remove("middle-top");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("middle-bottom");
+    expect(controller.getState().activePaneId).toBe("middle-bottom");
   });
 
   it("marks a newly split pane as focused in split memory", () => {
-    const workspace = createWorkspace(verticalMiddleTrifoldState());
+    const controller = createFocusGridController(verticalMiddleTrifoldState());
 
-    workspace.api.split("middle-top", {
+    controller.api.split("middle-top", {
       side: "down",
       newPaneId: "middle-top-bottom",
     });
-    focusDirection(workspace, "middle-top-bottom", "left");
-    focusDirection(workspace, "left", "right");
+    focusDirection(controller, "middle-top-bottom", "left");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("middle-top-bottom");
+    expect(controller.getState().activePaneId).toBe("middle-top-bottom");
   });
 
   it("uses nested split memory when geometry would pick another pane in the branch", () => {
-    const workspace = createWorkspace(verticalMiddleTrifoldState());
+    const controller = createFocusGridController(verticalMiddleTrifoldState());
 
-    workspace.api.split("middle-top", {
+    controller.api.split("middle-top", {
       side: "down",
       newPaneId: "middle-top-bottom",
     });
-    workspace.api.focus("middle-top");
-    focusDirection(workspace, "middle-top", "left");
-    focusDirection(workspace, "left", "right");
+    controller.api.focus("middle-top");
+    focusDirection(controller, "middle-top", "left");
+    focusDirection(controller, "left", "right");
 
-    expect(workspace.getState().activePaneId).toBe("middle-top");
+    expect(controller.getState().activePaneId).toBe("middle-top");
   });
 
   it("returns the same state when no directional sibling matches", () => {
@@ -1154,19 +1154,19 @@ describe("workspace", () => {
   });
 
   it("runs default pane directional focus commands against the active pane", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+    const controller = createFocusGridController(horizontalSplitState());
 
-    expect(workspace.commands.run("pane.focusRight", workspace)).toBe(true);
+    expect(controller.commands.run("pane.focusRight", controller)).toBe(true);
 
-    expect(workspace.getState().activePaneId).toBe("right");
+    expect(controller.getState().activePaneId).toBe("right");
   });
 
   it("runs default pane directional swap commands against the active pane", () => {
-    const workspace = createWorkspace(horizontalSplitState());
+    const controller = createFocusGridController(horizontalSplitState());
 
-    expect(workspace.commands.run("pane.swapRight", workspace)).toBe(true);
+    expect(controller.commands.run("pane.swapRight", controller)).toBe(true);
 
-    const state = workspace.getState();
+    const state = controller.getState();
     expect(state.activePaneId).toBe("left");
     expect(state.root.kind).toBe("split");
     expect(state.root.children[0]).toMatchObject({ paneId: "right" });
@@ -1174,7 +1174,7 @@ describe("workspace", () => {
   });
 });
 
-function horizontalSplitState(): WorkspaceState {
+function horizontalSplitState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1202,7 +1202,7 @@ function horizontalSplitState(): WorkspaceState {
   };
 }
 
-function verticalSplitState(): WorkspaceState {
+function verticalSplitState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1230,7 +1230,7 @@ function verticalSplitState(): WorkspaceState {
   };
 }
 
-function leftNestedTrifoldState(): WorkspaceState {
+function leftNestedTrifoldState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1271,7 +1271,7 @@ function leftNestedTrifoldState(): WorkspaceState {
   };
 }
 
-function nestedHorizontalState(): WorkspaceState {
+function nestedHorizontalState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1312,7 +1312,7 @@ function nestedHorizontalState(): WorkspaceState {
   };
 }
 
-function nestedHandleState(): WorkspaceState {
+function nestedHandleState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1353,7 +1353,7 @@ function nestedHandleState(): WorkspaceState {
   };
 }
 
-function nestedHandleWithPinnedChildState(): WorkspaceState {
+function nestedHandleWithPinnedChildState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1397,7 +1397,7 @@ function nestedHandleWithPinnedChildState(): WorkspaceState {
   };
 }
 
-function nestedDirectionalFocusState(): WorkspaceState {
+function nestedDirectionalFocusState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1438,7 +1438,7 @@ function nestedDirectionalFocusState(): WorkspaceState {
   };
 }
 
-function verticalMiddleTrifoldState(): WorkspaceState {
+function verticalMiddleTrifoldState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -1484,7 +1484,7 @@ function verticalMiddleTrifoldState(): WorkspaceState {
   };
 }
 
-function horizontalTargetWithStaleMemoryState(): WorkspaceState {
+function horizontalTargetWithStaleMemoryState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",

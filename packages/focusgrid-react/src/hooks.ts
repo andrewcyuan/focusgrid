@@ -1,57 +1,41 @@
-import { useContext, useRef, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import {
-  createWorkspace,
+  createFocusGridController,
   type ComputedLayout,
-  type CreateWorkspaceOptions,
-  type KeyBinding,
-  type Workspace,
-  type WorkspaceState,
+  type CreateFocusGridControllerOptions,
+  type FocusGridController,
+  type FocusGridControllerState,
 } from "@focusgrid/core";
-import { FocusGridContext } from "./FocusGridProvider";
 
-export function useFocusGridWorkspace(
-  createInitialState: () => WorkspaceState,
-  options?: CreateWorkspaceOptions,
-): Workspace {
-  const workspaceRef = useRef<Workspace | null>(null);
+export function useFocusGridController(
+  createInitialState: () => FocusGridControllerState,
+  options?: CreateFocusGridControllerOptions,
+): FocusGridController {
+  const controllerRef = useRef<FocusGridController | null>(null);
 
-  if (!workspaceRef.current) {
-    workspaceRef.current = createWorkspace(createInitialState(), options);
+  if (!controllerRef.current) {
+    controllerRef.current = createFocusGridController(
+      createInitialState(),
+      options,
+    );
   }
 
-  return workspaceRef.current;
+  return controllerRef.current;
 }
 
-export function useFocusGridKeymap(): KeyBinding[] | undefined {
-  return useFocusGridContext().keymap;
-}
-
-export function useWorkspace(): Workspace {
-  return useFocusGridContext().workspace;
-}
-
-function useFocusGridContext() {
-  const context = useContext(FocusGridContext);
-
-  if (!context) {
-    throw new Error("FocusGrid hooks must be used inside <FocusGridProvider>");
-  }
-
-  return context;
-}
-
-export function useWorkspaceState(): WorkspaceState {
-  const workspace = useWorkspace();
-
+export function useControllerState(
+  controller: FocusGridController,
+): FocusGridControllerState {
   return useSyncExternalStore(
-    workspace.subscribe.bind(workspace),
-    workspace.getState.bind(workspace),
-    workspace.getState.bind(workspace),
+    controller.subscribe.bind(controller),
+    controller.getState.bind(controller),
+    controller.getState.bind(controller),
   );
 }
 
-export function useComputedLayout(): ComputedLayout {
-  const workspace = useWorkspace();
-  useWorkspaceState();
-  return workspace.getComputedLayout();
+export function useControllerLayout(
+  controller: FocusGridController,
+): ComputedLayout {
+  useControllerState(controller);
+  return controller.getComputedLayout();
 }

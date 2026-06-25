@@ -1,20 +1,19 @@
 import type { CSSProperties } from "react";
 import { useEffect, useMemo } from "react";
-import type { ComputedHandle } from "@focusgrid/core";
+import type { ComputedHandle, FocusGridController } from "@focusgrid/core";
 import { PointerResizeController } from "@focusgrid/dom";
-import { useWorkspace } from "./hooks";
 
 export type ResizeHandleProps = {
+  controller: FocusGridController;
   handle: ComputedHandle;
 };
 
-export function ResizeHandle({ handle }: ResizeHandleProps) {
-  const workspace = useWorkspace();
-  const controller = useMemo(
-    () => new PointerResizeController(workspace),
-    [workspace],
+export function ResizeHandle({ controller, handle }: ResizeHandleProps) {
+  const resizeController = useMemo(
+    () => new PointerResizeController(controller),
+    [controller],
   );
-  useEffect(() => () => controller.destroy(), [controller]);
+  useEffect(() => () => resizeController.destroy(), [resizeController]);
 
   const style: CSSProperties = {
     left: handle.rect.x,
@@ -31,7 +30,11 @@ export function ResizeHandle({ handle }: ResizeHandleProps) {
       role="separator"
       aria-orientation={handle.direction === "horizontal" ? "vertical" : "horizontal"}
       onPointerDown={(event) =>
-        controller.startResize(event.nativeEvent, handle, event.currentTarget)
+        resizeController.startResize(
+          event.nativeEvent,
+          handle,
+          event.currentTarget,
+        )
       }
     />
   );

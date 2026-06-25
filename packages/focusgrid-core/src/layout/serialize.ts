@@ -1,9 +1,13 @@
-import type { WorkspaceState } from "./types";
+import type { FocusGridControllerState } from "./types";
 
-export function serializeWorkspace(state: WorkspaceState): string {
+export function serializeFocusGridControllerState(
+  state: FocusGridControllerState,
+): string {
   return JSON.stringify(state);
 }
 
-export function deserializeWorkspace(serialized: string): WorkspaceState {
-  return JSON.parse(serialized) as WorkspaceState;
+export function deserializeFocusGridControllerState(
+  serialized: string,
+): FocusGridControllerState {
+  return JSON.parse(serialized) as FocusGridControllerState;
 }

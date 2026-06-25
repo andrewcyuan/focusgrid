@@ -1,7 +1,7 @@
 import {
   findSplitNode,
   type ComputedHandle,
-  type Workspace,
+  type FocusGridController,
 } from "@focusgrid/core";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
@@ -36,7 +36,7 @@ export class PointerResizeController {
     this.endResize(event);
   };
 
-  constructor(private readonly workspace: Workspace) {}
+  constructor(private readonly controller: FocusGridController) {}
 
   startResize(
     event: PointerEvent,
@@ -49,7 +49,7 @@ export class PointerResizeController {
     const ownerDocument = this.resolveOwnerDocument(event, captureTarget);
     const pointerCaptureTarget = this.resolveCaptureTarget(captureTarget);
 
-    const split = findSplitNode(this.workspace.getState().root, handle.splitId);
+    const split = findSplitNode(this.controller.getState().root, handle.splitId);
 
     this.drag = {
       pointerId: event.pointerId,
@@ -71,7 +71,7 @@ export class PointerResizeController {
       return;
     }
 
-    const split = findSplitNode(this.workspace.getState().root, this.drag.splitId);
+    const split = findSplitNode(this.controller.getState().root, this.drag.splitId);
 
     if (!split) {
       return;
@@ -135,11 +135,11 @@ export class PointerResizeController {
       return;
     }
 
-    if (!findSplitNode(this.workspace.getState().root, this.drag.splitId)) {
+    if (!findSplitNode(this.controller.getState().root, this.drag.splitId)) {
       return;
     }
 
-    this.workspace.api.resizeHandle(this.drag.splitId, {
+    this.controller.api.resizeHandle(this.drag.splitId, {
       index: this.drag.index,
       deltaPx: this.pendingDeltaPx,
       snapshotSizes: this.drag.startSizes,

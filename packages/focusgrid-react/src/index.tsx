@@ -1,6 +1,3 @@
-export { FocusGridProvider } from "./FocusGridProvider";
-export type { FocusGridProviderProps } from "./FocusGridProvider";
-
 export { FocusGrid } from "./FocusGrid";
 export type { FocusGridProps } from "./FocusGrid";
 export type { PaneCloseEvent, PaneLayoutChangeEvent } from "./lifecycle";
@@ -17,9 +14,7 @@ export { ResizeHandle } from "./ResizeHandle";
 export type { ResizeHandleProps } from "./ResizeHandle";
 
 export {
-  useComputedLayout,
-  useFocusGridKeymap,
-  useFocusGridWorkspace,
-  useWorkspace,
-  useWorkspaceState,
+  useControllerLayout,
+  useControllerState,
+  useFocusGridController,
 } from "./hooks";

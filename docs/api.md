@@ -1,16 +1,16 @@
 # API
 
 The functions meant to be used in a scriptable / programmatic way, as opposed
-to human input. These functions live on `workspace.api` after creating a
-workspace with `createWorkspace()`.
+to human input. These functions live on `controller.api` after creating a
+controller with `createFocusGridController()`.
 
 ```ts
-import { createWorkspace } from "@focusgrid/core";
+import { createFocusGridController } from "@focusgrid/core";
 
-const workspace = createWorkspace(initialState);
-workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
+const controller = createFocusGridController(initialState);
+controller.api.split("editor", { side: "right", newPaneId: "terminal" });
 
-const workspaceWithMinimums = createWorkspace(initialState, {
+const controllerWithMinimums = createFocusGridController(initialState, {
   paneDefaults: {
     minWidth: 240,
     minHeight: 160,
@@ -31,7 +31,7 @@ type PaneDefaults = {
   minHeight?: number;
 };
 
-type CreateWorkspaceOptions = {
+type CreateFocusGridControllerOptions = {
   commands?: CommandRegistry;
   paneDefaults?: PaneDefaults;
 };
@@ -59,11 +59,11 @@ type ResizePaneOptions = {
 
 `paneDefaults` sets minimum dimensions for panes that do not already specify
 `minWidth` or `minHeight`. Defaults are applied to the initial layout, inherited
-by panes created through `workspace.api.split()`, and used for panes inserted
-through `workspace.api.wrapRootInSplit()` unless that call supplies explicit
+by panes created through `controller.api.split()`, and used for panes inserted
+through `controller.api.wrapRootInSplit()` unless that call supplies explicit
 minimums.
 
-## `workspace.api.split(paneId, options)`
+## `controller.api.split(paneId, options)`
 
 ```ts
 split(paneId: PaneId, options: SplitPaneOptions): PaneId | null;
@@ -75,7 +75,7 @@ the new pane id when the split succeeds and `null` when `paneId` does not
 exist or `options.newPaneId` already belongs to another pane. By default the
 new pane becomes active, unless `preserveActivePane: true` is provided.
 
-## `workspace.api.wrapRootInSplit(options)`
+## `controller.api.wrapRootInSplit(options)`
 
 ```ts
 wrapRootInSplit(options: WrapRootInSplitOptions): PaneId | null;
@@ -88,18 +88,18 @@ succeeds and `null` when `options.newPaneId` already belongs to another pane.
 By default the new pane becomes active, unless `preserveActivePane: true` is
 provided. `minWidth`, `minHeight`, and `data` are copied onto the inserted pane.
 
-## `workspace.api.remove(paneId)`
+## `controller.api.remove(paneId)`
 
 ```ts
 remove(paneId: PaneId): boolean;
 ```
 
-Removes `paneId` from the workspace and collapses any split that would be left
+Removes `paneId` from the controller and collapses any split that would be left
 with a single child. It returns `true` when the pane was removed and `false`
 when the pane does not exist or is the last remaining pane. If the removed pane
 was active, the first remaining pane becomes active.
 
-## `workspace.api.swap(firstPaneId, secondPaneId)`
+## `controller.api.swap(firstPaneId, secondPaneId)`
 
 ```ts
 swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean;
@@ -110,7 +110,7 @@ tree, split sizes, and pane node ids. It returns `true` when both pane ids exist
 and are different, otherwise `false`. The active pane id is preserved, so focus
 follows the pane content after the swap.
 
-## `workspace.api.resize(paneId, options)`
+## `controller.api.resize(paneId, options)`
 
 ```ts
 resize(paneId: PaneId, options: ResizePaneOptions): boolean;
@@ -121,7 +121,7 @@ Resizes `paneId` against the nearest adjacent split boundary in
 size changes and `false` when the pane or resize boundary cannot be found, or
 when minimum-size constraints prevent any change.
 
-## `workspace.api.focus(paneId)`
+## `controller.api.focus(paneId)`
 
 ```ts
 focus(paneId: PaneId): boolean;

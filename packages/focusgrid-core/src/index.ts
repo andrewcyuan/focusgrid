@@ -1,10 +1,10 @@
-export { createWorkspace, Workspace } from "./workspace";
+export { createFocusGridController, FocusGridController } from "./controller";
 export type {
-  CreateWorkspaceOptions,
+  CreateFocusGridControllerOptions,
   Listener,
   PaneDefaults,
-  WorkspaceApi,
-} from "./workspace";
+  FocusGridControllerApi,
+} from "./controller";
 
 export {
   CommandRegistry,
@@ -44,7 +44,10 @@ export type {
 } from "./layout/operations";
 export { computeLayout } from "./layout/solver";
 export { getMinimumSize } from "./layout/min-size";
-export { deserializeWorkspace, serializeWorkspace } from "./layout/serialize";
+export {
+  deserializeFocusGridControllerState,
+  serializeFocusGridControllerState,
+} from "./layout/serialize";
 
 export { createKeyStroke, normalizeKeyName, strokeToId } from "./keyboard/normalize";
 export {
@@ -94,5 +97,5 @@ export type {
   PaneSwapDirection,
   Rect,
   SplitNode,
-  WorkspaceState,
+  FocusGridControllerState,
 } from "./state";

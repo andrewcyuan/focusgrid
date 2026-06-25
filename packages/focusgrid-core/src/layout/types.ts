@@ -62,7 +62,7 @@ export type ComputedLayout = {
   handles: ComputedHandle[];
 };
 
-export type WorkspaceState = {
+export type FocusGridControllerState = {
   root: LayoutNode;
   activePaneId: PaneId | null;
   container: {

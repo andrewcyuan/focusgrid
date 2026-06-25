@@ -1,15 +1,15 @@
-import type { ComputedPane, PaneId, Workspace } from "@focusgrid/core";
+import type { ComputedPane, PaneId, FocusGridController } from "@focusgrid/core";
 
 export type PaneLayoutChangeEvent = {
   pane: ComputedPane;
   previousPane: ComputedPane;
-  workspace: Workspace;
+  controller: FocusGridController;
 };
 
 export type PaneCloseEvent = {
   paneId: PaneId;
   previousPane: ComputedPane;
-  workspace: Workspace;
+  controller: FocusGridController;
 };
 
 export type PaneLifecycleDiff = {

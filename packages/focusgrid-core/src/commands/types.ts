@@ -1,9 +1,9 @@
-import type { Workspace } from "../workspace";
-import type { WorkspaceState } from "../state";
+import type { FocusGridController } from "../controller";
+import type { FocusGridControllerState } from "../state";
 
 export type CommandContext = {
-  workspace: Workspace;
-  state: WorkspaceState;
+  controller: FocusGridController;
+  state: FocusGridControllerState;
 };
 
 export type CommandHandler<TArgs = unknown> = (

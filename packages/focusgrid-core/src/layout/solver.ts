@@ -5,11 +5,11 @@ import type {
   LayoutNode,
   Rect,
   SplitNode,
-  WorkspaceState,
+  FocusGridControllerState,
 } from "./types";
 import { HANDLE_SIZE } from "./constants";
 
-export function computeLayout(state: WorkspaceState): ComputedLayout {
+export function computeLayout(state: FocusGridControllerState): ComputedLayout {
   const out: ComputedLayout = {
     panes: [],
     handles: [],
@@ -34,7 +34,7 @@ function computeNode(
   node: LayoutNode,
   rect: Rect,
   out: ComputedLayout,
-  state: WorkspaceState,
+  state: FocusGridControllerState,
 ): void {
   if (node.kind === "pane") {
     out.panes.push({
@@ -53,7 +53,7 @@ function computeSplit(
   node: SplitNode,
   rect: Rect,
   out: ComputedLayout,
-  state: WorkspaceState,
+  state: FocusGridControllerState,
 ): void {
   const sizes = normalizeSizes(node.sizes, node.children.length);
   const axisSize = node.direction === "horizontal" ? rect.width : rect.height;

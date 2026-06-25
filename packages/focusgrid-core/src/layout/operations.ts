@@ -15,7 +15,7 @@ import type {
   PaneNode,
   Rect,
   SplitNode,
-  WorkspaceState,
+  FocusGridControllerState,
 } from "./types";
 
 export function buildLayoutIndex(root: LayoutNode): LayoutIndex {
@@ -48,7 +48,7 @@ export function findSplitNode(root: LayoutNode, splitId: NodeId): SplitNode | nu
   return node?.kind === "split" ? node : null;
 }
 
-export function focusPane(state: WorkspaceState, paneId: PaneId): WorkspaceState {
+export function focusPane(state: FocusGridControllerState, paneId: PaneId): FocusGridControllerState {
   if (!buildLayoutIndex(state.root).paneNodeByPaneId.has(paneId)) {
     return state;
   }
@@ -67,10 +67,10 @@ export function focusPane(state: WorkspaceState, paneId: PaneId): WorkspaceState
 }
 
 export function focusPaneInDirection(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   direction: PaneFocusDirection,
-): WorkspaceState {
+): FocusGridControllerState {
   const targetPaneId = findPaneInDirection(state, paneId, direction);
 
   if (!targetPaneId) {
@@ -87,7 +87,7 @@ export function focusPaneInDirection(
 }
 
 export function findPaneInDirection(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   direction: PaneFocusDirection,
 ): PaneId | null {
@@ -154,22 +154,22 @@ export type ResizePaneOptions = {
 };
 
 export function splitPane(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   options: SplitPaneOptions,
-): WorkspaceState;
+): FocusGridControllerState;
 export function splitPane(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   direction: Direction,
   newPaneId: PaneId,
-): WorkspaceState;
+): FocusGridControllerState;
 export function splitPane(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   optionsOrDirection: SplitPaneOptions | Direction,
   legacyNewPaneId?: PaneId,
-): WorkspaceState {
+): FocusGridControllerState {
   const options =
     typeof optionsOrDirection === "string"
       ? directionToSplitOptions(optionsOrDirection, legacyNewPaneId)
@@ -229,9 +229,9 @@ export function splitPane(
 }
 
 export function wrapRootInSplit(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   options: WrapRootInSplitOptions,
-): WorkspaceState {
+): FocusGridControllerState {
   const newPaneId = options.newPaneId ?? createId("pane");
   const index = buildLayoutIndex(state.root);
 
@@ -267,7 +267,7 @@ export function wrapRootInSplit(
   };
 }
 
-export function removePane(state: WorkspaceState, paneId: PaneId): WorkspaceState {
+export function removePane(state: FocusGridControllerState, paneId: PaneId): FocusGridControllerState {
   const panes = collectPaneIds(state.root);
 
   if (!panes.includes(paneId) || panes.length <= 1) {
@@ -291,15 +291,15 @@ export function removePane(state: WorkspaceState, paneId: PaneId): WorkspaceStat
   };
 }
 
-export function closePane(state: WorkspaceState, paneId: PaneId): WorkspaceState {
+export function closePane(state: FocusGridControllerState, paneId: PaneId): FocusGridControllerState {
   return removePane(state, paneId);
 }
 
 export function swapPanes(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   firstPaneId: PaneId,
   secondPaneId: PaneId,
-): WorkspaceState {
+): FocusGridControllerState {
   if (firstPaneId === secondPaneId) {
     return state;
   }
@@ -343,10 +343,10 @@ export function swapPanes(
 }
 
 export function swapPaneInDirection(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   direction: PaneSwapDirection,
-): WorkspaceState {
+): FocusGridControllerState {
   const targetPaneId = findPaneInDirection(state, paneId, direction);
 
   if (!targetPaneId) {
@@ -357,12 +357,12 @@ export function swapPaneInDirection(
 }
 
 export function resizeHandle(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   splitId: NodeId,
   index: number,
   deltaPx: number,
   snapshotSizes?: number[],
-): WorkspaceState {
+): FocusGridControllerState {
   let didResize = false;
 
   const nextRoot = mapLayout(state.root, (node) => {
@@ -415,22 +415,22 @@ export function resizeHandle(
 }
 
 export function resizePane(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   options: ResizePaneOptions,
-): WorkspaceState;
+): FocusGridControllerState;
 export function resizePane(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   direction: PaneResizeDirection,
   deltaPx: number,
-): WorkspaceState;
+): FocusGridControllerState;
 export function resizePane(
-  state: WorkspaceState,
+  state: FocusGridControllerState,
   paneId: PaneId,
   optionsOrDirection: ResizePaneOptions | PaneResizeDirection,
   legacyDeltaPx?: number,
-): WorkspaceState {
+): FocusGridControllerState {
   const options =
     typeof optionsOrDirection === "string"
       ? { direction: optionsOrDirection, deltaPx: legacyDeltaPx ?? 0 }
@@ -680,7 +680,7 @@ function isPositiveBoundaryDirection(direction: PaneResizeDirection): boolean {
   return direction === "right" || direction === "down";
 }
 
-function getSplitAxisSize(state: WorkspaceState, splitId: NodeId): number {
+function getSplitAxisSize(state: FocusGridControllerState, splitId: NodeId): number {
   const split = findSplitNode(state.root, splitId);
   const rect = findSplitRect(
     state.root,

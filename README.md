@@ -42,9 +42,9 @@ pnpm typecheck
 ## Headless usage
 
 ```ts
-import { createWorkspace } from "@focusgrid/core";
+import { createFocusGridController } from "@focusgrid/core";
 
-const workspace = createWorkspace({
+const controller = createFocusGridController({
   root: {
     kind: "pane",
     id: "node-1",
@@ -57,19 +57,19 @@ const workspace = createWorkspace({
   },
 });
 
-workspace.api.split("main", {
+controller.api.split("main", {
   side: "right",
   newPaneId: "terminal",
 });
 
-console.log(workspace.getComputedLayout());
+console.log(controller.getComputedLayout());
 ```
 
 ## React usage
 
 ```tsx
-import { createWorkspace } from "@focusgrid/core";
-import { FocusGridProvider, FocusGrid } from "@focusgrid/react";
+import { createFocusGridController } from "@focusgrid/core";
+import { FocusGrid } from "@focusgrid/react";
 import type { ComponentType } from "react";
 import "@focusgrid/react/styles.css";
 
@@ -90,7 +90,7 @@ const panes: Record<string, ComponentType> = {
   terminal: TerminalPane,
 };
 
-const workspace = createWorkspace({
+const controller = createFocusGridController({
   root: {
     kind: "split",
     id: "node-1",
@@ -118,14 +118,13 @@ const workspace = createWorkspace({
 
 export function App() {
   return (
-    <FocusGridProvider workspace={workspace}>
-      <FocusGrid
-        renderPane={({ paneId }) => {
-          const Component = panes[paneId];
-          return Component ? <Component /> : <EmptyPane paneId={paneId} />;
-        }}
-      />
-    </FocusGridProvider>
+    <FocusGrid
+      controller={controller}
+      renderPane={({ paneId }) => {
+        const Component = panes[paneId];
+        return Component ? <Component /> : <EmptyPane paneId={paneId} />;
+      }}
+    />
   );
 }
 ```

@@ -1,24 +1,28 @@
 import type { ComponentType, CSSProperties, ReactNode } from "react";
-import type { ComputedPane, PaneId, Rect, Workspace } from "@focusgrid/core";
-import { useWorkspace } from "./hooks";
+import type {
+  ComputedPane,
+  FocusGridController,
+  PaneId,
+  Rect,
+} from "@focusgrid/core";
 
 export type PaneRenderContext = {
   paneId: PaneId;
   rect: Rect;
   active: boolean;
-  workspace: Workspace;
+  controller: FocusGridController;
 };
 
 export type PaneComponentProps = PaneRenderContext;
 export type PaneComponent = ComponentType<PaneComponentProps>;
 
 export type PaneViewProps = {
+  controller: FocusGridController;
   pane: ComputedPane;
   renderPane: (ctx: PaneRenderContext) => ReactNode;
 };
 
-export function PaneView({ pane, renderPane }: PaneViewProps) {
-  const workspace = useWorkspace();
+export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
   const style: CSSProperties = {
     left: pane.rect.x,
     top: pane.rect.y,
@@ -33,14 +37,14 @@ export function PaneView({ pane, renderPane }: PaneViewProps) {
       data-pane-id={pane.paneId}
       style={style}
       onPointerDown={() => {
-        workspace.api.focus(pane.paneId);
+        controller.api.focus(pane.paneId);
       }}
     >
       {renderPane({
         paneId: pane.paneId,
         rect: pane.rect,
         active: pane.active,
-        workspace,
+        controller,
       })}
     </div>
   );

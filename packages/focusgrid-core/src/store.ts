@@ -1,2 +1,2 @@
-export { createWorkspace, Workspace } from "./workspace";
-export type { CreateWorkspaceOptions, Listener } from "./workspace";
+export { createFocusGridController, FocusGridController } from "./controller";
+export type { CreateFocusGridControllerOptions, Listener } from "./controller";

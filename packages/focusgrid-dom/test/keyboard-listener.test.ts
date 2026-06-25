@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createWorkspace,
+  createFocusGridController,
   parseKeySequence,
   type ComputedHandle,
-  type WorkspaceState,
+  type FocusGridControllerState,
 } from "@focusgrid/core";
 import { KeyboardListener, normalizeKeyboardEvent } from "../src/keyboard-listener";
 import { PointerResizeController } from "../src/pointer-resize";
@@ -18,7 +18,7 @@ function keyboardEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
   } as KeyboardEvent;
 }
 
-function workspaceState(): WorkspaceState {
+function controllerState(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -203,8 +203,8 @@ describe("KeyboardListener resize batching", () => {
   it("coalesces same-frame keyboard resize commands", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const resize = vi.spyOn(workspace.api, "resize");
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resize");
     let onKey: ((event: KeyboardEvent) => void) | null = null;
     const root = {
       addEventListener: vi.fn((_, listener: EventListener) => {
@@ -212,7 +212,7 @@ describe("KeyboardListener resize batching", () => {
       }),
       removeEventListener: vi.fn(),
     } as unknown as HTMLElement;
-    const listener = new KeyboardListener(workspace, root, {
+    const listener = new KeyboardListener(controller, root, {
       keymap: [
         {
           sequence: parseKeySequence("H"),
@@ -243,8 +243,8 @@ describe("KeyboardListener resize batching", () => {
   it("runs non-resize commands immediately", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const run = vi.spyOn(workspace.commands, "run");
+    const controller = createFocusGridController(controllerState());
+    const run = vi.spyOn(controller.commands, "run");
     let onKey: ((event: KeyboardEvent) => void) | null = null;
     const root = {
       addEventListener: vi.fn((_, listener: EventListener) => {
@@ -252,7 +252,7 @@ describe("KeyboardListener resize batching", () => {
       }),
       removeEventListener: vi.fn(),
     } as unknown as HTMLElement;
-    const listener = new KeyboardListener(workspace, root, {
+    const listener = new KeyboardListener(controller, root, {
       keymap: [
         {
           sequence: parseKeySequence("X"),
@@ -265,7 +265,7 @@ describe("KeyboardListener resize batching", () => {
     onKey?.(keydownEvent("X"));
 
     expect(run).toHaveBeenCalledTimes(1);
-    expect(run).toHaveBeenCalledWith("pane.close", workspace, undefined);
+    expect(run).toHaveBeenCalledWith("pane.close", controller, undefined);
 
     listener.destroy();
   });
@@ -275,15 +275,15 @@ describe("PointerResizeController batching", () => {
   it("coalesces pointer moves using the latest absolute drag delta", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const resize = vi.spyOn(workspace.api, "resizeHandle");
-    const controller = new PointerResizeController(workspace);
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const resizeController = new PointerResizeController(controller);
     const handle = resizeHandle();
 
-    controller.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), handle);
-    controller.updateResize(pointerEvent({ pointerId: 1, clientX: 110 }));
-    controller.updateResize(pointerEvent({ pointerId: 1, clientX: 130 }));
-    controller.updateResize(pointerEvent({ pointerId: 1, clientX: 160 }));
+    resizeController.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), handle);
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 110 }));
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 130 }));
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 160 }));
 
     expect(resize).not.toHaveBeenCalled();
 
@@ -300,14 +300,14 @@ describe("PointerResizeController batching", () => {
   it("flushes the latest pending resize when the drag ends before the frame runs", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const resize = vi.spyOn(workspace.api, "resizeHandle");
-    const controller = new PointerResizeController(workspace);
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const resizeController = new PointerResizeController(controller);
     const handle = resizeHandle();
 
-    controller.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), handle);
-    controller.updateResize(pointerEvent({ pointerId: 1, clientX: 145 }));
-    controller.endResize(pointerEvent({ pointerId: 1, clientX: 145 }));
+    resizeController.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), handle);
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 145 }));
+    resizeController.endResize(pointerEvent({ pointerId: 1, clientX: 145 }));
 
     expect(resize).toHaveBeenCalledTimes(1);
     expect(resize).toHaveBeenCalledWith("root", {
@@ -322,12 +322,12 @@ describe("PointerResizeController batching", () => {
   });
 
   it("registers document-level drag listeners when a drag starts", () => {
-    const workspace = createWorkspace(workspaceState());
-    const controller = new PointerResizeController(workspace);
+    const controller = createFocusGridController(controllerState());
+    const resizeController = new PointerResizeController(controller);
     const { ownerDocument } = pointerDocument();
     const target = captureTarget(ownerDocument);
 
-    controller.startResize(
+    resizeController.startResize(
       pointerEvent({ pointerId: 1, clientX: 100 }),
       resizeHandle(),
       target,
@@ -350,13 +350,13 @@ describe("PointerResizeController batching", () => {
   it("continues resizing from document pointer moves after leaving the handle", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const resize = vi.spyOn(workspace.api, "resizeHandle");
-    const controller = new PointerResizeController(workspace);
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
 
-    controller.startResize(
+    resizeController.startResize(
       pointerEvent({ pointerId: 1, clientX: 100 }),
       resizeHandle(),
       target,
@@ -378,13 +378,13 @@ describe("PointerResizeController batching", () => {
   it("flushes pending resize, removes listeners, and releases capture on pointer up", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const resize = vi.spyOn(workspace.api, "resizeHandle");
-    const controller = new PointerResizeController(workspace);
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
 
-    controller.startResize(
+    resizeController.startResize(
       pointerEvent({ pointerId: 1, clientX: 100 }),
       resizeHandle(),
       target,
@@ -422,13 +422,13 @@ describe("PointerResizeController batching", () => {
   it("cleans up pointer cancel without leaving a pending frame", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const resize = vi.spyOn(workspace.api, "resizeHandle");
-    const controller = new PointerResizeController(workspace);
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
 
-    controller.startResize(
+    resizeController.startResize(
       pointerEvent({ pointerId: 1, clientX: 100 }),
       resizeHandle(),
       target,
@@ -449,13 +449,13 @@ describe("PointerResizeController batching", () => {
   it("keeps document listeners active when pointer capture is unavailable", () => {
     vi.useFakeTimers();
 
-    const workspace = createWorkspace(workspaceState());
-    const resize = vi.spyOn(workspace.api, "resizeHandle");
-    const controller = new PointerResizeController(workspace);
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = { ownerDocument } as Element;
 
-    controller.startResize(
+    resizeController.startResize(
       pointerEvent({ pointerId: 1, clientX: 100 }),
       resizeHandle(),
       target,

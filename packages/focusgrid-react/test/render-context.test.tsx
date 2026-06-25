@@ -1,19 +1,18 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
-  createWorkspace,
+  createFocusGridController,
   type KeyBinding,
-  type WorkspaceState,
+  type FocusGridControllerState,
 } from "@focusgrid/core";
 import {
-  FocusGridProvider,
   FocusGrid,
-  useFocusGridKeymap,
-  useFocusGridWorkspace,
+  useControllerState,
+  useFocusGridController,
   type PaneRenderContext,
 } from "../src/index";
 
-function state(): WorkspaceState {
+function state(): FocusGridControllerState {
   return {
     root: {
       kind: "split",
@@ -43,18 +42,17 @@ function state(): WorkspaceState {
 
 describe("pane render context", () => {
   it("passes computed pane context to renderPane", () => {
-    const workspace = createWorkspace(state());
+    const controller = createFocusGridController(state());
     const contexts: PaneRenderContext[] = [];
 
     renderToStaticMarkup(
-      <FocusGridProvider workspace={workspace}>
-        <FocusGrid
-          renderPane={(ctx) => {
-            contexts.push(ctx);
-            return <span>{ctx.paneId}</span>;
-          }}
-        />
-      </FocusGridProvider>,
+      <FocusGrid
+        controller={controller}
+        renderPane={(ctx) => {
+          contexts.push(ctx);
+          return <span>{ctx.paneId}</span>;
+        }}
+      />,
     );
 
     expect(contexts).toEqual([
@@ -62,28 +60,30 @@ describe("pane render context", () => {
         paneId: "left",
         rect: { x: 0, y: 0, width: 397, height: 600 },
         active: false,
-        workspace,
+        controller,
       },
       {
         paneId: "right",
         rect: { x: 403, y: 0, width: 397, height: 600 },
         active: true,
-        workspace,
+        controller,
       },
     ]);
   });
 
-  it("creates a workspace with useFocusGridWorkspace while keeping provider and root separate", () => {
-    let workspaceFromHook: ReturnType<typeof createWorkspace> | null = null;
+  it("creates a stable controller with useFocusGridController", () => {
+    let controllerFromHook: ReturnType<typeof createFocusGridController> | null =
+      null;
 
     function TestApp() {
-      const workspace = useFocusGridWorkspace(state);
-      workspaceFromHook = workspace;
+      const controller = useFocusGridController(state);
+      controllerFromHook = controller;
 
       return (
-        <FocusGridProvider workspace={workspace}>
-          <FocusGrid renderPane={(ctx) => <span>{ctx.paneId}</span>} />
-        </FocusGridProvider>
+        <FocusGrid
+          controller={controller}
+          renderPane={(ctx) => <span>{ctx.paneId}</span>}
+        />
       );
     }
 
@@ -91,30 +91,55 @@ describe("pane render context", () => {
 
     expect(markup).toContain("<span>left</span>");
     expect(markup).toContain("<span>right</span>");
-    expect(workspaceFromHook?.getState().activePaneId).toBe("right");
+    expect(controllerFromHook?.getState().activePaneId).toBe("right");
   });
 
-  it("exposes the provider keymap to focus grids by default", () => {
-    const workspace = createWorkspace(state());
+  it("reads state from the supplied controller hook", () => {
+    const controller = createFocusGridController(state());
+    let activePaneId: string | null | undefined;
+
+    function TestApp() {
+      activePaneId = useControllerState(controller).activePaneId;
+      return null;
+    }
+
+    renderToStaticMarkup(<TestApp />);
+
+    expect(activePaneId).toBe("right");
+  });
+
+  it("notifies subscribers after controller api mutations", () => {
+    const controller = createFocusGridController(state());
+    const listenerCalls: Array<string | null> = [];
+    const unsubscribe = controller.subscribe(() => {
+      listenerCalls.push(controller.getState().activePaneId);
+    });
+
+    controller.api.focus("left");
+    unsubscribe();
+    controller.api.focus("right");
+
+    expect(listenerCalls).toEqual(["left"]);
+  });
+
+  it("accepts a component-level keymap without context", () => {
+    const controller = createFocusGridController(state());
     const keymap: KeyBinding[] = [
       {
         sequence: "x",
         command: "pane.close",
       },
     ];
-    let keymapFromHook: KeyBinding[] | undefined;
 
-    function TestApp() {
-      keymapFromHook = useFocusGridKeymap();
-      return <FocusGrid renderPane={(ctx) => <span>{ctx.paneId}</span>} />;
-    }
-
-    renderToStaticMarkup(
-      <FocusGridProvider workspace={workspace} keymap={keymap}>
-        <TestApp />
-      </FocusGridProvider>,
+    const markup = renderToStaticMarkup(
+      <FocusGrid
+        controller={controller}
+        keymap={keymap}
+        renderPane={(ctx) => <span>{ctx.paneId}</span>}
+      />,
     );
 
-    expect(keymapFromHook).toBe(keymap);
+    expect(markup).toContain("<span>left</span>");
+    expect(markup).toContain("<span>right</span>");
   });
 });

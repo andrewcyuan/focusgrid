@@ -5,7 +5,7 @@ import {
   type KeyBinding,
   type KeyStroke,
   type PaneResizeDirection,
-  type Workspace,
+  type FocusGridController,
 } from "@focusgrid/core";
 import { isEditableTarget } from "./focus";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
@@ -31,7 +31,7 @@ export class KeyboardListener {
 
     const stroke = normalizeKeyboardEvent(event);
     const result = this.router.handle(stroke, {
-      activePaneId: this.workspace.getState().activePaneId,
+      activePaneId: this.controller.getState().activePaneId,
       inputFocused: isEditableTarget(event.target),
       mode: this.mode,
     });
@@ -54,11 +54,11 @@ export class KeyboardListener {
       return;
     }
 
-    this.workspace.commands.run(result.command, this.workspace, result.args);
+    this.controller.commands.run(result.command, this.controller, result.args);
   };
 
   constructor(
-    private readonly workspace: Workspace,
+    private readonly controller: FocusGridController,
     private readonly rootEl: HTMLElement,
     options: KeyboardListenerOptions = {},
   ) {
@@ -88,7 +88,7 @@ export class KeyboardListener {
       return false;
     }
 
-    const paneId = this.workspace.getState().activePaneId;
+    const paneId = this.controller.getState().activePaneId;
 
     if (!paneId) {
       return true;
@@ -118,7 +118,7 @@ export class KeyboardListener {
       this.pendingResizeCommands.clear();
 
       for (const resize of commands) {
-        this.workspace.api.resize(resize.paneId, {
+        this.controller.api.resize(resize.paneId, {
           direction: resize.direction,
           deltaPx: resize.deltaPx,
         });

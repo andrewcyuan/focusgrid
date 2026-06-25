@@ -1,22 +1,22 @@
 # Commands
 
 Commands are named actions intended for keyboard shortcuts and other human
-input. A workspace gets a default command registry unless a custom registry is
-passed to `createWorkspace()`.
+input. A controller gets a default command registry unless a custom registry is
+passed to `createFocusGridController()`.
 
 ```ts
-import { createWorkspace } from "@focusgrid/core";
+import { createFocusGridController } from "@focusgrid/core";
 
-const workspace = createWorkspace(initialState);
-workspace.commands.run("pane.splitRight", workspace);
+const controller = createFocusGridController(initialState);
+controller.commands.run("pane.splitRight", controller);
 ```
 
 ## Shared types
 
 ```ts
 type CommandContext = {
-  workspace: Workspace;
-  state: WorkspaceState;
+  controller: FocusGridController;
+  state: FocusGridControllerState;
 };
 
 type CommandHandler<TArgs = unknown> = (
@@ -49,19 +49,19 @@ register<TArgs>(
 
 Registers `handler` under `name` and replaces any handler already using that
 name. The returned function unregisters that command name from the registry.
-Handlers receive the workspace and a state snapshot from just before the
+Handlers receive the controller and a state snapshot from just before the
 command runs, plus the optional args passed to `run()`.
 
-## `registry.run(name, workspace, args?)`
+## `registry.run(name, controller, args?)`
 
 ```ts
-run(name: string, workspace: Workspace, args?: unknown): boolean;
+run(name: string, controller: FocusGridController, args?: unknown): boolean;
 ```
 
-Runs the command registered as `name` against `workspace`. It returns `true`
+Runs the command registered as `name` against `controller`. It returns `true`
 when a handler exists and was called, and `false` when the command name is not
 registered. The return value does not indicate whether the handler changed
-workspace state.
+controller state.
 
 ## `createDefaultCommandRegistry()`
 
@@ -70,15 +70,15 @@ createDefaultCommandRegistry(): CommandRegistry;
 ```
 
 Creates a registry containing Focusgrid's built-in pane commands. This is the
-registry used by `createWorkspace()` when `options.commands` is not provided.
+registry used by `createFocusGridController()` when `options.commands` is not provided.
 
 ## Default commands
 
 ### Splitting
 
 ```ts
-workspace.commands.run("pane.splitRight", workspace);
-workspace.commands.run("pane.splitDown", workspace);
+controller.commands.run("pane.splitRight", controller);
+controller.commands.run("pane.splitDown", controller);
 ```
 
 Splits the active pane and inserts the new pane in the requested direction:
@@ -91,25 +91,25 @@ If there is no active pane, these commands do nothing.
 ### Closing
 
 ```ts
-workspace.commands.run("pane.close", workspace);
+controller.commands.run("pane.close", controller);
 ```
 
-Removes the active pane from the workspace. If there is no active pane or the
+Removes the active pane from the controller. If there is no active pane or the
 active pane is the last remaining pane, the command does nothing.
 
 ### Resizing
 
 ```ts
-workspace.commands.run("pane.resizeLeft", workspace, {
+controller.commands.run("pane.resizeLeft", controller, {
   deltaPx: 48,
 });
-workspace.commands.run("pane.resizeRight", workspace, {
+controller.commands.run("pane.resizeRight", controller, {
   deltaPx: 48,
 });
-workspace.commands.run("pane.resizeUp", workspace, {
+controller.commands.run("pane.resizeUp", controller, {
   deltaPx: 48,
 });
-workspace.commands.run("pane.resizeDown", workspace, {
+controller.commands.run("pane.resizeDown", controller, {
   deltaPx: 48,
 });
 ```
@@ -128,10 +128,10 @@ no active pane or no matching boundary, these commands do nothing.
 ### Moving Focus
 
 ```ts
-workspace.commands.run("pane.focusLeft", workspace);
-workspace.commands.run("pane.focusRight", workspace);
-workspace.commands.run("pane.focusUp", workspace);
-workspace.commands.run("pane.focusDown", workspace);
+controller.commands.run("pane.focusLeft", controller);
+controller.commands.run("pane.focusRight", controller);
+controller.commands.run("pane.focusUp", controller);
+controller.commands.run("pane.focusDown", controller);
 ```
 
 Moves focus from the active pane to the nearest pane in the requested
@@ -148,10 +148,10 @@ nothing.
 ### Swapping
 
 ```ts
-workspace.commands.run("pane.swapLeft", workspace);
-workspace.commands.run("pane.swapRight", workspace);
-workspace.commands.run("pane.swapUp", workspace);
-workspace.commands.run("pane.swapDown", workspace);
+controller.commands.run("pane.swapLeft", controller);
+controller.commands.run("pane.swapRight", controller);
+controller.commands.run("pane.swapUp", controller);
+controller.commands.run("pane.swapDown", controller);
 ```
 
 Swaps the active pane with the nearest pane in the requested direction while
