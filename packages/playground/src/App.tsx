@@ -67,7 +67,10 @@ export function App() {
   const workspace = usePaneWorkspace(createInitialState);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
-  const keymap = useMemo(() => createDefaultPaneKeymap(shortcuts), [shortcuts]);
+  const keymap = useMemo(
+    () => createDefaultPaneKeymap({ overrides: shortcuts }),
+    [shortcuts],
+  );
 
   useEffect(() => {
     saveShortcuts(shortcuts);

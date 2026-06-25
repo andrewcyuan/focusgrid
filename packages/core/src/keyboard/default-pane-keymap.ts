@@ -133,6 +133,9 @@ export const defaultPaneShortcutActions = [
 export type PaneShortcutId = (typeof defaultPaneShortcutActions)[number]["id"];
 export type PaneShortcutOverrides = Partial<Record<PaneShortcutId, string>>;
 export type PaneShortcutValues = Record<PaneShortcutId, string>;
+export type CreateDefaultPaneKeymapOptions = {
+  overrides?: PaneShortcutOverrides;
+};
 
 export function createDefaultPaneShortcuts(): PaneShortcutValues {
   return Object.fromEntries(
@@ -144,8 +147,10 @@ export function createDefaultPaneShortcuts(): PaneShortcutValues {
 }
 
 export function createDefaultPaneKeymap(
-  shortcuts: PaneShortcutOverrides = {},
+  options: CreateDefaultPaneKeymapOptions = {},
 ): KeyBinding[] {
+  const shortcuts = options.overrides ?? {};
+
   return defaultPaneShortcutActions.flatMap((action) => {
     const sequence = (shortcuts[action.id] ?? action.defaultSequence).trim();
     const args = "args" in action ? action.args : undefined;

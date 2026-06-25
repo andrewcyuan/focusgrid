@@ -61,6 +61,7 @@ export {
 } from "./keyboard/default-pane-keymap";
 export type {
   DefaultPaneCommand,
+  CreateDefaultPaneKeymapOptions,
   PaneShortcutAction,
   PaneShortcutId,
   PaneShortcutOverrides,

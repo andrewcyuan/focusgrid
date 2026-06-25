@@ -2,6 +2,8 @@
 
 This is a web library with react bindings to make keyboard native interfaces in the web.
 
+Right now, we do not give a fuck about breaking transitions. No one uses this library yet and we are making it as perfect as possible. be thorough in implementation and don't hesitate to suggest refactors (dont implement them without asking though).
+
 ## Code practices
 
 - Always check before adding dependencies. This is a library so dependencies should be kept at a minimum

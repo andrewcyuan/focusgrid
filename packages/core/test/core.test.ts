@@ -1560,10 +1560,12 @@ describe("keyboard", () => {
 
   it("applies default pane keymap overrides and omits invalid or empty bindings", () => {
     const keymap = createDefaultPaneKeymap({
-      "split-right": "Ctrl-B R",
-      close: "",
-      "focus-left": "Ctrl+B",
-      "focus-right": "Ctrl+",
+      overrides: {
+        "split-right": "Ctrl-B R",
+        close: "",
+        "focus-left": "Ctrl+B",
+        "focus-right": "Ctrl+",
+      },
     });
 
     expect(
