@@ -30,7 +30,9 @@ export default defineConfig({
       },
       {
         find: "@focusgrid/kcl",
-        replacement: fileURLToPath(new URL("../kcl/src/index.ts", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL("../kcl-core/src/index.ts", import.meta.url),
+        ),
       },
       {
         find: "@focusgrid/kcl-react",

@@ -11,7 +11,7 @@ export default defineConfig({
       "@focusgrid/core": resolve(repoRoot, "packages/focusgrid-core/src/index.ts"),
       "@focusgrid/dom": resolve(repoRoot, "packages/focusgrid-dom/src/index.ts"),
       "@focusgrid/react": resolve(repoRoot, "packages/focusgrid-react/src/index.tsx"),
-      "@focusgrid/kcl": resolve(repoRoot, "packages/kcl/src/index.ts"),
+      "@focusgrid/kcl": resolve(repoRoot, "packages/kcl-core/src/index.ts"),
       "@focusgrid/kcl-react": resolve(repoRoot, "packages/kcl-react/src/index.tsx"),
     },
   },
