@@ -32,10 +32,6 @@ export class RootResizeObserver {
   }
 
   private dispatchSize(width: number, height: number): void {
-    this.workspace.dispatch({
-      type: "container.setSize",
-      width: Math.floor(width),
-      height: Math.floor(height),
-    });
+    this.workspace.api.setContainerSize(Math.floor(width), Math.floor(height));
   }
 }

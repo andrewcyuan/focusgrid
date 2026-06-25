@@ -33,10 +33,7 @@ export function PaneView({ pane, renderPane }: PaneViewProps) {
       data-pane-id={pane.paneId}
       style={style}
       onPointerDown={() => {
-        workspace.dispatch({
-          type: "pane.focus",
-          paneId: pane.paneId,
-        });
+        workspace.api.focus(pane.paneId);
       }}
     >
       {renderPane({

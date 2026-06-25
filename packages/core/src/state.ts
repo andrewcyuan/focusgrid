@@ -17,5 +17,3 @@ export type {
   SplitNode,
   WorkspaceState,
 } from "./layout/types";
-
-export type { WorkspaceAction } from "./layout/reducer";

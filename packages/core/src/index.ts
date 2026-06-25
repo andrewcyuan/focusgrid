@@ -42,8 +42,6 @@ export type {
   SplitPaneOptions,
   WrapRootInSplitOptions,
 } from "./layout/operations";
-export { reducer } from "./layout/reducer";
-export type { WorkspaceAction } from "./layout/reducer";
 export { computeLayout } from "./layout/solver";
 export { getMinimumSize } from "./layout/min-size";
 export { deserializeWorkspace, serializeWorkspace } from "./layout/serialize";

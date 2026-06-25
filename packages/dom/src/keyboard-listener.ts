@@ -118,9 +118,7 @@ export class KeyboardListener {
       this.pendingResizeCommands.clear();
 
       for (const resize of commands) {
-        this.workspace.dispatch({
-          type: "pane.resize",
-          paneId: resize.paneId,
+        this.workspace.api.resize(resize.paneId, {
           direction: resize.direction,
           deltaPx: resize.deltaPx,
         });

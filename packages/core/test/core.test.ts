@@ -6,16 +6,21 @@ import {
   createDefaultPaneShortcuts,
   createWorkspace,
   defaultPaneShortcutActions,
+  focusPane,
+  focusPaneInDirection,
   normalizeKeySequenceInput,
   paneFocusDirections,
   paneResizeDirections,
   paneSplitSides,
   paneSwapDirections,
   parseKeySequence,
-  reducer,
+  resizeHandle,
+  resizePane,
+  splitPane,
   swapPaneInDirection,
   swapPanes,
   validateKeySequenceInput,
+  wrapRootInSplit,
   type WorkspaceState,
 } from "../src";
 
@@ -40,12 +45,7 @@ describe("workspace", () => {
   it("splits panes and computes rectangles", () => {
     const workspace = createWorkspace(initialState());
 
-    workspace.dispatch({
-      type: "pane.split",
-      paneId: "editor",
-      direction: "horizontal",
-      newPaneId: "terminal",
-    });
+    workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
 
     const state = workspace.getState();
     const layout = workspace.getComputedLayout();
@@ -380,15 +380,11 @@ describe("workspace", () => {
     });
   });
 
-  it("accepts option-shaped reducer actions for split, root wrap, and resize", () => {
-    const split = reducer(initialState(), {
-      type: "pane.split",
-      paneId: "editor",
-      options: {
+  it("accepts option-shaped operations for split, root wrap, and resize", () => {
+    const split = splitPane(initialState(), "editor", {
         side: "left",
         newPaneId: "nav",
         preserveActivePane: true,
-      },
     });
 
     expect(split.activePaneId).toBe("editor");
@@ -398,12 +394,9 @@ describe("workspace", () => {
       children: [{ paneId: "nav" }, { paneId: "editor" }],
     });
 
-    const wrapped = reducer(initialState(), {
-      type: "root.wrapInSplit",
-      options: {
+    const wrapped = wrapRootInSplit(initialState(), {
         side: "down",
         newPaneId: "console",
-      },
     });
 
     expect(wrapped.activePaneId).toBe("console");
@@ -413,13 +406,9 @@ describe("workspace", () => {
       children: [{ paneId: "editor" }, { paneId: "console" }],
     });
 
-    const resized = reducer(horizontalSplitState(), {
-      type: "pane.resize",
-      paneId: "left",
-      options: {
+    const resized = resizePane(horizontalSplitState(), "left", {
         direction: "right",
         deltaPx: 100,
-      },
     });
 
     expect(resized.root.kind).toBe("split");
@@ -429,17 +418,8 @@ describe("workspace", () => {
   it("closes a pane and collapses a single-child split", () => {
     const workspace = createWorkspace(initialState());
 
-    workspace.dispatch({
-      type: "pane.split",
-      paneId: "editor",
-      direction: "horizontal",
-      newPaneId: "terminal",
-    });
-
-    workspace.dispatch({
-      type: "pane.close",
-      paneId: "terminal",
-    });
+    workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
+    workspace.api.remove("terminal");
 
     expect(workspace.getState().root.kind).toBe("pane");
     expect(workspace.getState().activePaneId).toBe("editor");
@@ -472,17 +452,17 @@ describe("workspace", () => {
   it("removes nested panes without preserving stale directional focus memory", () => {
     const workspace = createWorkspace(verticalMiddleTrifoldState());
 
-    workspace.dispatch({
-      type: "pane.focus",
-      paneId: "middle-top",
-    });
+    workspace.api.focus("middle-top");
     expect(workspace.api.remove("middle-top")).toBe(true);
 
-    workspace.dispatch({
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    const target = focusPaneInDirection(
+      workspace.getState(),
+      "left",
+      "right",
+    ).activePaneId;
+    if (target) {
+      workspace.api.focus(target);
+    }
 
     expect(workspace.getState().activePaneId).toBe("middle-bottom");
   });
@@ -518,11 +498,7 @@ describe("workspace", () => {
       },
     });
 
-    workspace.dispatch({
-      type: "pane.swap",
-      firstPaneId: "left",
-      secondPaneId: "right",
-    });
+    workspace.api.swap("left", "right");
 
     const root = workspace.getState().root;
     expect(root.kind).toBe("split");
@@ -591,11 +567,7 @@ describe("workspace", () => {
   });
 
   it("updates split focus memory after swapping the active pane", () => {
-    const next = reducer(nestedHorizontalState(), {
-      type: "pane.swap",
-      firstPaneId: "left",
-      secondPaneId: "middle",
-    });
+    const next = swapPanes(nestedHorizontalState(), "left", "middle");
 
     expect(next.activePaneId).toBe("middle");
     expect(next.root.kind).toBe("split");
@@ -603,11 +575,7 @@ describe("workspace", () => {
   });
 
   it("swaps panes with the direct horizontal and vertical directional neighbors", () => {
-    const horizontal = reducer(horizontalSplitState(), {
-      type: "pane.swapDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    const horizontal = swapPaneInDirection(horizontalSplitState(), "left", "right");
 
     expect(horizontal.activePaneId).toBe("left");
     expect(horizontal.root.kind).toBe("split");
@@ -620,11 +588,7 @@ describe("workspace", () => {
       paneId: "left",
     });
 
-    const vertical = reducer(verticalSplitState(), {
-      type: "pane.swapDirection",
-      paneId: "bottom",
-      direction: "up",
-    });
+    const vertical = swapPaneInDirection(verticalSplitState(), "bottom", "up");
 
     expect(vertical.activePaneId).toBe("bottom");
     expect(vertical.root.kind).toBe("split");
@@ -640,11 +604,7 @@ describe("workspace", () => {
 
   it("directional swap uses the same nested target as directional focus", () => {
     const state = verticalMiddleTrifoldState();
-    const focused = reducer(state, {
-      type: "pane.focusDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    const focused = focusPaneInDirection(state, "left", "right");
     const swapped = swapPaneInDirection(state, "left", "right");
 
     expect(focused.activePaneId).toBe("middle-bottom");
@@ -668,11 +628,11 @@ describe("workspace", () => {
   });
 
   it("directional swap preserves split structure and sizes", () => {
-    const next = reducer(nestedDirectionalFocusState(), {
-      type: "pane.swapDirection",
-      paneId: "left",
-      direction: "right",
-    });
+    const next = swapPaneInDirection(
+      nestedDirectionalFocusState(),
+      "left",
+      "right",
+    );
 
     expect(next.root.kind).toBe("split");
     expect(next.root).toMatchObject({
@@ -696,31 +656,18 @@ describe("workspace", () => {
     expect(swapPanes(state, "left", "left")).toBe(state);
     expect(swapPanes(state, "left", "missing")).toBe(state);
     expect(swapPaneInDirection(state, "left", "up")).toBe(state);
-    expect(
-      reducer(state, {
-        type: "pane.swap",
-        firstPaneId: "missing",
-        secondPaneId: "right",
-      }),
-    ).toBe(state);
+    expect(swapPanes(state, "missing", "right")).toBe(state);
   });
 
   it("resizes a handle from a snapshot", () => {
     const workspace = createWorkspace(initialState());
 
-    workspace.dispatch({
-      type: "pane.split",
-      paneId: "editor",
-      direction: "horizontal",
-      newPaneId: "terminal",
-    });
+    workspace.api.split("editor", { side: "right", newPaneId: "terminal" });
 
     const split = workspace.getState().root;
     expect(split.kind).toBe("split");
 
-    workspace.dispatch({
-      type: "handle.resize",
-      splitId: split.id,
+    workspace.api.resizeHandle(split.id, {
       index: 0,
       deltaPx: 100,
       snapshotSizes: [0.5, 0.5],
@@ -735,9 +682,7 @@ describe("workspace", () => {
   it("resizes a pane horizontally toward an adjacent pane", () => {
     const workspace = createWorkspace(horizontalSplitState());
 
-    workspace.dispatch({
-      type: "pane.resize",
-      paneId: "left",
+    workspace.api.resize("left", {
       direction: "right",
       deltaPx: 100,
     });
@@ -751,9 +696,7 @@ describe("workspace", () => {
   it("resizes a pane vertically toward an adjacent pane", () => {
     const workspace = createWorkspace(verticalSplitState());
 
-    workspace.dispatch({
-      type: "pane.resize",
-      paneId: "bottom",
+    workspace.api.resize("bottom", {
       direction: "up",
       deltaPx: 60,
     });
@@ -767,9 +710,7 @@ describe("workspace", () => {
   it("uses the nearest matching ancestor boundary for pane resize", () => {
     const workspace = createWorkspace(nestedHorizontalState());
 
-    workspace.dispatch({
-      type: "pane.resize",
-      paneId: "middle",
+    workspace.api.resize("middle", {
       direction: "right",
       deltaPx: 100,
     });
@@ -785,9 +726,7 @@ describe("workspace", () => {
   });
 
   it("resizes a middle pane against the left sibling boundary in a binary trifold", () => {
-    const growMiddle = reducer(leftNestedTrifoldState(), {
-      type: "pane.resize",
-      paneId: "middle",
+    const growMiddle = resizePane(leftNestedTrifoldState(), "middle", {
       direction: "left",
       deltaPx: 100,
     });
@@ -800,9 +739,7 @@ describe("workspace", () => {
     expect(grownNested.sizes[0]).toBeCloseTo(0.298793);
     expect(grownNested.sizes[1]).toBeCloseTo(0.701207);
 
-    const shrinkMiddle = reducer(leftNestedTrifoldState(), {
-      type: "pane.resize",
-      paneId: "middle",
+    const shrinkMiddle = resizePane(leftNestedTrifoldState(), "middle", {
       direction: "right",
       deltaPx: 100,
     });
@@ -817,9 +754,7 @@ describe("workspace", () => {
   });
 
   it("resizes a middle pane against the right sibling boundary in a binary trifold", () => {
-    const growMiddle = reducer(nestedHorizontalState(), {
-      type: "pane.resize",
-      paneId: "middle",
+    const growMiddle = resizePane(nestedHorizontalState(), "middle", {
       direction: "right",
       deltaPx: 100,
     });
@@ -832,9 +767,7 @@ describe("workspace", () => {
     expect(grownNested.sizes[0]).toBeCloseTo(0.701207);
     expect(grownNested.sizes[1]).toBeCloseTo(0.298793);
 
-    const shrinkMiddle = reducer(nestedHorizontalState(), {
-      type: "pane.resize",
-      paneId: "middle",
+    const shrinkMiddle = resizePane(nestedHorizontalState(), "middle", {
       direction: "left",
       deltaPx: 100,
     });
@@ -849,9 +782,7 @@ describe("workspace", () => {
   });
 
   it("resizes edge panes by moving their sibling boundary", () => {
-    const leftEdgeShrink = reducer(horizontalSplitState(), {
-      type: "pane.resize",
-      paneId: "left",
+    const leftEdgeShrink = resizePane(horizontalSplitState(), "left", {
       direction: "left",
       deltaPx: 100,
     });
@@ -860,9 +791,7 @@ describe("workspace", () => {
     expect(leftEdgeShrink.root.sizes[0]).toBeCloseTo(0.4);
     expect(leftEdgeShrink.root.sizes[1]).toBeCloseTo(0.6);
 
-    const leftEdgeGrow = reducer(horizontalSplitState(), {
-      type: "pane.resize",
-      paneId: "left",
+    const leftEdgeGrow = resizePane(horizontalSplitState(), "left", {
       direction: "right",
       deltaPx: 100,
     });
@@ -871,9 +800,7 @@ describe("workspace", () => {
     expect(leftEdgeGrow.root.sizes[0]).toBeCloseTo(0.6);
     expect(leftEdgeGrow.root.sizes[1]).toBeCloseTo(0.4);
 
-    const rightEdgeShrink = reducer(horizontalSplitState(), {
-      type: "pane.resize",
-      paneId: "right",
+    const rightEdgeShrink = resizePane(horizontalSplitState(), "right", {
       direction: "right",
       deltaPx: 100,
     });
@@ -882,9 +809,7 @@ describe("workspace", () => {
     expect(rightEdgeShrink.root.sizes[0]).toBeCloseTo(0.6);
     expect(rightEdgeShrink.root.sizes[1]).toBeCloseTo(0.4);
 
-    const rightEdgeGrow = reducer(horizontalSplitState(), {
-      type: "pane.resize",
-      paneId: "right",
+    const rightEdgeGrow = resizePane(horizontalSplitState(), "right", {
       direction: "left",
       deltaPx: 100,
     });
@@ -893,9 +818,7 @@ describe("workspace", () => {
     expect(rightEdgeGrow.root.sizes[0]).toBeCloseTo(0.4);
     expect(rightEdgeGrow.root.sizes[1]).toBeCloseTo(0.6);
 
-    const topEdgeShrink = reducer(verticalSplitState(), {
-      type: "pane.resize",
-      paneId: "top",
+    const topEdgeShrink = resizePane(verticalSplitState(), "top", {
       direction: "up",
       deltaPx: 60,
     });
@@ -904,9 +827,7 @@ describe("workspace", () => {
     expect(topEdgeShrink.root.sizes[0]).toBeCloseTo(0.4);
     expect(topEdgeShrink.root.sizes[1]).toBeCloseTo(0.6);
 
-    const topEdgeGrow = reducer(verticalSplitState(), {
-      type: "pane.resize",
-      paneId: "top",
+    const topEdgeGrow = resizePane(verticalSplitState(), "top", {
       direction: "down",
       deltaPx: 60,
     });
@@ -915,9 +836,7 @@ describe("workspace", () => {
     expect(topEdgeGrow.root.sizes[0]).toBeCloseTo(0.6);
     expect(topEdgeGrow.root.sizes[1]).toBeCloseTo(0.4);
 
-    const bottomEdgeShrink = reducer(verticalSplitState(), {
-      type: "pane.resize",
-      paneId: "bottom",
+    const bottomEdgeShrink = resizePane(verticalSplitState(), "bottom", {
       direction: "down",
       deltaPx: 60,
     });
@@ -926,9 +845,7 @@ describe("workspace", () => {
     expect(bottomEdgeShrink.root.sizes[0]).toBeCloseTo(0.6);
     expect(bottomEdgeShrink.root.sizes[1]).toBeCloseTo(0.4);
 
-    const bottomEdgeGrow = reducer(verticalSplitState(), {
-      type: "pane.resize",
-      paneId: "bottom",
+    const bottomEdgeGrow = resizePane(verticalSplitState(), "bottom", {
       direction: "up",
       deltaPx: 60,
     });

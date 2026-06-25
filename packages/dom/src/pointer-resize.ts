@@ -139,9 +139,7 @@ export class PointerResizeController {
       return;
     }
 
-    this.workspace.dispatch({
-      type: "handle.resize",
-      splitId: this.drag.splitId,
+    this.workspace.api.resizeHandle(this.drag.splitId, {
       index: this.drag.index,
       deltaPx: this.pendingDeltaPx,
       snapshotSizes: this.drag.startSizes,

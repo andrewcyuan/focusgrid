@@ -1,9 +1,9 @@
 import { CommandRegistry, createDefaultCommandRegistry } from "./commands/registry";
 import { createId } from "./utils/ids";
-import { reducer, type WorkspaceAction } from "./layout/reducer";
 import {
   focusPane,
   removePane,
+  resizeHandle as resizeHandleOperation,
   resizePane,
   splitPane,
   swapPanes,
@@ -14,7 +14,7 @@ import {
 } from "./layout/operations";
 import { computeLayout } from "./layout/solver";
 import type { ComputedLayout, LayoutNode, PaneNode, WorkspaceState } from "./state";
-import type { PaneId } from "./layout/types";
+import type { NodeId, PaneId } from "./layout/types";
 
 export type Listener = () => void;
 
@@ -34,7 +34,15 @@ export type WorkspaceApi = {
   remove(paneId: PaneId): boolean;
   swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean;
   resize(paneId: PaneId, options: ResizePaneOptions): boolean;
+  resizeHandle(splitId: NodeId, options: ResizeHandleOptions): boolean;
   focus(paneId: PaneId): boolean;
+  setContainerSize(width: number, height: number): boolean;
+};
+
+export type ResizeHandleOptions = {
+  index: number;
+  deltaPx: number;
+  snapshotSizes?: number[];
 };
 
 export class Workspace {
@@ -73,7 +81,33 @@ export class Workspace {
         this.commit(swapPanes(this.state, firstPaneId, secondPaneId)),
       resize: (paneId, resizeOptions) =>
         this.commit(resizePane(this.state, paneId, resizeOptions)),
+      resizeHandle: (splitId, resizeOptions) =>
+        this.commit(
+          resizeHandleOperation(
+            this.state,
+            splitId,
+            resizeOptions.index,
+            resizeOptions.deltaPx,
+            resizeOptions.snapshotSizes,
+          ),
+        ),
       focus: (paneId) => this.commit(focusPane(this.state, paneId)),
+      setContainerSize: (width, height) => {
+        if (
+          this.state.container.width === width &&
+          this.state.container.height === height
+        ) {
+          return false;
+        }
+
+        return this.commit({
+          ...this.state,
+          container: {
+            width,
+            height,
+          },
+        });
+      },
     };
   }
 
@@ -83,12 +117,6 @@ export class Workspace {
 
   getComputedLayout(): ComputedLayout {
     return computeLayout(this.state);
-  }
-
-  dispatch(action: WorkspaceAction): void {
-    const next = reducer(this.state, action);
-
-    this.commit(next);
   }
 
   private commit(next: WorkspaceState): boolean {
