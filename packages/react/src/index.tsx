@@ -18,7 +18,8 @@ export type { ResizeHandleProps } from "./ResizeHandle";
 
 export {
   useComputedLayout,
-  usePaneWorkspace,
+  useFocusGridKeymap,
+  useFocusGridWorkspace,
   useWorkspace,
   useWorkspaceState,
 } from "./hooks";

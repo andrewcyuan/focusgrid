@@ -13,7 +13,7 @@ import {
   type PaneComponentProps,
   FocusGridProvider,
   FocusGrid,
-  usePaneWorkspace,
+  useFocusGridWorkspace,
   useWorkspaceState,
   type PaneRenderContext,
 } from "@focusgrid/react";
@@ -64,7 +64,7 @@ const paneComponents: Record<string, PaneComponent> = {
 };
 
 export function App() {
-  const workspace = usePaneWorkspace(createInitialState);
+  const workspace = useFocusGridWorkspace(createInitialState);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
@@ -77,7 +77,7 @@ export function App() {
   }, [shortcuts]);
 
   return (
-    <FocusGridProvider workspace={workspace}>
+    <FocusGridProvider workspace={workspace} keymap={keymap}>
       <div className="AppShell" data-sidebar-open={sidebarOpen}>
         {sidebarOpen ? (
           <Sidebar
@@ -99,7 +99,6 @@ export function App() {
           />
           <FocusGrid
             className="PlaygroundFocusGrid"
-            keymap={keymap}
             renderPane={(ctx) => {
               return <PaneSlot ctx={ctx} />;
             }}

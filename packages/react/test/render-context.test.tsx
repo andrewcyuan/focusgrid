@@ -1,10 +1,15 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { createWorkspace, type WorkspaceState } from "@focusgrid/core";
+import {
+  createWorkspace,
+  type KeyBinding,
+  type WorkspaceState,
+} from "@focusgrid/core";
 import {
   FocusGridProvider,
   FocusGrid,
-  usePaneWorkspace,
+  useFocusGridKeymap,
+  useFocusGridWorkspace,
   type PaneRenderContext,
 } from "../src/index";
 
@@ -68,11 +73,11 @@ describe("pane render context", () => {
     ]);
   });
 
-  it("creates a workspace with usePaneWorkspace while keeping provider and root separate", () => {
+  it("creates a workspace with useFocusGridWorkspace while keeping provider and root separate", () => {
     let workspaceFromHook: ReturnType<typeof createWorkspace> | null = null;
 
     function TestApp() {
-      const workspace = usePaneWorkspace(state);
+      const workspace = useFocusGridWorkspace(state);
       workspaceFromHook = workspace;
 
       return (
@@ -87,5 +92,29 @@ describe("pane render context", () => {
     expect(markup).toContain("<span>left</span>");
     expect(markup).toContain("<span>right</span>");
     expect(workspaceFromHook?.getState().activePaneId).toBe("right");
+  });
+
+  it("exposes the provider keymap to focus grids by default", () => {
+    const workspace = createWorkspace(state());
+    const keymap: KeyBinding[] = [
+      {
+        sequence: "x",
+        command: "pane.close",
+      },
+    ];
+    let keymapFromHook: KeyBinding[] | undefined;
+
+    function TestApp() {
+      keymapFromHook = useFocusGridKeymap();
+      return <FocusGrid renderPane={(ctx) => <span>{ctx.paneId}</span>} />;
+    }
+
+    renderToStaticMarkup(
+      <FocusGridProvider workspace={workspace} keymap={keymap}>
+        <TestApp />
+      </FocusGridProvider>,
+    );
+
+    expect(keymapFromHook).toBe(keymap);
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import type { ComputedPane, KeyBinding, PaneId } from "@focusgrid/core";
 import { WorkspaceDomController } from "@focusgrid/dom";
-import { useComputedLayout, useWorkspace } from "./hooks";
+import { useComputedLayout, useFocusGridKeymap, useWorkspace } from "./hooks";
 import {
   createPaneMap,
   diffPaneLifecycle,
@@ -14,7 +14,7 @@ import type { PaneRenderContext } from "./PaneView";
 
 export type FocusGridProps = {
   renderPane: (ctx: PaneRenderContext) => ReactNode;
-  keymap?: KeyBinding[];
+  overrideKeymap?: KeyBinding[];
   className?: string;
   onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
   onPaneClose?: (event: PaneCloseEvent) => void;
@@ -22,12 +22,14 @@ export type FocusGridProps = {
 
 export function FocusGrid({
   renderPane,
-  keymap,
+  overrideKeymap,
   className,
   onPaneLayoutChange,
   onPaneClose,
 }: FocusGridProps) {
   const workspace = useWorkspace();
+  const providerKeymap = useFocusGridKeymap();
+  const keymap = overrideKeymap ?? providerKeymap;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const previousPaneMapRef = useRef<Map<PaneId, ComputedPane> | null>(
     null,

@@ -120,12 +120,23 @@ handling and resize observation together.
 
 The React package owns the public rendering API.
 
+`FocusGridProvider` owns the workspace context and the default keymap shared by
+descendant grids:
+
+```ts
+export type FocusGridProviderProps = {
+  workspace: Workspace;
+  keymap?: KeyBinding[];
+  children: ReactNode;
+};
+```
+
 The current public render API is in `packages/react/src/FocusGrid.tsx`:
 
 ```ts
 export type FocusGridProps = {
   renderPane: (paneId: string) => ReactNode;
-  keymap?: KeyBinding[];
+  overrideKeymap?: KeyBinding[];
   className?: string;
 };
 ```
@@ -196,7 +207,7 @@ type PaneRenderContext = {
 type FocusGridProps = {
   renderPane: (ctx: PaneRenderContext) => ReactNode;
   onPaneLayoutChange?: (ctx: PaneRenderContext) => void;
-  keymap?: KeyBinding[];
+  overrideKeymap?: KeyBinding[];
   className?: string;
 };
 ```

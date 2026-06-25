@@ -3,12 +3,13 @@ import {
   createWorkspace,
   type ComputedLayout,
   type CreateWorkspaceOptions,
+  type KeyBinding,
   type Workspace,
   type WorkspaceState,
 } from "@focusgrid/core";
-import { FocusGridWorkspaceContext } from "./FocusGridProvider";
+import { FocusGridContext } from "./FocusGridProvider";
 
-export function usePaneWorkspace(
+export function useFocusGridWorkspace(
   createInitialState: () => WorkspaceState,
   options?: CreateWorkspaceOptions,
 ): Workspace {
@@ -21,14 +22,22 @@ export function usePaneWorkspace(
   return workspaceRef.current;
 }
 
-export function useWorkspace(): Workspace {
-  const workspace = useContext(FocusGridWorkspaceContext);
+export function useFocusGridKeymap(): KeyBinding[] | undefined {
+  return useFocusGridContext().keymap;
+}
 
-  if (!workspace) {
-    throw new Error("useWorkspace must be used inside <FocusGridProvider>");
+export function useWorkspace(): Workspace {
+  return useFocusGridContext().workspace;
+}
+
+function useFocusGridContext() {
+  const context = useContext(FocusGridContext);
+
+  if (!context) {
+    throw new Error("FocusGrid hooks must be used inside <FocusGridProvider>");
   }
 
-  return workspace;
+  return context;
 }
 
 export function useWorkspaceState(): WorkspaceState {
