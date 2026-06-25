@@ -5,9 +5,11 @@
     "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
-      "@focusgrid/core": ["packages/core/src/index.ts"],
-      "@focusgrid/dom": ["packages/dom/src/index.ts"],
-      "@focusgrid/react": ["packages/react/src/index.tsx"]
+      "@focusgrid/core": ["packages/focusgrid-core/src/index.ts"],
+      "@focusgrid/dom": ["packages/focusgrid-dom/src/index.ts"],
+      "@focusgrid/react": ["packages/focusgrid-react/src/index.tsx"],
+      "@focusgrid/kcl": ["packages/kcl/src/index.ts"],
+      "@focusgrid/kcl-react": ["packages/kcl-react/src/index.tsx"]
     },
     "strict": true,
     "declaration": true,

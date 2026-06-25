@@ -6,19 +6,37 @@ export default defineConfig({
     alias: [
       {
         find: "@focusgrid/react/styles.css",
-        replacement: fileURLToPath(new URL("../react/src/styles.css", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL("../focusgrid-react/src/styles.css", import.meta.url),
+        ),
       },
       {
         find: "@focusgrid/core",
-        replacement: fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL("../focusgrid-core/src/index.ts", import.meta.url),
+        ),
       },
       {
         find: "@focusgrid/dom",
-        replacement: fileURLToPath(new URL("../dom/src/index.ts", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL("../focusgrid-dom/src/index.ts", import.meta.url),
+        ),
       },
       {
         find: "@focusgrid/react",
-        replacement: fileURLToPath(new URL("../react/src/index.tsx", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL("../focusgrid-react/src/index.tsx", import.meta.url),
+        ),
+      },
+      {
+        find: "@focusgrid/kcl",
+        replacement: fileURLToPath(new URL("../kcl/src/index.ts", import.meta.url)),
+      },
+      {
+        find: "@focusgrid/kcl-react",
+        replacement: fileURLToPath(
+          new URL("../kcl-react/src/index.tsx", import.meta.url),
+        ),
       },
     ],
   },

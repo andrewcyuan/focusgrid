@@ -32,12 +32,12 @@ browser event / command
 ```
 
 The center of the system is `Workspace.api` in
-`packages/core/src/workspace.ts`. API methods run layout operations, store the
+`packages/focusgrid-core/src/workspace.ts`. API methods run layout operations, store the
 new state, and notify subscribers when the state object changes.
 
 ## Core Package
 
-The persistent state shape lives in `packages/core/src/layout/types.ts`:
+The persistent state shape lives in `packages/focusgrid-core/src/layout/types.ts`:
 
 ```ts
 type WorkspaceState = {
@@ -64,7 +64,7 @@ split
 A `SplitNode` stores proportional `sizes`, not pixel rectangles. Pixel
 rectangles are derived later from the current container size.
 
-The layout operations are in `packages/core/src/layout/operations.ts`. The main
+The layout operations are in `packages/focusgrid-core/src/layout/operations.ts`. The main
 workspace API operations are:
 
 ```txt
@@ -77,7 +77,7 @@ resizeHandle
 ```
 
 Actual pixel layout is computed on demand in
-`packages/core/src/layout/solver.ts`. `computeLayout(state)` walks the tree and
+`packages/focusgrid-core/src/layout/solver.ts`. `computeLayout(state)` walks the tree and
 produces:
 
 ```ts
@@ -95,7 +95,7 @@ panes.
 The DOM package does not render panes. It only listens to browser events and
 dispatches workspace actions.
 
-Root size changes come from `packages/dom/src/resize-observer.ts`:
+Root size changes come from `packages/focusgrid-dom/src/resize-observer.ts`:
 
 ```txt
 ResizeObserver fires
@@ -104,7 +104,7 @@ ResizeObserver fires
   -> React rerenders layout
 ```
 
-Handle drags come from `packages/dom/src/pointer-resize.ts`:
+Handle drags come from `packages/focusgrid-dom/src/pointer-resize.ts`:
 
 ```txt
 pointermove on resize handle
@@ -113,7 +113,7 @@ pointermove on resize handle
   -> layout recomputes
 ```
 
-The root DOM controller in `packages/dom/src/controller.ts` wires keyboard
+The root DOM controller in `packages/focusgrid-dom/src/controller.ts` wires keyboard
 handling and resize observation together.
 
 ## React Package
@@ -131,7 +131,7 @@ export type FocusGridProviderProps = {
 };
 ```
 
-The current public render API is in `packages/react/src/FocusGrid.tsx`:
+The current public render API is in `packages/focusgrid-react/src/FocusGrid.tsx`:
 
 ```ts
 export type FocusGridProps = {
@@ -155,11 +155,11 @@ Then it renders every computed pane:
 ))}
 ```
 
-The subscription is in `packages/react/src/hooks.ts`. `useSyncExternalStore`
+The subscription is in `packages/focusgrid-react/src/hooks.ts`. `useSyncExternalStore`
 subscribes to `workspace.subscribe()`, so any successful dispatch causes React
 to update.
 
-The content render call is in `packages/react/src/PaneView.tsx`:
+The content render call is in `packages/focusgrid-react/src/PaneView.tsx`:
 
 ```tsx
 {renderPane(pane.paneId)}
@@ -185,9 +185,9 @@ If the goal is to let clients pass both an initial `render()` and a callback
 that runs when layout changes, the files to start with are:
 
 ```txt
-packages/react/src/FocusGrid.tsx
-packages/react/src/PaneView.tsx
-packages/react/src/hooks.ts
+packages/focusgrid-react/src/FocusGrid.tsx
+packages/focusgrid-react/src/PaneView.tsx
+packages/focusgrid-react/src/hooks.ts
 ```
 
 This likely does not belong in `core`. Core already exposes layout. It also
@@ -273,24 +273,24 @@ already owns rerendering. The callback is really a layout notification hook.
 For client rendering behavior, start in:
 
 ```txt
-packages/react/src/FocusGrid.tsx
-packages/react/src/PaneView.tsx
+packages/focusgrid-react/src/FocusGrid.tsx
+packages/focusgrid-react/src/PaneView.tsx
 ```
 
 For why layout changed, trace backward through:
 
 ```txt
-packages/react/src/hooks.ts
-packages/core/src/workspace.ts
-packages/core/src/layout/operations.ts
-packages/core/src/layout/solver.ts
+packages/focusgrid-react/src/hooks.ts
+packages/focusgrid-core/src/workspace.ts
+packages/focusgrid-core/src/layout/operations.ts
+packages/focusgrid-core/src/layout/solver.ts
 ```
 
 For browser-driven layout changes, start in:
 
 ```txt
-packages/dom/src/resize-observer.ts
-packages/dom/src/pointer-resize.ts
+packages/focusgrid-dom/src/resize-observer.ts
+packages/focusgrid-dom/src/pointer-resize.ts
 ```
 
 The shortest mental model is:
