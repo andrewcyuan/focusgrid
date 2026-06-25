@@ -4,6 +4,7 @@ import { createWorkspace, type WorkspaceState } from "@focusgrid/core";
 import {
   PaneProvider,
   PaneRoot,
+  usePaneWorkspace,
   type PaneRenderContext,
 } from "../src/index";
 
@@ -65,5 +66,26 @@ describe("pane render context", () => {
         workspace,
       },
     ]);
+  });
+
+  it("creates a workspace with usePaneWorkspace while keeping provider and root separate", () => {
+    let workspaceFromHook: ReturnType<typeof createWorkspace> | null = null;
+
+    function TestApp() {
+      const workspace = usePaneWorkspace(state);
+      workspaceFromHook = workspace;
+
+      return (
+        <PaneProvider workspace={workspace}>
+          <PaneRoot renderPane={(ctx) => <span>{ctx.paneId}</span>} />
+        </PaneProvider>
+      );
+    }
+
+    const markup = renderToStaticMarkup(<TestApp />);
+
+    expect(markup).toContain("<span>left</span>");
+    expect(markup).toContain("<span>right</span>");
+    expect(workspaceFromHook?.getState().activePaneId).toBe("right");
   });
 });

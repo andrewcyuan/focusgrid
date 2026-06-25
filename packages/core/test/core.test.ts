@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
   KeyRouter,
+  cardinalDirections,
   createDefaultPaneKeymap,
+  createDefaultPaneShortcuts,
   createWorkspace,
   defaultPaneShortcutActions,
+  normalizeKeySequenceInput,
+  paneFocusDirections,
+  paneResizeDirections,
+  paneSplitSides,
+  paneSwapDirections,
   parseKeySequence,
   reducer,
   swapPaneInDirection,
   swapPanes,
+  validateKeySequenceInput,
   type WorkspaceState,
 } from "../src";
 
@@ -77,9 +85,9 @@ describe("workspace", () => {
     });
 
     const down = createWorkspace(initialState());
-    expect(down.api.split("editor", { side: "down", newPaneId: "console" })).toBe(
-      "console",
-    );
+    expect(
+      down.api.split("editor", { side: "down", newPaneId: "console" }),
+    ).toBe("console");
     expect(down.getState().root).toMatchObject({
       kind: "split",
       direction: "vertical",
@@ -103,9 +111,9 @@ describe("workspace", () => {
 
     expect(newPaneId).toEqual(expect.stringMatching(/^pane-/));
     expect(generated.getState().activePaneId).toBe(newPaneId);
-    expect(generated.getComputedLayout().panes.map((pane) => pane.paneId)).toContain(
-      newPaneId,
-    );
+    expect(
+      generated.getComputedLayout().panes.map((pane) => pane.paneId),
+    ).toContain(newPaneId);
 
     const preserved = createWorkspace(initialState());
     expect(
@@ -311,9 +319,9 @@ describe("workspace", () => {
 
     expect(newPaneId).toEqual(expect.stringMatching(/^pane-/));
     expect(generated.getState().activePaneId).toBe(newPaneId);
-    expect(generated.getComputedLayout().panes.map((pane) => pane.paneId)).toContain(
-      newPaneId,
-    );
+    expect(
+      generated.getComputedLayout().panes.map((pane) => pane.paneId),
+    ).toContain(newPaneId);
 
     const duplicatePaneId = createWorkspace(horizontalSplitState());
     const beforeDuplicatePaneId = duplicatePaneId.getState();
@@ -1004,9 +1012,9 @@ describe("workspace", () => {
   it("exposes scriptable pane resize and focus through workspace.api", () => {
     const workspace = createWorkspace(horizontalSplitState());
 
-    expect(workspace.api.resize("left", { direction: "right", deltaPx: 100 })).toBe(
-      true,
-    );
+    expect(
+      workspace.api.resize("left", { direction: "right", deltaPx: 100 }),
+    ).toBe(true);
     expect(workspace.api.focus("right")).toBe(true);
     expect(workspace.getState().activePaneId).toBe("right");
     expect(workspace.api.focus("missing")).toBe(false);
@@ -1019,17 +1027,17 @@ describe("workspace", () => {
     const zeroDelta = createWorkspace(horizontalSplitState());
     const beforeZeroDelta = zeroDelta.getState();
 
-    expect(zeroDelta.api.resize("left", { direction: "right", deltaPx: 0 })).toBe(
-      false,
-    );
+    expect(
+      zeroDelta.api.resize("left", { direction: "right", deltaPx: 0 }),
+    ).toBe(false);
     expect(zeroDelta.getState()).toBe(beforeZeroDelta);
 
     const noBoundary = createWorkspace(horizontalSplitState());
     const beforeNoBoundary = noBoundary.getState();
 
-    expect(noBoundary.api.resize("left", { direction: "up", deltaPx: 100 })).toBe(
-      false,
-    );
+    expect(
+      noBoundary.api.resize("left", { direction: "up", deltaPx: 100 }),
+    ).toBe(false);
     expect(noBoundary.getState()).toBe(beforeNoBoundary);
 
     const zeroContainer = createWorkspace({
@@ -1604,6 +1612,17 @@ function horizontalTargetWithStaleMemoryState(): WorkspaceState {
 }
 
 describe("keyboard", () => {
+  it("creates typed default pane shortcut values from the exported actions", () => {
+    expect(createDefaultPaneShortcuts()).toEqual(
+      Object.fromEntries(
+        defaultPaneShortcutActions.map((action) => [
+          action.id,
+          action.defaultSequence,
+        ]),
+      ),
+    );
+  });
+
   it("creates the default pane keymap from the exported shortcut actions", () => {
     const keymap = createDefaultPaneKeymap();
 
@@ -1629,6 +1648,7 @@ describe("keyboard", () => {
       "split-right": "Ctrl-B R",
       close: "",
       "focus-left": "Ctrl+B",
+      "focus-right": "Ctrl+",
     });
 
     expect(
@@ -1640,9 +1660,32 @@ describe("keyboard", () => {
     expect(keymap.some((binding) => binding.command === "pane.close")).toBe(
       false,
     );
-    expect(keymap.some((binding) => binding.command === "pane.focusLeft")).toBe(
-      false,
+    expect(
+      keymap.find((binding) => binding.command === "pane.focusLeft"),
+    ).toMatchObject({
+      sequence: parseKeySequence("Ctrl-B"),
+      command: "pane.focusLeft",
+    });
+    expect(
+      keymap.some((binding) => binding.command === "pane.focusRight"),
+    ).toBe(false);
+  });
+
+  it("normalizes and validates shortcut input for editors", () => {
+    expect(normalizeKeySequenceInput("  Ctrl+B   Shift+Left  ")).toBe(
+      "Ctrl-B Shift-Left",
     );
+
+    expect(validateKeySequenceInput("Ctrl+B")).toEqual({
+      ok: true,
+      sequence: parseKeySequence("Ctrl-B"),
+      value: "Ctrl-B",
+    });
+
+    expect(validateKeySequenceInput("Ctrl+")).toEqual({
+      ok: false,
+      error: "Invalid key stroke: Ctrl+",
+    });
   });
 
   it("parses multi-stroke shortcuts and matches them through the router", () => {
@@ -1706,7 +1749,9 @@ describe("keyboard", () => {
   });
 
   it("uses dashes for modifier key syntax and normalizes arrow aliases", () => {
-    expect(parseKeySequence("Ctrl-Shift-B Arrow-Left ArrowRight Ctrl-+ -")).toEqual([
+    expect(
+      parseKeySequence("Ctrl-Shift-B Arrow-Left ArrowRight Ctrl-+ -"),
+    ).toEqual([
       {
         key: "b",
         ctrl: true,

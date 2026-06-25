@@ -1,5 +1,5 @@
 import type { KeyBinding } from "./keymap";
-import { parseKeySequence } from "./parser";
+import { validateKeySequenceInput } from "./parser";
 
 export type DefaultPaneCommand =
   | "pane.splitRight"
@@ -131,9 +131,20 @@ export const defaultPaneShortcutActions = [
 ] as const satisfies readonly PaneShortcutAction[];
 
 export type PaneShortcutId = (typeof defaultPaneShortcutActions)[number]["id"];
+export type PaneShortcutOverrides = Partial<Record<PaneShortcutId, string>>;
+export type PaneShortcutValues = Record<PaneShortcutId, string>;
+
+export function createDefaultPaneShortcuts(): PaneShortcutValues {
+  return Object.fromEntries(
+    defaultPaneShortcutActions.map((action) => [
+      action.id,
+      action.defaultSequence,
+    ]),
+  ) as PaneShortcutValues;
+}
 
 export function createDefaultPaneKeymap(
-  shortcuts: Partial<Record<PaneShortcutId, string>> = {},
+  shortcuts: PaneShortcutOverrides = {},
 ): KeyBinding[] {
   return defaultPaneShortcutActions.flatMap((action) => {
     const sequence = (shortcuts[action.id] ?? action.defaultSequence).trim();
@@ -144,18 +155,20 @@ export function createDefaultPaneKeymap(
       return [];
     }
 
-    try {
-      return [
-        {
-          sequence: parseKeySequence(sequence),
-          command: action.command,
-          args,
-          preventDefault: true,
-          repeat,
-        },
-      ];
-    } catch {
+    const validation = validateKeySequenceInput(sequence);
+
+    if (!validation.ok) {
       return [];
     }
+
+    return [
+      {
+        sequence: validation.sequence,
+        command: action.command,
+        args,
+        preventDefault: true,
+        repeat,
+      },
+    ];
   });
 }

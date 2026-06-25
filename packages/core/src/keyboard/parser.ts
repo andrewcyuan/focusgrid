@@ -1,12 +1,51 @@
 import { createKeyStroke } from "./normalize";
 import type { KeySequence, KeyStroke } from "./keymap";
 
+export type KeySequenceValidationResult =
+  | {
+      ok: true;
+      sequence: KeySequence;
+      value: string;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
 export function parseKeySequence(input: string): KeySequence {
   return input
     .trim()
     .split(/\s+/)
     .filter(Boolean)
     .map(parseKeyStroke);
+}
+
+export function normalizeKeySequenceInput(input: string): string {
+  return input
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(normalizeKeyStrokeInput)
+    .join(" ");
+}
+
+export function validateKeySequenceInput(
+  input: string,
+): KeySequenceValidationResult {
+  const value = normalizeKeySequenceInput(input);
+
+  try {
+    return {
+      ok: true,
+      sequence: parseKeySequence(value),
+      value,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Invalid key sequence",
+    };
+  }
 }
 
 export function parseKeyStroke(input: string): KeyStroke {
@@ -36,6 +75,22 @@ export function parseKeyStroke(input: string): KeyStroke {
   }
 
   return stroke;
+}
+
+function normalizeKeyStrokeInput(input: string): string {
+  if (!input.includes("+")) {
+    return input;
+  }
+
+  const parts = input.split("+");
+  const key = parts.at(-1);
+  const modifiers = parts.slice(0, -1);
+
+  if (!key || modifiers.length === 0 || !modifiers.every(isModifierName)) {
+    return input;
+  }
+
+  return [...modifiers, key].join("-");
 }
 
 function splitKeyStroke(input: string): { modifiers: string[]; key: string } {

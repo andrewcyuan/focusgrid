@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentType, CSSProperties, ReactNode } from "react";
 import type { ComputedPane, PaneId, Rect, Workspace } from "@focusgrid/core";
 import { useWorkspace } from "./hooks";
 
@@ -8,6 +8,9 @@ export type PaneRenderContext = {
   active: boolean;
   workspace: Workspace;
 };
+
+export type PaneComponentProps = PaneRenderContext;
+export type PaneComponent = ComponentType<PaneComponentProps>;
 
 export type PaneViewProps = {
   pane: ComputedPane;

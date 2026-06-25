@@ -15,6 +15,13 @@ export type { PaneResizeCommandArgs } from "./commands/registry";
 export type { CommandContext, CommandHandler } from "./commands/types";
 
 export {
+  cardinalDirections,
+  paneFocusDirections,
+  paneResizeDirections,
+  paneSplitSides,
+  paneSwapDirections,
+} from "./layout/types";
+export {
   buildLayoutIndex,
   closePane,
   collectPaneIds,
@@ -31,7 +38,6 @@ export {
   wrapRootInSplit,
 } from "./layout/operations";
 export type {
-  PaneSplitSide,
   ResizePaneOptions,
   SplitPaneOptions,
   WrapRootInSplitOptions,
@@ -43,15 +49,24 @@ export { getMinimumSize } from "./layout/min-size";
 export { deserializeWorkspace, serializeWorkspace } from "./layout/serialize";
 
 export { createKeyStroke, normalizeKeyName, strokeToId } from "./keyboard/normalize";
-export { parseKeySequence, parseKeyStroke } from "./keyboard/parser";
+export {
+  normalizeKeySequenceInput,
+  parseKeySequence,
+  parseKeyStroke,
+  validateKeySequenceInput,
+} from "./keyboard/parser";
+export type { KeySequenceValidationResult } from "./keyboard/parser";
 export {
   createDefaultPaneKeymap,
+  createDefaultPaneShortcuts,
   defaultPaneShortcutActions,
 } from "./keyboard/default-pane-keymap";
 export type {
   DefaultPaneCommand,
   PaneShortcutAction,
   PaneShortcutId,
+  PaneShortcutOverrides,
+  PaneShortcutValues,
 } from "./keyboard/default-pane-keymap";
 export { createTrie, KeyRouter } from "./keyboard/trie";
 export type { KeyRouterOptions } from "./keyboard/trie";
@@ -67,6 +82,7 @@ export type {
   ComputedHandle,
   ComputedLayout,
   ComputedPane,
+  CardinalDirection,
   Direction,
   LayoutIndex,
   LayoutNode,
@@ -75,6 +91,7 @@ export type {
   PaneId,
   PaneNode,
   PaneResizeDirection,
+  PaneSplitSide,
   PaneSwapDirection,
   Rect,
   SplitNode,

@@ -1,6 +1,25 @@
-import { useContext, useSyncExternalStore } from "react";
-import type { ComputedLayout, Workspace, WorkspaceState } from "@focusgrid/core";
+import { useContext, useRef, useSyncExternalStore } from "react";
+import {
+  createWorkspace,
+  type ComputedLayout,
+  type CreateWorkspaceOptions,
+  type Workspace,
+  type WorkspaceState,
+} from "@focusgrid/core";
 import { PaneWorkspaceContext } from "./PaneProvider";
+
+export function usePaneWorkspace(
+  createInitialState: () => WorkspaceState,
+  options?: CreateWorkspaceOptions,
+): Workspace {
+  const workspaceRef = useRef<Workspace | null>(null);
+
+  if (!workspaceRef.current) {
+    workspaceRef.current = createWorkspace(createInitialState(), options);
+  }
+
+  return workspaceRef.current;
+}
 
 export function useWorkspace(): Workspace {
   const workspace = useContext(PaneWorkspaceContext);

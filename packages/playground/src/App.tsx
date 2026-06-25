@@ -1,16 +1,19 @@
 import {
-  createDefaultCommandRegistry,
   createDefaultPaneKeymap,
-  createWorkspace,
   collectPaneIds,
   defaultPaneShortcutActions,
-  type PaneSplitSide,
+  paneSplitSides,
+  type PaneShortcutId,
+  type PaneShortcutValues,
   type Workspace,
   type WorkspaceState,
 } from "@focusgrid/core";
 import {
+  type PaneComponent,
+  type PaneComponentProps,
   PaneProvider,
   PaneRoot,
+  usePaneWorkspace,
   useWorkspaceState,
   type PaneRenderContext,
 } from "@focusgrid/react";
@@ -20,17 +23,8 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type ComponentType,
 } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
-
-type PaneComponentProps = {
-  paneId: string;
-  active: boolean;
-  workspace: Workspace;
-};
-
-const rootWrapSides: PaneSplitSide[] = ["left", "right", "up", "down"];
 
 function createInitialState(): WorkspaceState {
   return {
@@ -64,16 +58,13 @@ function createInitialState(): WorkspaceState {
   };
 }
 
-const workspace = createWorkspace(createInitialState(), {
-  commands: createDefaultCommandRegistry(),
-});
-
-const paneComponents: Record<string, ComponentType<PaneComponentProps>> = {
+const paneComponents: Record<string, PaneComponent> = {
   alpha: TextPane,
   beta: TextPane,
 };
 
 export function App() {
+  const workspace = usePaneWorkspace(createInitialState);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(() => createDefaultPaneKeymap(shortcuts), [shortcuts]);
@@ -120,8 +111,8 @@ function Sidebar({
   shortcuts,
   onShortcutChange,
 }: {
-  shortcuts: Record<string, string>;
-  onShortcutChange: (id: string, sequence: string) => void;
+  shortcuts: PaneShortcutValues;
+  onShortcutChange: (id: PaneShortcutId, sequence: string) => void;
 }) {
   return (
     <aside className="Sidebar">
@@ -180,7 +171,7 @@ function Toolbar({
       </button>
       <div className="ToolbarActions">
         <div className="ToolbarButtonGroup" aria-label="Wrap root in split">
-          {rootWrapSides.map((side) => (
+          {paneSplitSides.map((side) => (
             <button
               key={side}
               type="button"
@@ -222,11 +213,7 @@ function Toolbar({
               return;
             }
 
-            workspace.dispatch({
-              type: "pane.swap",
-              firstPaneId: activePaneId,
-              secondPaneId: swapTargetId,
-            });
+            workspace.api.swap(activePaneId, swapTargetId);
           }}
         >
           Swap
@@ -245,13 +232,7 @@ function Toolbar({
 function PaneSlot({ ctx }: { ctx: PaneRenderContext }) {
   const Component = paneComponents[ctx.paneId] ?? TextPane;
 
-  return (
-    <Component
-      paneId={ctx.paneId}
-      active={ctx.active}
-      workspace={ctx.workspace}
-    />
-  );
+  return <Component {...ctx} />;
 }
 
 function TextPane({ paneId, active, workspace }: PaneComponentProps) {
@@ -275,10 +256,7 @@ function TextPane({ paneId, active, workspace }: PaneComponentProps) {
         ref={inputRef}
         defaultValue={`This is pane "${paneId}". Focus this textbox to focus its pane.`}
         onFocus={() => {
-          workspace.dispatch({
-            type: "pane.focus",
-            paneId,
-          });
+          workspace.api.focus(paneId);
         }}
       />
     </section>

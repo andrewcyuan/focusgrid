@@ -10,6 +10,7 @@ import type {
   PaneFocusDirection,
   PaneId,
   PaneResizeDirection,
+  PaneSplitSide,
   PaneSwapDirection,
   PaneNode,
   Rect,
@@ -131,8 +132,6 @@ export function findPaneInDirection(
 
   return null;
 }
-
-export type PaneSplitSide = "left" | "right" | "up" | "down";
 
 export type SplitPaneOptions = {
   side: PaneSplitSide;

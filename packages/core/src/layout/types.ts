@@ -2,9 +2,18 @@ export type PaneId = string;
 export type NodeId = string;
 
 export type Direction = "horizontal" | "vertical";
-export type PaneFocusDirection = "left" | "right" | "up" | "down";
-export type PaneResizeDirection = "left" | "right" | "up" | "down";
-export type PaneSwapDirection = "left" | "right" | "up" | "down";
+export const cardinalDirections = ["left", "right", "up", "down"] as const;
+
+export type CardinalDirection = (typeof cardinalDirections)[number];
+export type PaneSplitSide = CardinalDirection;
+export type PaneFocusDirection = CardinalDirection;
+export type PaneResizeDirection = CardinalDirection;
+export type PaneSwapDirection = CardinalDirection;
+
+export const paneSplitSides = cardinalDirections;
+export const paneFocusDirections = cardinalDirections;
+export const paneResizeDirections = cardinalDirections;
+export const paneSwapDirections = cardinalDirections;
 
 export type PaneNode = {
   kind: "pane";
