@@ -5,6 +5,8 @@ FocusGrid pane. It treats the list like a file tree: the list root owns focus in
 row mode, arrow keys move the active row, `Space` activates the row, and `Enter`
 opens inline editing.
 
+We created the playground to be a good model of how clients can use KCL.
+
 ## Data Model
 
 The playground keeps todo data as plain immutable state. Row actions receive the
