@@ -198,7 +198,7 @@ test("KCL route keeps focus on the list root and moves active row with arrows", 
   ).toHaveAttribute("aria-selected", "true");
 });
 
-test("KCL Enter toggles the active todo without moving DOM focus into rows", async ({
+test("KCL Space toggles the active todo without moving DOM focus into rows", async ({
   page,
 }) => {
   await page.goto("/kcl");
@@ -212,7 +212,7 @@ test("KCL Enter toggles the active todo without moving DOM focus into rows", asy
   await expect(alphaList).toBeFocused();
   await expect(checkbox).not.toBeChecked();
 
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Space");
 
   await expect(alphaList).toBeFocused();
   await expect(checkbox).toBeChecked();
@@ -222,7 +222,87 @@ test("KCL Enter toggles the active todo without moving DOM focus into rows", asy
   );
 });
 
-test("KCL pointer selection focuses the list and activates rows on double click", async ({
+test("KCL Enter edits the active todo and returns focus to the list", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const firstRow = page
+    .locator('[data-kcl-pane-id="alpha"] [role="option"]')
+    .first();
+
+  await expect(alphaList).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const editor = firstRow.locator('[data-kcl-edit-input="true"]');
+  await expect(editor).toBeFocused();
+  await expect
+    .poll(async () =>
+      editor.evaluate((element) => {
+        const input = element as HTMLInputElement;
+        return [input.selectionStart, input.selectionEnd, input.value.length];
+      }),
+    )
+    .toEqual([0, "Triage alpha inbox".length, "Triage alpha inbox".length]);
+
+  await page.keyboard.type("Buy milk");
+  await expect(editor).toHaveValue("Buy milk");
+
+  await page.keyboard.press("Enter");
+  await expect(alphaList).toBeFocused();
+  await expect(firstRow.locator('[data-kcl-edit-input="true"]')).toHaveCount(0);
+  await expect(firstRow.locator("span")).toHaveText("Buy milk");
+});
+
+test("KCL Escape exits edit mode and preserves typed text", async ({ page }) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const firstRow = page
+    .locator('[data-kcl-pane-id="alpha"] [role="option"]')
+    .first();
+
+  await expect(alphaList).toBeFocused();
+  await page.keyboard.press("Enter");
+  const editor = firstRow.locator('[data-kcl-edit-input="true"]');
+  await expect(editor).toBeFocused();
+
+  await page.keyboard.type("Preserved");
+  await page.keyboard.press("Escape");
+
+  await expect(alphaList).toBeFocused();
+  await expect(firstRow.locator('[data-kcl-edit-input="true"]')).toHaveCount(0);
+  await expect(firstRow.locator("span")).toHaveText("Preserved");
+});
+
+test("KCL Space inside the edit input inserts text instead of toggling", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const firstRow = page
+    .locator('[data-kcl-pane-id="alpha"] [role="option"]')
+    .first();
+  const checkbox = firstRow.locator('input[type="checkbox"]');
+
+  await expect(checkbox).not.toBeChecked();
+  await expect(
+    page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]'),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const editor = firstRow.locator('[data-kcl-edit-input="true"]');
+  await expect(editor).toBeFocused();
+  await page.keyboard.type("Buy");
+  await page.keyboard.press("Space");
+  await page.keyboard.type("milk");
+
+  await expect(editor).toHaveValue("Buy milk");
+  await expect(checkbox).not.toBeChecked();
+});
+
+test("KCL pointer selection focuses the list and double click edits rows", async ({
   page,
 }) => {
   await page.goto("/kcl");
@@ -239,8 +319,8 @@ test("KCL pointer selection focuses the list and activates rows on double click"
   await expect(thirdCheckbox).not.toBeChecked();
 
   await thirdRow.dblclick();
-  await expect(alphaList).toBeFocused();
-  await expect(thirdCheckbox).toBeChecked();
+  await expect(thirdRow.locator('[data-kcl-edit-input="true"]')).toBeFocused();
+  await expect(thirdCheckbox).not.toBeChecked();
 });
 
 test("KCL route exposes FocusGrid shortcuts and pane shortcuts work while list is focused", async ({

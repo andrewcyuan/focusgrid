@@ -31,9 +31,15 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
-import { createInitialTodos, toggleTodo, type TodoItem } from "./kcl-todos";
+import {
+  createInitialTodos,
+  toggleTodo,
+  updateTodoLabel,
+  type TodoItem,
+} from "./kcl-todos";
 
 function createInitialState(): FocusGridControllerState {
   return {
@@ -434,6 +440,7 @@ function KCLTodoPane({
   shortcuts,
 }: PaneComponentProps & { shortcuts: KCLShortcutValues }) {
   const [todos, setTodos] = useState(() => createInitialTodos(paneId));
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const kclController = useKCLController({
     itemCount: todos.length,
     orientation: "vertical",
@@ -445,6 +452,9 @@ function KCLTodoPane({
         overrides: shortcuts,
         onActivate: (ctx) => {
           setTodos((current) => toggleTodo(current, ctx.index));
+        },
+        onEdit: (ctx) => {
+          setEditingIndex(ctx.index);
         },
       }),
     [shortcuts],
@@ -461,6 +471,40 @@ function KCLTodoPane({
     );
     list?.focus();
   }, [active, controller, paneId]);
+
+  useEffect(() => {
+    const input = paneRef.current?.querySelector<HTMLInputElement>(
+      '[data-kcl-edit-input="true"]',
+    );
+
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    input.select();
+  }, [editingIndex]);
+
+  const focusListRoot = () => {
+    paneRef.current
+      ?.querySelector<HTMLElement>(".KCLKeyboardControlledList")
+      ?.focus();
+  };
+
+  const stopEditing = () => {
+    setEditingIndex(null);
+    requestAnimationFrame(focusListRoot);
+  };
+
+  const onEditInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter" && event.key !== "Escape") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    stopEditing();
+  };
 
   return (
     <section
@@ -479,10 +523,29 @@ function KCLTodoPane({
         direction="vertical"
         dataList={todos}
         renderCell={(ctx) => (
-          <label className="KCLTodoRow" data-checked={ctx.data.checked}>
-            <input type="checkbox" readOnly checked={ctx.data.checked} />
-            <span>{ctx.data.label}</span>
-          </label>
+          <div className="KCLTodoRow" data-checked={ctx.data.checked}>
+            <input
+              type="checkbox"
+              tabIndex={-1}
+              readOnly
+              checked={ctx.data.checked}
+            />
+            {editingIndex === ctx.index ? (
+              <input
+                data-kcl-edit-input="true"
+                value={ctx.data.label}
+                spellCheck={false}
+                onChange={(event) => {
+                  setTodos((current) =>
+                    updateTodoLabel(current, ctx.index, event.target.value),
+                  );
+                }}
+                onKeyDown={onEditInputKeyDown}
+              />
+            ) : (
+              <span>{ctx.data.label}</span>
+            )}
+          </div>
         )}
       />
     </section>

@@ -24,9 +24,11 @@ export type KCLRowDomProps = {
   role: "option";
   "aria-selected": "true" | "false";
   tabIndex: -1;
-  onPointerDown: (event: Pick<PointerEvent, "preventDefault">) => void;
-  onClick: () => void;
-  onDoubleClick: () => void;
+  onPointerDown: (
+    event: Pick<PointerEvent, "preventDefault" | "target">,
+  ) => void;
+  onClick: (event: Pick<MouseEvent, "target">) => void;
+  onDoubleClick: (event: Pick<MouseEvent, "target">) => void;
 };
 
 export class KCLDomController<T> {
@@ -46,6 +48,10 @@ export class KCLDomController<T> {
   };
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
+    if (isEditableEventTarget(event.target, this.rootEl)) {
+      return;
+    }
+
     if (isModifierOnlyKey(event.key)) {
       return;
     }
@@ -140,16 +146,28 @@ export class KCLDomController<T> {
         this.controller.getState().activeIndex === index ? "true" : "false",
       tabIndex: -1,
       onPointerDown: (event) => {
+        if (isEditableEventTarget(event.target, this.rootEl)) {
+          return;
+        }
+
         event.preventDefault();
       },
-      onClick: () => {
+      onClick: (event) => {
+        if (isEditableEventTarget(event.target, this.rootEl)) {
+          return;
+        }
+
         this.focusRoot();
         this.controller.api.setActiveIndex(index);
       },
-      onDoubleClick: () => {
+      onDoubleClick: (event) => {
+        if (isEditableEventTarget(event.target, this.rootEl)) {
+          return;
+        }
+
         this.focusRoot();
         this.controller.api.setActiveIndex(index);
-        this.runActivateAction();
+        this.runCommandAction("edit");
       },
     };
   }
@@ -187,7 +205,12 @@ export class KCLDomController<T> {
       }
 
       if (action.command === "activate") {
-        this.runActivateAction();
+        this.runCommandAction("activate");
+        return;
+      }
+
+      if (action.command === "edit") {
+        this.runCommandAction("edit");
       }
 
       return;
@@ -200,11 +223,11 @@ export class KCLDomController<T> {
     }
   }
 
-  private runActivateAction(): void {
+  private runCommandAction(command: "activate" | "edit"): void {
     for (const binding of resolveKCLKeymap(this.keymap)) {
       const action = binding.args;
 
-      if (action?.kind === "cell") {
+      if (action?.kind === "cell" && action.command === command) {
         this.runAction(action);
         return;
       }
@@ -216,4 +239,30 @@ export class KCLDomController<T> {
       this.rootEl.focus();
     }
   }
+}
+
+function isEditableEventTarget(
+  target: EventTarget | null,
+  rootEl: HTMLElement,
+): boolean {
+  if (!target || target === rootEl || !("tagName" in target)) {
+    return false;
+  }
+
+  const element = target as Element & {
+    isContentEditable?: boolean;
+  };
+  const tagName = element.tagName.toLowerCase();
+  const role =
+    typeof element.getAttribute === "function"
+      ? element.getAttribute("role")
+      : null;
+
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    element.isContentEditable === true ||
+    role === "textbox"
+  );
 }

@@ -279,12 +279,23 @@ textarea {
   flex: 0 0 auto;
 }
 
+.KCLTodoRow input[data-kcl-edit-input="true"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid #9eb3d8;
+  border-radius: 4px;
+  background: white;
+  color: #172033;
+  padding: 3px 5px;
+}
+
 .KCLTodoRow span {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.KCLTodoRow[data-checked="true"] span {
+.KCLTodoRow[data-checked="true"] span,
+.KCLTodoRow[data-checked="true"] input[data-kcl-edit-input="true"] {
   color: #6d7483;
   text-decoration: line-through;
 }

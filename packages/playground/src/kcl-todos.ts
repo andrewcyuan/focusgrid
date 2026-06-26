@@ -34,3 +34,18 @@ export function toggleTodo(items: readonly TodoItem[], index: number): TodoItem[
       : item,
   );
 }
+
+export function updateTodoLabel(
+  items: readonly TodoItem[],
+  index: number,
+  label: string,
+): TodoItem[] {
+  return items.map((item, itemIndex) =>
+    itemIndex === index
+      ? {
+          ...item,
+          label,
+        }
+      : item,
+  );
+}

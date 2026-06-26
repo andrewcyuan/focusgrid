@@ -91,12 +91,14 @@ export function KeyboardControlledList<T>({
           role: "option" as const,
           "aria-selected": state.activeIndex === index ? "true" : "false",
           tabIndex: -1,
-          onPointerDown: (event: Pick<PointerEvent, "preventDefault">) =>
+          onPointerDown: (
+            event: Pick<PointerEvent, "preventDefault" | "target">,
+          ) =>
             event.preventDefault(),
-          onClick: () => {
+          onClick: (_event: Pick<MouseEvent, "target">) => {
             controller.api.setActiveIndex(index);
           },
-          onDoubleClick: () => undefined,
+          onDoubleClick: (_event: Pick<MouseEvent, "target">) => undefined,
         };
 
         return (
@@ -109,8 +111,8 @@ export function KeyboardControlledList<T>({
             data-kcl-row-index={index}
             data-active={state.activeIndex === index}
             onPointerDown={(event) => rowProps.onPointerDown(event.nativeEvent)}
-            onClick={rowProps.onClick}
-            onDoubleClick={rowProps.onDoubleClick}
+            onClick={(event) => rowProps.onClick(event.nativeEvent)}
+            onDoubleClick={(event) => rowProps.onDoubleClick(event.nativeEvent)}
           >
             {renderCell(controller.getCellContext(index, data))}
           </div>

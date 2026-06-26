@@ -49,6 +49,7 @@ function keydownEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
     metaKey: input.metaKey ?? false,
     altKey: input.altKey ?? false,
     shiftKey: input.shiftKey ?? false,
+    target: input.target ?? null,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
   } as unknown as KeyboardEvent;
@@ -112,6 +113,30 @@ describe("KCLDomController", () => {
     expect(controller.getState().activeIndex).toBe(1);
   });
 
+  it("ignores keyboard routing from editable descendants", () => {
+    const action = vi.fn();
+    const controller = createKCLController({ itemCount: 2 });
+    const { root, listeners } = rootElement();
+    const domController = new KCLDomController(controller, root, {
+      keymap: createDefaultKCLKeymap({ onActivate: action }),
+    });
+    const input = {
+      tagName: "INPUT",
+      getAttribute: () => null,
+    };
+    const event = keydownEvent({
+      key: " ",
+      target: input as unknown as EventTarget,
+    });
+
+    domController.mount();
+    listeners.get("keydown")?.(event);
+
+    expect(action).not.toHaveBeenCalled();
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(controller.getState().activeIndex).toBe(0);
+  });
+
   it("consumes pending prefixes and invalid continuations", () => {
     const controller = createKCLController({ itemCount: 1 });
     const keymap: KCLActionBinding<string>[] = [
@@ -160,32 +185,28 @@ describe("KCLDomController", () => {
   });
 
   it("focuses the root and updates active index from row pointer props", () => {
-    const action = vi.fn();
+    const edit = vi.fn();
     const controller = createKCLController({ itemCount: 2 });
     const { root } = rootElement();
     const domController = new KCLDomController(controller, root, {
       dataList: ["alpha", "beta"],
-      keymap: [
-        {
-          sequence: "Enter",
-          action,
-        },
-      ],
+      keymap: createDefaultKCLKeymap({ onEdit: edit }),
     });
 
     domController.mount();
     const row = domController.getRowProps(1);
-    const pointer = { preventDefault: vi.fn() };
+    const pointer = { preventDefault: vi.fn(), target: root };
+    const click = { target: root };
 
     row.onPointerDown(pointer);
-    row.onClick();
+    row.onClick(click);
 
     expect(pointer.preventDefault).toHaveBeenCalledTimes(1);
     expect(root.focus).toHaveBeenCalledTimes(1);
     expect(controller.getState().activeIndex).toBe(1);
 
-    row.onDoubleClick();
-    expect(action).toHaveBeenCalledWith({
+    row.onDoubleClick(click);
+    expect(edit).toHaveBeenCalledWith({
       index: 1,
       data: "beta",
       isListFocused: false,

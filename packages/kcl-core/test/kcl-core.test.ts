@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createDefaultKCLKeymap,
+  createDefaultKCLShortcuts,
   createKCLCellContext,
   createKCLController,
   parseKeySequence,
@@ -116,12 +117,20 @@ describe("KCLController", () => {
 });
 
 describe("KCL keymaps", () => {
-  it("creates default movement and activation bindings", () => {
+  it("creates default movement, activation, and edit bindings", () => {
     const activate = vi.fn();
-    const keymap = createDefaultKCLKeymap<string>({ onActivate: activate });
+    const edit = vi.fn();
+    const keymap = createDefaultKCLKeymap<string>({
+      onActivate: activate,
+      onEdit: edit,
+    });
     const resolved = resolveKCLKeymap(keymap);
 
-    expect(resolved).toHaveLength(7);
+    expect(createDefaultKCLShortcuts()).toMatchObject({
+      activate: "Space",
+      edit: "Enter",
+    });
+    expect(resolved).toHaveLength(8);
     expect(resolved[0]).toMatchObject({
       sequence: parseKeySequence("Up"),
       args: {
@@ -130,9 +139,23 @@ describe("KCL keymaps", () => {
         args: { direction: "up" },
       },
     });
+    expect(resolved[6]).toMatchObject({
+      sequence: parseKeySequence("Space"),
+      args: {
+        kind: "cell",
+        command: "activate",
+        action: activate,
+      },
+    });
     expect(resolved[6]?.args).toEqual({
       kind: "cell",
+      command: "activate",
       action: activate,
+    });
+    expect(resolved[7]?.args).toEqual({
+      kind: "cell",
+      command: "edit",
+      action: edit,
     });
   });
 

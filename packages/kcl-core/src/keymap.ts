@@ -10,7 +10,7 @@ import type {
   KCLOrientation,
 } from "./controller";
 
-export type KCLCommandName = "moveActive" | "activate";
+export type KCLCommandName = "moveActive" | "activate" | "edit";
 
 export type KCLCommandAction =
   | KCLCommandName
@@ -36,6 +36,7 @@ export type KCLShortcutContext = {
 export type KCLActionBinding<T> = {
   sequence: KeySequence | string;
   action: KCLCellAction<T> | KCLCommandAction;
+  command?: KCLCommandName;
   preventDefault?: boolean;
   repeat?: boolean;
 };
@@ -49,6 +50,7 @@ export type KCLResolvedAction<T> =
   | {
       kind: "cell";
       action: KCLCellAction<T>;
+      command?: KCLCommandName;
     };
 
 export type KCLKeyBinding<T> = ShortcutBinding<
@@ -127,8 +129,14 @@ export const defaultKCLShortcutActions = [
   {
     id: "activate",
     label: "Activate row",
-    defaultSequence: "Enter",
+    defaultSequence: "Space",
     action: "activate",
+  },
+  {
+    id: "edit",
+    label: "Edit row",
+    defaultSequence: "Enter",
+    action: "edit",
   },
 ] as const satisfies readonly KCLDefaultShortcutAction[];
 
@@ -149,6 +157,7 @@ export function createDefaultKCLKeymap<T>(
   options: {
     overrides?: KCLShortcutOverrides;
     onActivate?: KCLCellAction<T>;
+    onEdit?: KCLCellAction<T>;
   } = {},
 ): KCLActionBinding<T>[] {
   const shortcuts = options.overrides ?? {};
@@ -160,15 +169,13 @@ export function createDefaultKCLKeymap<T>(
       return [];
     }
 
-    const resolvedAction =
-      action.id === "activate" && options.onActivate
-        ? options.onActivate
-        : action.action;
+    const resolvedAction = resolveDefaultAction(action, options);
 
     return [
       {
         sequence,
         action: resolvedAction,
+        command: getDefaultCommand(action),
         repeat: "repeat" in action ? action.repeat : undefined,
       },
     ];
@@ -192,7 +199,7 @@ export function resolveKCLKeymap<T>(
       {
         sequence,
         action: `kcl.action.${index}`,
-        args: resolveAction(binding.action),
+        args: resolveAction(binding.action, binding.command),
         preventDefault: binding.preventDefault ?? true,
         repeat: binding.repeat,
       },
@@ -220,11 +227,13 @@ export function createKCLCellContext<T>(
 
 function resolveAction<T>(
   action: KCLCellAction<T> | KCLCommandAction,
+  command?: KCLCommandName,
 ): KCLResolvedAction<T> {
   if (typeof action === "function") {
     return {
       kind: "cell",
       action,
+      command,
     };
   }
 
@@ -240,6 +249,34 @@ function resolveAction<T>(
     command: action.command,
     args: action.args,
   };
+}
+
+function resolveDefaultAction<T>(
+  action: KCLDefaultShortcutAction,
+  options: {
+    onActivate?: KCLCellAction<T>;
+    onEdit?: KCLCellAction<T>;
+  },
+): KCLCellAction<T> | KCLCommandAction {
+  if (action.id === "activate" && options.onActivate) {
+    return options.onActivate;
+  }
+
+  if (action.id === "edit" && options.onEdit) {
+    return options.onEdit;
+  }
+
+  return action.action;
+}
+
+function getDefaultCommand(
+  action: KCLDefaultShortcutAction,
+): KCLCommandName | undefined {
+  if (action.id === "activate" || action.id === "edit") {
+    return action.id;
+  }
+
+  return undefined;
 }
 
 function validateSequence(sequence: string): KeySequence | null {
