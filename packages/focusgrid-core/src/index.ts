@@ -21,29 +21,11 @@ export {
   paneSplitSides,
   paneSwapDirections,
 } from "./layout/types";
-export {
-  buildLayoutIndex,
-  closePane,
-  collectPaneIds,
-  findSplitNode,
-  findPaneInDirection,
-  focusPane,
-  focusPaneInDirection,
-  removePane,
-  resizeHandle,
-  resizePane,
-  splitPane,
-  swapPaneInDirection,
-  swapPanes,
-  wrapRootInSplit,
-} from "./layout/operations";
 export type {
   ResizePaneOptions,
   SplitPaneOptions,
   WrapRootInSplitOptions,
 } from "./layout/operations";
-export { computeLayout } from "./layout/solver";
-export { getMinimumSize } from "./layout/min-size";
 export {
   deserializeFocusGridControllerState,
   serializeFocusGridControllerState,
@@ -56,17 +38,13 @@ export {
   normalizeKeySequenceInput,
   parseKeySequence,
   parseKeyStroke,
-  createTrie,
-  KeyRouter,
   validateKeySequenceInput,
 } from "@focusgrid/shortcut-engine";
 export type {
-  KeyRouterOptions,
   KeySequence,
   KeySequenceValidationResult,
   KeyStroke,
   ShortcutBinding,
-  ShortcutMatchResult,
 } from "@focusgrid/shortcut-engine";
 export {
   createDefaultPaneKeymap,

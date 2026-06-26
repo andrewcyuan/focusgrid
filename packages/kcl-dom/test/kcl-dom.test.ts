@@ -118,6 +118,7 @@ describe("KCLDomController", () => {
     const controller = createKCLController({ itemCount: 2 });
     const { root, listeners } = rootElement();
     const domController = new KCLDomController(controller, root, {
+      dataList: ["alpha", "beta"],
       keymap: createDefaultKCLKeymap({ onActivate: action }),
     });
     const input = {
@@ -135,6 +136,34 @@ describe("KCLDomController", () => {
     expect(action).not.toHaveBeenCalled();
     expect(event.preventDefault).not.toHaveBeenCalled();
     expect(controller.getState().activeIndex).toBe(0);
+  });
+
+  it.each([
+    ["checkbox", "checkbox"],
+    ["radio", "radio"],
+    ["button-like input", "button"],
+  ])("routes keyboard events from %s descendants through the list", (_, type) => {
+    const action = vi.fn();
+    const controller = createKCLController({ itemCount: 2 });
+    const { root, listeners } = rootElement();
+    const domController = new KCLDomController(controller, root, {
+      dataList: ["alpha", "beta"],
+      keymap: createDefaultKCLKeymap({ onActivate: action }),
+    });
+    const target = {
+      tagName: "INPUT",
+      getAttribute: (name: string) => (name === "type" ? type : null),
+    };
+    const event = keydownEvent({
+      key: " ",
+      target: target as unknown as EventTarget,
+    });
+
+    domController.mount();
+    listeners.get("keydown")?.(event);
+
+    expect(action).toHaveBeenCalledTimes(1);
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
   });
 
   it("consumes pending prefixes and invalid continuations", () => {
@@ -212,5 +241,53 @@ describe("KCLDomController", () => {
       isListFocused: false,
       isCellActive: true,
     });
+  });
+
+  it.each([
+    ["checkbox", "checkbox"],
+    ["radio", "radio"],
+    ["button-like input", "button"],
+  ])("keeps %s row descendants controlled by the list root", (_, type) => {
+    const controller = createKCLController({ itemCount: 2 });
+    const { root } = rootElement();
+    const domController = new KCLDomController(controller, root);
+    const target = {
+      tagName: "INPUT",
+      getAttribute: (name: string) => (name === "type" ? type : null),
+    } as unknown as EventTarget;
+
+    domController.mount();
+    const row = domController.getRowProps(1);
+    const pointer = { preventDefault: vi.fn(), target };
+    const click = { target };
+
+    row.onPointerDown(pointer);
+    row.onClick(click);
+
+    expect(pointer.preventDefault).toHaveBeenCalledTimes(1);
+    expect(root.focus).toHaveBeenCalledTimes(1);
+    expect(controller.getState().activeIndex).toBe(1);
+  });
+
+  it("allows text input row descendants to keep focus and skip row selection", () => {
+    const controller = createKCLController({ itemCount: 2 });
+    const { root } = rootElement();
+    const domController = new KCLDomController(controller, root);
+    const input = {
+      tagName: "INPUT",
+      getAttribute: (name: string) => (name === "type" ? "text" : null),
+    } as unknown as EventTarget;
+
+    domController.mount();
+    const row = domController.getRowProps(1);
+    const pointer = { preventDefault: vi.fn(), target: input };
+    const click = { target: input };
+
+    row.onPointerDown(pointer);
+    row.onClick(click);
+
+    expect(pointer.preventDefault).not.toHaveBeenCalled();
+    expect(root.focus).not.toHaveBeenCalled();
+    expect(controller.getState().activeIndex).toBe(0);
   });
 });

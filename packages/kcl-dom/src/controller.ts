@@ -48,7 +48,7 @@ export class KCLDomController<T> {
   };
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
-    if (isEditableEventTarget(event.target, this.rootEl)) {
+    if (isTextEditingEventTarget(event.target, this.rootEl)) {
       return;
     }
 
@@ -146,14 +146,14 @@ export class KCLDomController<T> {
         this.controller.getState().activeIndex === index ? "true" : "false",
       tabIndex: -1,
       onPointerDown: (event) => {
-        if (isEditableEventTarget(event.target, this.rootEl)) {
+        if (isTextEditingEventTarget(event.target, this.rootEl)) {
           return;
         }
 
         event.preventDefault();
       },
       onClick: (event) => {
-        if (isEditableEventTarget(event.target, this.rootEl)) {
+        if (isTextEditingEventTarget(event.target, this.rootEl)) {
           return;
         }
 
@@ -161,7 +161,7 @@ export class KCLDomController<T> {
         this.controller.api.setActiveIndex(index);
       },
       onDoubleClick: (event) => {
-        if (isEditableEventTarget(event.target, this.rootEl)) {
+        if (isTextEditingEventTarget(event.target, this.rootEl)) {
           return;
         }
 
@@ -241,7 +241,7 @@ export class KCLDomController<T> {
   }
 }
 
-function isEditableEventTarget(
+function isTextEditingEventTarget(
   target: EventTarget | null,
   rootEl: HTMLElement,
 ): boolean {
@@ -258,11 +258,39 @@ function isEditableEventTarget(
       ? element.getAttribute("role")
       : null;
 
+  if (tagName === "input") {
+    return isTextEditingInput(element);
+  }
+
   return (
-    tagName === "input" ||
     tagName === "textarea" ||
     tagName === "select" ||
     element.isContentEditable === true ||
     role === "textbox"
   );
 }
+
+function isTextEditingInput(element: Element): boolean {
+  const type =
+    typeof element.getAttribute === "function"
+      ? (element.getAttribute("type") ?? "text").toLowerCase()
+      : "text";
+
+  return TEXT_EDITING_INPUT_TYPES.has(type);
+}
+
+const TEXT_EDITING_INPUT_TYPES = new Set([
+  "",
+  "date",
+  "datetime-local",
+  "email",
+  "month",
+  "number",
+  "password",
+  "search",
+  "tel",
+  "text",
+  "time",
+  "url",
+  "week",
+]);

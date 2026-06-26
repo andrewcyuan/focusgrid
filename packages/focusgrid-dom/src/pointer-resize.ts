@@ -1,7 +1,9 @@
 import {
-  findSplitNode,
   type ComputedHandle,
   type FocusGridController,
+  type LayoutNode,
+  type NodeId,
+  type SplitNode,
 } from "@focusgrid/core";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
@@ -230,4 +232,22 @@ export class PointerResizeController {
       // The drag is already ending; failed release should not block cleanup.
     }
   }
+}
+
+function findSplitNode(root: LayoutNode, splitId: NodeId): SplitNode | null {
+  if (root.kind === "split") {
+    if (root.id === splitId) {
+      return root;
+    }
+
+    for (const child of root.children) {
+      const match = findSplitNode(child, splitId);
+
+      if (match) {
+        return match;
+      }
+    }
+  }
+
+  return null;
 }

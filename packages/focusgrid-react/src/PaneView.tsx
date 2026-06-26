@@ -1,4 +1,9 @@
-import type { ComponentType, CSSProperties, ReactNode } from "react";
+import type {
+  ComponentType,
+  CSSProperties,
+  PointerEvent,
+  ReactNode,
+} from "react";
 import type {
   ComputedPane,
   FocusGridController,
@@ -35,9 +40,11 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
       className="FocusgridPaneView"
       data-active={pane.active}
       data-pane-id={pane.paneId}
+      tabIndex={-1}
       style={style}
-      onPointerDown={() => {
+      onPointerDown={(event) => {
         controller.api.focus(pane.paneId);
+        focusPaneShellForNonInteractivePointer(event);
       }}
     >
       {renderPane({
@@ -47,5 +54,60 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
         controller,
       })}
     </div>
+  );
+}
+
+function focusPaneShellForNonInteractivePointer(
+  event: PointerEvent<HTMLDivElement>,
+): void {
+  if (isInteractiveOrFocusableDescendant(event.target, event.currentTarget)) {
+    return;
+  }
+
+  event.currentTarget.focus({ preventScroll: true });
+}
+
+function isInteractiveOrFocusableDescendant(
+  target: EventTarget,
+  paneShell: HTMLElement,
+): boolean {
+  if (!(target instanceof HTMLElement) || target === paneShell) {
+    return false;
+  }
+
+  let element: HTMLElement | null = target;
+
+  while (element && element !== paneShell) {
+    if (isInteractiveOrFocusableElement(element)) {
+      return true;
+    }
+
+    element = element.parentElement;
+  }
+
+  return false;
+}
+
+function isInteractiveOrFocusableElement(element: HTMLElement): boolean {
+  const tagName = element.tagName.toLowerCase();
+  const role = element.getAttribute("role");
+
+  return (
+    element.isContentEditable ||
+    element.tabIndex >= 0 ||
+    tagName === "a" ||
+    tagName === "button" ||
+    tagName === "input" ||
+    tagName === "select" ||
+    tagName === "textarea" ||
+    role === "button" ||
+    role === "checkbox" ||
+    role === "link" ||
+    role === "menuitem" ||
+    role === "option" ||
+    role === "radio" ||
+    role === "switch" ||
+    role === "tab" ||
+    role === "textbox"
   );
 }

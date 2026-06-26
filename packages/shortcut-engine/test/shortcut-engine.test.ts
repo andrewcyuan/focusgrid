@@ -233,6 +233,63 @@ describe("KeyRouter", () => {
     });
   });
 
+  it("does not leave a disabled single-stroke binding pending", () => {
+    const router = new KeyRouter<typeof ctx>([
+      {
+        sequence: parseKeySequence("X"),
+        action: "inactive.run",
+        when: (value) => !value.active,
+      },
+      {
+        sequence: parseKeySequence("X Y"),
+        action: "active.run",
+      },
+    ]);
+
+    expect(router.handle(parseKeySequence("X")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+    });
+
+    expect(router.handle(parseKeySequence("Y")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: false,
+    });
+  });
+
+  it("resets cleanly when a multi-stroke completion is disabled", () => {
+    const router = new KeyRouter<typeof ctx>([
+      {
+        sequence: parseKeySequence("Ctrl-B X"),
+        action: "inactive.run",
+        when: (value) => !value.active,
+      },
+      {
+        sequence: parseKeySequence("Y"),
+        action: "active.run",
+      },
+    ]);
+
+    expect(router.handle(parseKeySequence("Ctrl-B")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: true,
+    });
+
+    expect(router.handle(parseKeySequence("X")[0]!, ctx)).toEqual({
+      matched: false,
+      pending: false,
+    });
+
+    expect(router.handle(parseKeySequence("Y")[0]!, ctx)).toEqual({
+      matched: true,
+      pending: false,
+      action: "active.run",
+      args: undefined,
+      preventDefault: true,
+    });
+  });
+
   it("retains a repeatable leader so different followers can run during the repeat window", () => {
     let now = 1000;
     const router = new KeyRouter(

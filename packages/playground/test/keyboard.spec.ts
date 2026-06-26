@@ -29,6 +29,41 @@ test("pane shortcuts are handled before focused textareas edit text", async ({
   await expect(page.locator(".TextPane")).toHaveCount(3);
 });
 
+test("clicking non-focusable pane content focuses the pane shell for shortcuts", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const alphaPane = page.locator('[data-pane-id="alpha"]');
+  const alphaText = alphaPane.locator("textarea");
+  await expect(alphaText).toBeFocused();
+
+  await alphaPane.locator(".TextPaneHeader").click();
+
+  await expect(alphaPane).toBeFocused();
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Shift+5");
+
+  await expect(page.locator(".TextPane")).toHaveCount(3);
+});
+
+test("pane shortcuts stay scoped to the focused FocusGrid subtree", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const splitRightShortcut = page.getByLabel("Split right");
+  await splitRightShortcut.focus();
+  await expect(splitRightShortcut).toBeFocused();
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Shift+5");
+
+  await expect(page.locator(".TextPane")).toHaveCount(2);
+  await expect(splitRightShortcut).toBeFocused();
+});
+
 test("directional swap shortcuts move the active pane from a focused textarea", async ({
   page,
 }) => {
@@ -321,6 +356,59 @@ test("KCL pointer selection focuses the list and double click edits rows", async
   await thirdRow.dblclick();
   await expect(thirdRow.locator('[data-kcl-edit-input="true"]')).toBeFocused();
   await expect(thirdCheckbox).not.toBeChecked();
+});
+
+test("KCL checkbox row descendants keep focus on the list root and select the row", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
+  const thirdRow = rows.nth(2);
+  const thirdCheckbox = thirdRow.locator('input[type="checkbox"]');
+
+  await thirdCheckbox.click();
+
+  await expect(alphaList).toBeFocused();
+  await expect(thirdRow).toHaveAttribute("aria-selected", "true");
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
+  await expect(thirdCheckbox).not.toBeChecked();
+});
+
+test("KCL radio row descendants keep focus on the list root and select the row", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
+  const thirdRow = rows.nth(2);
+  const thirdRadio = thirdRow.locator('input[type="radio"]');
+
+  await thirdRadio.click();
+
+  await expect(alphaList).toBeFocused();
+  await expect(thirdRow).toHaveAttribute("aria-selected", "true");
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
+  await expect(thirdRadio).not.toBeChecked();
+});
+
+test("KCL button-like input row descendants keep focus on the list root and select the row", async ({
+  page,
+}) => {
+  await page.goto("/kcl");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
+  const thirdRow = rows.nth(2);
+  const thirdButtonInput = thirdRow.locator('input[type="button"]');
+
+  await thirdButtonInput.click();
+
+  await expect(alphaList).toBeFocused();
+  await expect(thirdRow).toHaveAttribute("aria-selected", "true");
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
 });
 
 test("KCL route exposes FocusGrid shortcuts and pane shortcuts work while list is focused", async ({

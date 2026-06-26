@@ -6,21 +6,23 @@ import {
   createDefaultPaneShortcuts,
   createFocusGridController,
   defaultPaneShortcutActions,
-  focusPane,
-  focusPaneInDirection,
   paneFocusDirections,
   paneResizeDirections,
   paneSplitSides,
   paneSwapDirections,
+  type PaneFocusDirection,
+  type FocusGridControllerState,
+} from "../src";
+import {
+  focusPane,
+  focusPaneInDirection,
   resizeHandle,
   resizePane,
   splitPane,
   swapPaneInDirection,
   swapPanes,
   wrapRootInSplit,
-  type PaneFocusDirection,
-  type FocusGridControllerState,
-} from "../src";
+} from "../src/layout/operations";
 
 function initialState(): FocusGridControllerState {
   return {

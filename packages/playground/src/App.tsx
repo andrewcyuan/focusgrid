@@ -1,8 +1,8 @@
 import {
   createDefaultPaneKeymap,
-  collectPaneIds,
   defaultPaneShortcutActions,
   paneSplitSides,
+  type LayoutNode,
   type PaneShortcutId,
   type PaneShortcutValues,
   type FocusGridController,
@@ -367,6 +367,14 @@ function Toolbar({
   );
 }
 
+function collectPaneIds(root: LayoutNode): string[] {
+  if (root.kind === "pane") {
+    return [root.paneId];
+  }
+
+  return root.children.flatMap((child) => collectPaneIds(child));
+}
+
 function KCLToolbar({
   sidebarOpen,
   controller,
@@ -529,6 +537,20 @@ function KCLTodoPane({
               tabIndex={-1}
               readOnly
               checked={ctx.data.checked}
+            />
+            <input
+              type="radio"
+              tabIndex={-1}
+              readOnly
+              checked={false}
+              name={`${paneId}-todo-row-radio`}
+              aria-label={`Select ${ctx.data.label}`}
+            />
+            <input
+              type="button"
+              tabIndex={-1}
+              value="Row"
+              aria-label={`Row action ${ctx.data.label}`}
             />
             {editingIndex === ctx.index ? (
               <input

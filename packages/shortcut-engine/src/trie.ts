@@ -74,8 +74,6 @@ export class KeyRouter<
       };
     }
 
-    this.current = next;
-
     if (next.binding && (!next.binding.when || next.binding.when(ctx))) {
       const binding = next.binding;
       this.current = this.root;
@@ -89,6 +87,17 @@ export class KeyRouter<
         preventDefault: binding.preventDefault ?? true,
       };
     }
+
+    if (next.binding) {
+      this.current = this.root;
+      this.repeat = null;
+      return {
+        matched: false,
+        pending: false,
+      };
+    }
+
+    this.current = next;
 
     return {
       matched: false,
