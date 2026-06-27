@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.tsx --format esm,cjs --dts --external react --external react-dom --external @focusgrid/kcl --external @focusgrid/kcl-dom",
+    "build": "tsdown src/index.tsx --config ../../tsdown.config.mjs --format esm,cjs --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle @focusgrid/kcl --deps.never-bundle @focusgrid/kcl-dom",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"

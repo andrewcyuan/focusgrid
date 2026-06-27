@@ -31,7 +31,7 @@
     "./styles.css": "./dist/styles.css"
   },
   "scripts": {
-    "build": "tsup src/index.tsx --format esm,cjs --dts --external react --external react-dom --external @focusgrid/core --external @focusgrid/dom && cp src/styles.css dist/styles.css",
+    "build": "tsdown src/index.tsx --config ../../tsdown.config.mjs --format esm,cjs --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle @focusgrid/core --deps.never-bundle @focusgrid/dom && cp src/styles.css dist/styles.css",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"

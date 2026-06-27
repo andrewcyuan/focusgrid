@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "build": "tsdown src/index.ts --config ../../tsdown.config.mjs --format esm,cjs",
     "test": "vitest run --config ../../vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"

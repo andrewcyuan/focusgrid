@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --external @focusgrid/kcl --external @focusgrid/shortcut-engine",
+    "build": "tsdown src/index.ts --config ../../tsdown.config.mjs --format esm,cjs --deps.never-bundle @focusgrid/kcl --deps.never-bundle @focusgrid/shortcut-engine",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
