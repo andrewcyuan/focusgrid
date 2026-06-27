@@ -3,14 +3,23 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewcyuan/focusgrid.git"
+  },
   "packageManager": "pnpm@10.25.0",
   "scripts": {
     "build": "./scripts/pnpm -r build",
     "test": "./scripts/pnpm -r test",
     "typecheck": "./scripts/pnpm -r typecheck",
-    "lint": "./scripts/pnpm -r lint"
+    "lint": "./scripts/pnpm -r lint",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "./scripts/pnpm typecheck && ./scripts/pnpm test && ./scripts/pnpm build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
