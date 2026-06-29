@@ -18,6 +18,7 @@ import {
 } from "@focusgrid/react";
 import {
   KCCollection,
+  KCItem,
   KCList,
   createDefaultKCCollectionKeymap,
   createDefaultKCLShortcuts,
@@ -30,6 +31,7 @@ import {
 } from "@focusgrid/kcc-react";
 import {
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -39,8 +41,8 @@ import {
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
 import {
   createInitialTodos,
-  toggleTodo,
-  updateTodoLabel,
+  toggleTodoById,
+  updateTodoLabelById,
   type TodoItem,
 } from "./kcc-todos";
 
@@ -452,10 +454,31 @@ function KCLTodoPane({
 }: PaneComponentProps & { shortcuts: KCLShortcutValues }) {
   const [todos, setTodos] = useState(() => createInitialTodos(paneId));
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [counter, setCounter] = useState(0);
+  const nextAddedTodoRef = useRef(1);
   const kclController = useKCLController({
     orientation: "vertical",
   });
   const paneRef = useRef<HTMLElement | null>(null);
+  const splitTodoIndex = Math.ceil(todos.length / 2);
+  const topTodos = todos.slice(0, splitTodoIndex);
+  const bottomTodos = todos.slice(splitTodoIndex);
+  const addTodo = useCallback(() => {
+    setTodos((current) => {
+      const nextNumber = current.length + 1;
+      const nextAddedTodo = nextAddedTodoRef.current;
+      nextAddedTodoRef.current += 1;
+
+      return [
+        ...current,
+        {
+          id: `${paneId}-added-${nextAddedTodo}`,
+          label: `New ${paneId} item ${nextNumber}`,
+          checked: false,
+        },
+      ];
+    });
+  }, [paneId]);
   const nativeKeymap = useMemo(
     () =>
       createDefaultKCCollectionKeymap({
@@ -466,10 +489,16 @@ function KCLTodoPane({
   const todoActions = useMemo<readonly KCLActionBinding<TodoItem>[]>(
     () => [
       {
+        sequence: "A",
+        action: () => {
+          addTodo();
+        },
+      },
+      {
         sequence: shortcuts.activate,
         command: "activate",
         action: (ctx: KCActionContext<TodoItem>) => {
-          setTodos((current) => toggleTodo(current, ctx.index));
+          setTodos((current) => toggleTodoById(current, ctx.id));
         },
       },
       {
@@ -480,7 +509,36 @@ function KCLTodoPane({
         },
       },
     ],
-    [shortcuts],
+    [addTodo, shortcuts],
+  );
+  const addOnlyActions = useMemo<readonly KCLActionBinding<undefined>[]>(
+    () => [
+      {
+        sequence: "A",
+        action: () => {
+          addTodo();
+        },
+      },
+    ],
+    [addTodo],
+  );
+  const counterActions = useMemo<readonly KCLActionBinding<number>[]>(
+    () => [
+      {
+        sequence: "A",
+        action: () => {
+          addTodo();
+        },
+      },
+      {
+        sequence: shortcuts.activate,
+        command: "activate",
+        action: () => {
+          setCounter((value) => value + 1);
+        },
+      },
+    ],
+    [addTodo, shortcuts.activate],
   );
 
   useEffect(() => {
@@ -547,7 +605,7 @@ function KCLTodoPane({
         className="KCLKeyboardControlledList"
       >
         <KCList
-          dataList={todos}
+          dataList={topTodos}
           getItemId={(todo) => todo.id}
           customActionKeybinds={todoActions}
           renderCell={(ctx) => (
@@ -579,7 +637,7 @@ function KCLTodoPane({
                   spellCheck={false}
                   onChange={(event) => {
                     setTodos((current) =>
-                      updateTodoLabel(current, ctx.index, event.target.value),
+                      updateTodoLabelById(current, ctx.id, event.target.value),
                     );
                   }}
                   onKeyDown={onEditInputKeyDown}
@@ -590,6 +648,70 @@ function KCLTodoPane({
             </div>
           )}
         />
+        <KCItem
+          id={`${paneId}-static-item`}
+          className="KCLStaticItem"
+          customActionKeybinds={addOnlyActions}
+        >
+          <strong>Static collection item</strong>
+          <span>Not part of the todo data list</span>
+        </KCItem>
+        <KCList
+          dataList={bottomTodos}
+          getItemId={(todo) => todo.id}
+          customActionKeybinds={todoActions}
+          renderCell={(ctx) => (
+            <div className="KCLTodoRow" data-checked={ctx.data.checked}>
+              <input
+                type="checkbox"
+                tabIndex={-1}
+                readOnly
+                checked={ctx.data.checked}
+              />
+              <input
+                type="radio"
+                tabIndex={-1}
+                readOnly
+                checked={false}
+                name={`${paneId}-todo-row-radio`}
+                aria-label={`Select ${ctx.data.label}`}
+              />
+              <input
+                type="button"
+                tabIndex={-1}
+                value="Row"
+                aria-label={`Row action ${ctx.data.label}`}
+              />
+              {editingId === ctx.id ? (
+                <input
+                  data-kcl-edit-input="true"
+                  value={ctx.data.label}
+                  spellCheck={false}
+                  onChange={(event) => {
+                    setTodos((current) =>
+                      updateTodoLabelById(current, ctx.id, event.target.value),
+                    );
+                  }}
+                  onKeyDown={onEditInputKeyDown}
+                />
+              ) : (
+                <span>{ctx.data.label}</span>
+              )}
+            </div>
+          )}
+        />
+        <KCItem
+          id={`${paneId}-counter`}
+          data={counter}
+          className="KCLCounterItem"
+          customActionKeybinds={counterActions}
+        >
+          {(ctx) => (
+            <button className="KCLCounterButton" type="button" tabIndex={-1}>
+              Counter {ctx.data}
+            </button>
+          )}
+        </KCItem>
       </KCCollection>
     </section>
   );

@@ -35,6 +35,20 @@ export function toggleTodo(items: readonly TodoItem[], index: number): TodoItem[
   );
 }
 
+export function toggleTodoById(
+  items: readonly TodoItem[],
+  id: string,
+): TodoItem[] {
+  return items.map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          checked: !item.checked,
+        }
+      : item,
+  );
+}
+
 export function updateTodoLabel(
   items: readonly TodoItem[],
   index: number,
@@ -42,6 +56,21 @@ export function updateTodoLabel(
 ): TodoItem[] {
   return items.map((item, itemIndex) =>
     itemIndex === index
+      ? {
+          ...item,
+          label,
+        }
+      : item,
+  );
+}
+
+export function updateTodoLabelById(
+  items: readonly TodoItem[],
+  id: string,
+  label: string,
+): TodoItem[] {
+  return items.map((item) =>
+    item.id === id
       ? {
           ...item,
           label,

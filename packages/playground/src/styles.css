@@ -294,6 +294,32 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.KCLStaticItem {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  color: #172033;
+}
+
+.KCLStaticItem span {
+  color: #5f6878;
+  font-size: 0.85rem;
+}
+
+.KCLCounterItem {
+  padding: 8px;
+}
+
+.KCLCounterButton {
+  width: 100%;
+  border: 1px solid #b8c4d8;
+  border-radius: 5px;
+  background: #f7f9fd;
+  color: #172033;
+  padding: 7px 10px;
+  text-align: left;
+}
+
 .KCLTodoRow[data-checked="true"] span,
 .KCLTodoRow[data-checked="true"] input[data-kcl-edit-input="true"] {
   color: #6d7483;

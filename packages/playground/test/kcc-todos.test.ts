@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   createInitialTodos,
   toggleTodo,
+  toggleTodoById,
   updateTodoLabel,
+  updateTodoLabelById,
 } from "../src/kcc-todos";
 
 describe("KCC todo playground helpers", () => {
@@ -43,5 +45,17 @@ describe("KCC todo playground helpers", () => {
     expect(source[1]?.label).toBe("Review keyboard behavior");
     expect(next[0]).toBe(source[0]);
     expect(next[2]).toBe(source[2]);
+  });
+
+  it("toggles and updates todos by stable id", () => {
+    const source = createInitialTodos("beta");
+    const toggled = toggleTodoById(source, "beta-ship");
+    const renamed = updateTodoLabelById(toggled, "beta-ship", "Ship by id");
+
+    expect(toggled[2]?.checked).toBe(true);
+    expect(source[2]?.checked).toBe(false);
+    expect(renamed[2]?.label).toBe("Ship by id");
+    expect(renamed[0]).toBe(source[0]);
+    expect(renamed[1]).toBe(source[1]);
   });
 });

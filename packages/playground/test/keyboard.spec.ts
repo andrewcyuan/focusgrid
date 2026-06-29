@@ -257,6 +257,26 @@ test("KCC Space toggles the active todo without moving DOM focus into rows", asy
   );
 });
 
+test("KCC A appends a todo item from the active collection entry", async ({
+  page,
+}) => {
+  await page.goto("/kcc");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
+
+  await expect(alphaList).toBeFocused();
+  await expect(rows).toHaveCount(5);
+
+  await page.keyboard.press("a");
+
+  await expect(alphaList).toBeFocused();
+  await expect(rows).toHaveCount(6);
+  await expect(rows.nth(4).locator(".KCLTodoRow span")).toHaveText(
+    "New alpha item 4",
+  );
+});
+
 test("KCC Enter edits the active todo and returns focus to the list", async ({
   page,
 }) => {
@@ -344,7 +364,7 @@ test("KCC pointer selection focuses the list and double click edits rows", async
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
-  const thirdRow = rows.nth(2);
+  const thirdRow = rows.nth(3);
   const thirdCheckbox = thirdRow.locator('input[type="checkbox"]');
 
   await thirdRow.click();
@@ -365,7 +385,7 @@ test("KCC checkbox row descendants keep focus on the list root and select the ro
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
-  const thirdRow = rows.nth(2);
+  const thirdRow = rows.nth(3);
   const thirdCheckbox = thirdRow.locator('input[type="checkbox"]');
 
   await thirdCheckbox.click();
@@ -383,7 +403,7 @@ test("KCC radio row descendants keep focus on the list root and select the row",
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
-  const thirdRow = rows.nth(2);
+  const thirdRow = rows.nth(3);
   const thirdRadio = thirdRow.locator('input[type="radio"]');
 
   await thirdRadio.click();
@@ -401,7 +421,7 @@ test("KCC button-like input row descendants keep focus on the list root and sele
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
-  const thirdRow = rows.nth(2);
+  const thirdRow = rows.nth(3);
   const thirdButtonInput = thirdRow.locator('input[type="button"]');
 
   await thirdButtonInput.click();
@@ -434,4 +454,32 @@ test("KCC route exposes FocusGrid shortcuts and pane shortcuts work while list i
   await expect(activeList).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(activeList).toHaveAttribute("aria-activedescendant", /-review$/);
+});
+
+test("KCC generated panes mix list rows with static and counter items", async ({
+  page,
+}) => {
+  await page.goto("/kcc");
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Shift+5");
+
+  const activePane = page.locator(".KCLPane[data-active='true']");
+  const activeList = activePane.locator("[role='listbox']");
+  const rows = activePane.locator("[role='option']");
+  const staticItem = activePane.locator(".KCLStaticItem");
+  const counterButton = activePane.locator(".KCLCounterButton");
+
+  await expect(activeList).toBeFocused();
+  await expect(rows).toHaveCount(5);
+  await expect(staticItem).toContainText("Static collection item");
+  await expect(counterButton).toHaveText("Counter 0");
+
+  await page.keyboard.press("End");
+  await expect(activeList).toHaveAttribute("aria-activedescendant", /-counter$/);
+
+  await page.keyboard.press("Space");
+
+  await expect(activeList).toBeFocused();
+  await expect(counterButton).toHaveText("Counter 1");
 });
