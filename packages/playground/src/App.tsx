@@ -511,17 +511,6 @@ function KCLTodoPane({
     ],
     [addTodo, shortcuts],
   );
-  const addOnlyActions = useMemo<readonly KCLActionBinding<undefined>[]>(
-    () => [
-      {
-        sequence: "A",
-        action: () => {
-          addTodo();
-        },
-      },
-    ],
-    [addTodo],
-  );
   const counterActions = useMemo<readonly KCLActionBinding<number>[]>(
     () => [
       {
@@ -648,14 +637,10 @@ function KCLTodoPane({
             </div>
           )}
         />
-        <KCItem
-          id={`${paneId}-static-item`}
-          className="KCLStaticItem"
-          customActionKeybinds={addOnlyActions}
-        >
+        <div className="KCLStaticItem">
           <strong>Static collection item</strong>
           <span>Not part of the todo data list</span>
-        </KCItem>
+        </div>
         <KCList
           dataList={bottomTodos}
           getItemId={(todo) => todo.id}
