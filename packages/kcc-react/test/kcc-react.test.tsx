@@ -1,12 +1,15 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  KCCollection,
+  KCItem,
+  KCList,
   KeyboardControlledList,
   createDefaultKCLKeymap,
   createKCLController,
   useKCLController,
   useKCLControllerState,
-  type KCLCellContext,
+  type KCActionContext,
 } from "../src";
 
 describe("KeyboardControlledList", () => {
@@ -16,7 +19,7 @@ describe("KeyboardControlledList", () => {
       activeIndex: 1,
       focused: true,
     });
-    const contexts: Array<KCLCellContext<string>> = [];
+    const contexts: Array<KCActionContext<string>> = [];
 
     const markup = renderToStaticMarkup(
       <KeyboardControlledList
@@ -35,16 +38,18 @@ describe("KeyboardControlledList", () => {
     expect(markup).toContain("<span>beta</span>");
     expect(contexts).toEqual([
       {
+        id: "item-0",
         index: 0,
         data: "alpha",
-        isListFocused: true,
-        isCellActive: false,
+        isCollectionFocused: true,
+        isItemActive: false,
       },
       {
+        id: "item-1",
         index: 1,
         data: "beta",
-        isListFocused: true,
-        isCellActive: true,
+        isCollectionFocused: true,
+        isItemActive: true,
       },
     ]);
   });
@@ -64,8 +69,39 @@ describe("KeyboardControlledList", () => {
 
     expect(markup).toContain('role="option"');
     expect(markup).toContain('aria-selected="true"');
-    expect(markup).toContain('data-kcl-row-index="0"');
+    expect(markup).toContain('data-kc-item-id="item-0"');
     expect(markup).toContain('data-active="true"');
+  });
+
+  it("renders collection items, lists, and static children in one surface", () => {
+    const controller = createKCLController({
+      itemIds: ["compose", "inbox-primary", "labels-more"],
+      activeItemId: "inbox-primary",
+      focused: true,
+    });
+
+    const markup = renderToStaticMarkup(
+      <KCCollection
+        controller={controller}
+        keymap={[]}
+        direction="vertical"
+      >
+        <h2>Mail</h2>
+        <KCItem id="compose">Compose</KCItem>
+        <KCList
+          dataList={[{ id: "primary", label: "Primary" }]}
+          getItemId={(item) => `inbox-${item.id}`}
+          renderCell={(ctx) => ctx.data.label}
+        />
+        <KCItem id="labels-more">More</KCItem>
+      </KCCollection>,
+    );
+
+    expect(markup).toContain("<h2>Mail</h2>");
+    expect(markup).toContain('data-kc-item-id="compose"');
+    expect(markup).toContain('data-kc-item-id="inbox-primary"');
+    expect(markup).toContain('aria-selected="true"');
+    expect(markup).toContain('data-kc-item-id="labels-more"');
   });
 
   it("creates a stable controller with useKCLController", () => {

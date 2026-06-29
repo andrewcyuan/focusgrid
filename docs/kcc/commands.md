@@ -1,24 +1,26 @@
 # Commands
 
-Commands are named actions intended for keyboard shortcuts and other human
-input. KCC has one built-in controller command for movement, plus logical row
-actions that are usually supplied by the app through `createDefaultKCLKeymap()`.
+KCC has native collection commands for structural navigation. Application
+behavior such as activation, editing, deletion, and menu opening should be
+registered as `KCItem` or `KCList` action bindings.
 
 ```ts
-import { createKCLController } from "@focusgrid/kcc-core";
+import { createKCController } from "@focusgrid/kcc-core";
 
-const controller = createKCLController({
-  itemCount: 3,
+const controller = createKCController({
+  itemIds: ["compose", "inbox", "labels"],
+  activeItemId: "compose",
   orientation: "vertical",
 });
 
 controller.commands.moveActive("down");
+controller.getState().activeItemId; // "inbox"
 ```
 
-## Shared types
+## Shared Types
 
 ```ts
-type KCLMoveDirection =
+type KCMoveDirection =
   | "up"
   | "down"
   | "left"
@@ -30,151 +32,96 @@ type KCLCommandName = "moveActive" | "activate" | "edit";
 
 type KCLCommandArgs =
   | {
-      direction: KCLMoveDirection;
+      direction: KCMoveDirection;
       count?: number;
     }
   | undefined;
 
-type KCLActionBinding<T> = {
+type KCActionBinding<T> = {
   sequence: KeySequence | string;
-  action: KCLCellAction<T> | KCLCommandAction;
+  action: KCItemAction<T> | KCLCommandAction;
   command?: KCLCommandName;
   preventDefault?: boolean;
   repeat?: boolean;
 };
 ```
 
-## `controller.commands.moveActive(direction, count?)`
+## `moveActive(direction, count?)`
 
 ```ts
-moveActive(direction: KCLMoveDirection, count?: number): boolean;
+moveActive(direction: KCMoveDirection, count?: number): boolean;
 ```
 
-Moves the active row and returns `true` when the active index changes.
-`count` defaults to `1`.
+Moves the active item and returns `true` when `activeItemId` changes. Movement is
+orientation-aware:
 
-Vertical lists respond to:
+- vertical collections respond to `up` and `down`
+- horizontal collections respond to `left` and `right`
+- both orientations respond to `start` and `end`
 
-- `up`
-- `down`
-- `start`
-- `end`
+Movement clamps by default. Set `wrapAround` on the controller or collection to
+wrap from end to start.
 
-Horizontal lists respond to:
+## Native Keymap
 
-- `left`
-- `right`
-- `start`
-- `end`
-
-Movement clamps to the first and last item. Empty lists keep
-`activeIndex: -1`.
-
-## Default keyboard commands
-
-`createDefaultKCLKeymap()` creates bindings for the built-in movement command
-and the app-provided row actions.
+Use `createDefaultKCCollectionKeymap()` for collection-owned movement:
 
 ```ts
-const keymap = createDefaultKCLKeymap<TodoItem>({
-  onActivate: (ctx) => toggleTodo(ctx.index),
-  onEdit: (ctx) => editTodo(ctx.index),
+const nativeKeymap = createDefaultKCCollectionKeymap({
+  overrides: {
+    "move-down": "J",
+    "move-up": "K",
+  },
 });
-```
-
-### Moving
-
-```ts
-createDefaultKCLKeymap();
 ```
 
 Default movement shortcuts:
 
-- `Up`: move up.
-- `Down`: move down.
-- `Left`: move left.
-- `Right`: move right.
-- `Home`: move to the first row.
-- `End`: move to the last row.
+- `Up`: move up
+- `Down`: move down
+- `Left`: move left
+- `Right`: move right
+- `Home`: move to the first item
+- `End`: move to the last item
 
-Arrow movement is orientation-aware. A vertical list ignores left/right movement,
-and a horizontal list ignores up/down movement.
+## Custom Actions
 
-### Activating
+Attach application actions to the receiver that owns the data:
 
-```ts
-createDefaultKCLKeymap<T>({
-  onActivate: (ctx) => {
-    // Toggle, open, select, or otherwise activate ctx.data.
-  },
-});
-```
-
-Default shortcut:
-
-- `Space`: activate the active row.
-
-If `onActivate` is omitted, the binding resolves to the logical `activate`
-command but has no app behavior by itself.
-
-### Editing
-
-```ts
-createDefaultKCLKeymap<T>({
-  onEdit: (ctx) => {
-    // Enter edit mode for ctx.index or ctx.data.
-  },
-});
-```
-
-Default shortcut:
-
-- `Enter`: edit the active row.
-
-If `onEdit` is omitted, the binding resolves to the logical `edit` command but
-has no app behavior by itself.
-
-## Shortcut overrides
-
-```ts
-const keymap = createDefaultKCLKeymap<TodoItem>({
-  overrides: {
-    activate: "Enter",
-    edit: "E",
-    "move-down": "J",
-    "move-up": "K",
-  },
-  onActivate,
-  onEdit,
-});
-```
-
-Overrides are keyed by `KCLShortcutId`. Empty strings disable a default binding,
-and invalid sequences are ignored when the keymap is resolved.
-
-## Custom bindings
-
-Apps can provide their own `KCLActionBinding` entries instead of the default
-keymap.
-
-```ts
-const keymap: KCLActionBinding<Row>[] = [
+```tsx
+const rowActions: KCActionBinding<TodoItem>[] = [
   {
-    sequence: "J",
-    action: {
-      command: "moveActive",
-      args: { direction: "down" },
-    },
-    repeat: true,
+    sequence: "Space",
+    command: "activate",
+    action: (ctx) => toggleTodo(ctx.id),
   },
   {
-    sequence: "X",
-    action: (ctx) => archiveRow(ctx.data.id),
-    preventDefault: true,
+    sequence: "Enter",
+    command: "edit",
+    action: (ctx) => editTodo(ctx.id),
   },
 ];
+
+<KCList
+  dataList={todos}
+  getItemId={(todo) => todo.id}
+  customActionKeybinds={rowActions}
+  renderCell={renderTodo}
+/>;
 ```
 
-Function actions receive the current active row context. Command actions are
-handled by KCC itself when they refer to `moveActive`; logical `activate` and
-`edit` are useful when paired with app callbacks from the default keymap.
+The collection routes keyboard events in this order:
+
+1. Normalize the event at the collection root.
+2. Try native collection movement bindings.
+3. If a native binding matches, run it and stop.
+4. Resolve custom bindings for the active registered entry.
+5. If a custom binding matches, run it with that entry's action context.
+
+Native collection bindings always win. Conflicts warn and remain deterministic.
+
+## Legacy Helper
+
+`createDefaultKCLKeymap()` still creates the older combined list keymap with
+movement plus activate/edit callbacks. New collection code should split native
+movement and receiver actions explicitly.

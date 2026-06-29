@@ -206,11 +206,61 @@ describe("KCLDomController", () => {
     listeners.get("keydown")?.(keydownEvent({ key: "Enter" }));
 
     expect(action).toHaveBeenCalledWith({
+      id: "item-1",
       index: 1,
       data: "beta",
+      isCollectionFocused: false,
+      isItemActive: true,
       isListFocused: false,
       isCellActive: true,
     });
+  });
+
+  it("warns on native/custom conflicts and lets native movement win", () => {
+    const action = vi.fn();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const controller = createKCLController({
+      itemIds: ["compose", "inbox"],
+      activeItemId: "compose",
+    });
+    const { root, listeners } = rootElement();
+    const entries = [
+      {
+        id: "compose",
+        element: null,
+        data: "compose",
+        getActionKeybinds: () => [
+          {
+            sequence: "Down",
+            action,
+          },
+        ],
+      },
+      {
+        id: "inbox",
+        element: null,
+        data: "inbox",
+      },
+    ];
+    const domController = new KCLDomController(controller, root, {
+      keymap: createDefaultKCLKeymap(),
+      entries,
+    });
+
+    domController.mount();
+    domController.update({
+      keymap: createDefaultKCLKeymap(),
+      entries,
+    });
+    listeners.get("keydown")?.(keydownEvent({ key: "ArrowDown" }));
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("conflicts with native"),
+    );
+    expect(action).not.toHaveBeenCalled();
+    expect(controller.getState().activeItemId).toBe("inbox");
+
+    warn.mockRestore();
   });
 
   it("focuses the root and updates active index from row pointer props", () => {
@@ -236,8 +286,11 @@ describe("KCLDomController", () => {
 
     row.onDoubleClick(click);
     expect(edit).toHaveBeenCalledWith({
+      id: "item-1",
       index: 1,
       data: "beta",
+      isCollectionFocused: false,
+      isItemActive: true,
       isListFocused: false,
       isCellActive: true,
     });

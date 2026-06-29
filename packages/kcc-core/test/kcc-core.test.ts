@@ -12,10 +12,13 @@ import {
 describe("KCLController", () => {
   it("initializes empty and non-empty lists deterministically", () => {
     expect(createKCLController().getState()).toEqual({
+      activeItemId: null,
       activeIndex: -1,
       itemCount: 0,
+      itemIds: [],
       focused: false,
       orientation: "vertical",
+      wrapAround: false,
     });
 
     expect(
@@ -26,10 +29,13 @@ describe("KCLController", () => {
         orientation: "horizontal",
       }).getState(),
     ).toEqual({
+      activeItemId: "item-2",
       activeIndex: 2,
       itemCount: 5,
+      itemIds: ["item-0", "item-1", "item-2", "item-3", "item-4"],
       focused: true,
       orientation: "horizontal",
+      wrapAround: false,
     });
   });
 
@@ -101,18 +107,71 @@ describe("KCLController", () => {
     });
 
     expect(controller.getCellContext(0, "alpha")).toEqual({
+      id: "item-0",
       index: 0,
       data: "alpha",
+      isCollectionFocused: true,
+      isItemActive: false,
       isListFocused: true,
       isCellActive: false,
     });
 
     expect(controller.getCellContext(1, "beta")).toEqual({
+      id: "item-1",
       index: 1,
       data: "beta",
+      isCollectionFocused: true,
+      isItemActive: true,
       isListFocused: true,
       isCellActive: true,
     });
+  });
+
+  it("reconciles active items by stable id when entries reorder", () => {
+    const controller = createKCLController();
+
+    controller.api.setRegisteredEntries([
+      { id: "compose", element: null, data: undefined },
+      { id: "inbox", element: null, data: undefined },
+      { id: "labels", element: null, data: undefined },
+    ]);
+    controller.api.setActiveItemId("labels");
+
+    expect(controller.getState()).toMatchObject({
+      activeItemId: "labels",
+      activeIndex: 2,
+      itemIds: ["compose", "inbox", "labels"],
+    });
+
+    controller.api.setRegisteredEntries([
+      { id: "labels", element: null, data: undefined },
+      { id: "compose", element: null, data: undefined },
+      { id: "inbox", element: null, data: undefined },
+    ]);
+
+    expect(controller.getState()).toMatchObject({
+      activeItemId: "labels",
+      activeIndex: 0,
+      itemIds: ["labels", "compose", "inbox"],
+    });
+  });
+
+  it("moves across registered entries and supports wrap-around", () => {
+    const controller = createKCLController({ wrapAround: true });
+
+    controller.api.setRegisteredEntries([
+      { id: "compose", element: null, data: undefined },
+      { id: "inbox", element: null, data: undefined },
+      { id: "disabled", element: null, data: undefined, disabled: true },
+      { id: "labels", element: null, data: undefined },
+    ]);
+
+    expect(controller.getState().activeItemId).toBe("compose");
+    expect(controller.commands.moveActive("down", 2)).toBe(true);
+    expect(controller.getState().activeItemId).toBe("labels");
+
+    expect(controller.commands.moveActive("down")).toBe(true);
+    expect(controller.getState().activeItemId).toBe("compose");
   });
 });
 
@@ -181,15 +240,21 @@ describe("KCL keymaps", () => {
 
   it("creates action contexts for the current active data item", () => {
     const state: KCLControllerState = {
+      activeItemId: "item-1",
       activeIndex: 1,
       itemCount: 2,
+      itemIds: ["item-0", "item-1"],
       focused: true,
       orientation: "vertical",
+      wrapAround: false,
     };
 
     expect(createKCLCellContext(state, ["alpha", "beta"])).toEqual({
+      id: "item-1",
       index: 1,
       data: "beta",
+      isCollectionFocused: true,
+      isItemActive: true,
       isListFocused: true,
       isCellActive: true,
     });

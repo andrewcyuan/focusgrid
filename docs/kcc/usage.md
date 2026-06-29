@@ -1,16 +1,13 @@
 # KCC Playground Todo Example
 
-The `/kcc` playground demonstrates a keyboard-controlled todo list inside each
-FocusGrid pane. It treats the list like a file tree: the list root owns focus in
-row mode, arrow keys move the active row, `Space` activates the row, and `Enter`
-opens inline editing.
-
-We created the playground to be a good model of how clients can use KCC.
+The `/kcc` playground demonstrates a keyboard-controlled todo collection inside
+each FocusGrid pane. The collection root owns focus, arrow keys move the active
+item, `Space` activates the active todo, and `Enter` opens inline editing.
 
 ## Data Model
 
-The playground keeps todo data as plain immutable state. Row actions receive the
-active row index from KCC and update only that item.
+Todo rows have stable ids. KCC exposes both `ctx.id` and a compatibility
+`ctx.index`; app code should prefer ids when reconciling dynamic collections.
 
 ```ts
 export type TodoItem = {
@@ -18,84 +15,58 @@ export type TodoItem = {
   label: string;
   checked: boolean;
 };
-
-export function toggleTodo(items: readonly TodoItem[], index: number): TodoItem[] {
-  return items.map((item, itemIndex) =>
-    itemIndex === index ? { ...item, checked: !item.checked } : item,
-  );
-}
-
-export function updateTodoLabel(
-  items: readonly TodoItem[],
-  index: number,
-  label: string,
-): TodoItem[] {
-  return items.map((item, itemIndex) =>
-    itemIndex === index ? { ...item, label } : item,
-  );
-}
 ```
 
 ## Keymap Wiring
 
-KCC's default row shortcuts are declared in `@focusgrid/kcc-core`:
-
-```ts
-{
-  id: "activate",
-  label: "Activate row",
-  defaultSequence: "Space",
-  action: "activate",
-},
-{
-  id: "edit",
-  label: "Edit row",
-  defaultSequence: "Enter",
-  action: "edit",
-}
-```
-
-The playground binds those logical actions to todo behavior with
-`createDefaultKCLKeymap`.
+Native movement bindings belong to `KCCollection`:
 
 ```tsx
-const keymap = useMemo(
-  () =>
-    createDefaultKCLKeymap<TodoItem>({
-      overrides: shortcuts,
-      onActivate: (ctx) => {
-        setTodos((current) => toggleTodo(current, ctx.index));
-      },
-      onEdit: (ctx) => {
-        setEditingIndex(ctx.index);
-      },
-    }),
+const nativeKeymap = useMemo(
+  () => createDefaultKCCollectionKeymap({ overrides: shortcuts }),
   [shortcuts],
 );
 ```
 
-The shortcut sidebar edits the same `shortcuts` object, so changing the KCC row
-bindings immediately rebuilds this keymap.
+Application behavior belongs to receiver action bindings:
+
+```tsx
+const todoActions = useMemo<readonly KCLActionBinding<TodoItem>[]>(
+  () => [
+    {
+      sequence: shortcuts.activate,
+      command: "activate",
+      action: (ctx) => {
+        setTodos((current) => toggleTodo(current, ctx.index));
+      },
+    },
+    {
+      sequence: shortcuts.edit,
+      command: "edit",
+      action: (ctx) => {
+        setEditingId(ctx.id);
+      },
+    },
+  ],
+  [shortcuts],
+);
+```
+
+Native bindings are routed first. If a row action conflicts with movement, the
+movement binding wins and KCC warns.
 
 ## Focus Model
 
-In row mode, DOM focus stays on the KCC list root:
+DOM focus stays on the `KCCollection` root while navigating:
 
 ```tsx
-useEffect(() => {
-  if (!active) {
-    return;
-  }
-
-  controller.api.focus(paneId);
-  paneRef.current
-    ?.querySelector<HTMLElement>(".KCLKeyboardControlledList")
-    ?.focus();
-}, [active, controller, paneId]);
+paneRef.current
+  ?.querySelector<HTMLElement>(".KCLKeyboardControlledList")
+  ?.focus();
 ```
 
-When edit mode starts, the active row renders an input. A follow-up effect focuses
-that input and selects the whole label, so typing replaces the row text.
+When edit mode starts, the active row renders an input. A follow-up effect
+focuses that input and selects the whole label.
 
 ```tsx
 useEffect(() => {
@@ -109,73 +80,78 @@ useEffect(() => {
 
   input.focus();
   input.select();
-}, [editingIndex]);
+}, [editingId]);
 ```
 
-`Enter` and `Escape` both leave edit mode. The current text is already saved by
-`onChange`, so leaving edit mode just restores focus to the list root.
-
-```tsx
-const stopEditing = () => {
-  setEditingIndex(null);
-  requestAnimationFrame(focusListRoot);
-};
-
-const onEditInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-  if (event.key !== "Enter" && event.key !== "Escape") {
-    return;
-  }
-
-  event.preventDefault();
-  event.stopPropagation();
-  stopEditing();
-};
-```
+`Enter` and `Escape` leave edit mode and restore focus to the collection root.
 
 ## Row Rendering
 
-Each row renders a read-only checkbox and either a label or an edit input.
-
 ```tsx
-<KeyboardControlledList
+<KCCollection
   controller={kclController}
-  keymap={keymap}
+  keymap={nativeKeymap}
   direction="vertical"
-  dataList={todos}
-  renderCell={(ctx) => (
-    <div className="KCLTodoRow" data-checked={ctx.data.checked}>
-      <input
-        type="checkbox"
-        tabIndex={-1}
-        readOnly
-        checked={ctx.data.checked}
-      />
-      {editingIndex === ctx.index ? (
+  className="KCLKeyboardControlledList"
+>
+  <KCList
+    dataList={todos}
+    getItemId={(todo) => todo.id}
+    customActionKeybinds={todoActions}
+    renderCell={(ctx) => (
+      <div className="KCLTodoRow" data-checked={ctx.data.checked}>
         <input
-          data-kcl-edit-input="true"
-          value={ctx.data.label}
-          spellCheck={false}
-          onChange={(event) => {
-            setTodos((current) =>
-              updateTodoLabel(current, ctx.index, event.target.value),
-            );
-          }}
-          onKeyDown={onEditInputKeyDown}
+          type="checkbox"
+          tabIndex={-1}
+          readOnly
+          checked={ctx.data.checked}
         />
-      ) : (
-        <span>{ctx.data.label}</span>
-      )}
-    </div>
-  )}
-/>
+        {editingId === ctx.id ? (
+          <input
+            data-kcl-edit-input="true"
+            value={ctx.data.label}
+            spellCheck={false}
+            onChange={(event) => {
+              setTodos((current) =>
+                updateTodoLabel(current, ctx.index, event.target.value),
+              );
+            }}
+            onKeyDown={onEditInputKeyDown}
+          />
+        ) : (
+          <span>{ctx.data.label}</span>
+        )}
+      </div>
+    )}
+  />
+</KCCollection>
 ```
 
-## Editable Targets
+## Heterogeneous Collections
 
-`kcc-dom` listens in the capture phase so list shortcuts win while the list root
-is focused. It deliberately ignores keydown events from editable descendants.
-That lets `Space` insert a space in the inline input instead of toggling the
-checkbox, while `Space` on the list root still activates the active row.
+Use `KCItem` for single controls, `KCList` for row groups, and normal React
+children for static layout:
 
-Double-click follows the same model: pointer selection focuses the list root and
-updates the active row; double-click enters edit mode for that row.
+```tsx
+<KCCollection controller={controller} keymap={keymap} direction="vertical">
+  <Logo />
+  <KCItem id="compose" customActionKeybinds={composeActions}>
+    <ComposeButton />
+  </KCItem>
+  <KCList
+    dataList={inboxes}
+    getItemId={(inbox) => `inbox:${inbox.id}`}
+    customActionKeybinds={inboxActions}
+    renderCell={(ctx) => <InboxRow inbox={ctx.data} />}
+  />
+  <h2>Labels</h2>
+  <KCList
+    dataList={labels}
+    getItemId={(label) => `label:${label.id}`}
+    customActionKeybinds={labelActions}
+    renderCell={(ctx) => <LabelRow label={ctx.data} />}
+  />
+</KCCollection>
+```
+
+The heading and logo render, but keyboard navigation skips them.

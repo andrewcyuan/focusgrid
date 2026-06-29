@@ -1,219 +1,195 @@
 # API
 
-The functions meant to be used in a scriptable / programmatic way, as opposed
-to human input. These APIs live in `@focusgrid/kcc-core`, `@focusgrid/kcc-dom`, and
+KCC APIs live in `@focusgrid/kcc-core`, `@focusgrid/kcc-dom`, and
 `@focusgrid/kcc-react`.
+
+The primary React model is one `KCCollection` root with inline receivers:
 
 ```tsx
 import {
-  KeyboardControlledList,
-  createDefaultKCLKeymap,
-  useKCLController,
+  KCCollection,
+  KCItem,
+  KCList,
+  createDefaultKCCollectionKeymap,
+  useKCController,
+  type KCActionBinding,
 } from "@focusgrid/kcc-react";
 
-const controller = useKCLController({
-  itemCount: rows.length,
-  orientation: "vertical",
-});
+const controller = useKCController({ orientation: "vertical" });
+const keymap = createDefaultKCCollectionKeymap();
 
-const keymap = createDefaultKCLKeymap<Row>({
-  onActivate: (ctx) => toggleRow(ctx.index),
-  onEdit: (ctx) => editRow(ctx.index),
-});
+const rowActions: KCActionBinding<Row>[] = [
+  {
+    sequence: "Space",
+    command: "activate",
+    action: (ctx) => toggleRow(ctx.id),
+  },
+];
+
+<KCCollection controller={controller} keymap={keymap} direction="vertical">
+  <KCItem id="compose">Compose</KCItem>
+  <KCList
+    dataList={rows}
+    getItemId={(row) => row.id}
+    customActionKeybinds={rowActions}
+    renderCell={(ctx) => <RowView row={ctx.data} active={ctx.isItemActive} />}
+  />
+  <h2>Static heading</h2>
+</KCCollection>;
 ```
 
-## Shared types
+Static children render normally and do not register navigable entries.
+
+## Shared Types
 
 ```ts
-type KCLOrientation = "vertical" | "horizontal";
+type KCOrientation = "vertical" | "horizontal";
+type KCMoveDirection = "up" | "down" | "left" | "right" | "start" | "end";
 
-type KCLMoveDirection =
-  | "up"
-  | "down"
-  | "left"
-  | "right"
-  | "start"
-  | "end";
-
-type KCLControllerState = {
+type KCControllerState = {
+  activeItemId: string | null;
   activeIndex: number;
   itemCount: number;
+  itemIds: readonly string[];
   focused: boolean;
-  orientation: KCLOrientation;
+  orientation: KCOrientation;
+  wrapAround: boolean;
 };
 
-type KCLCellContext<T> = {
+type KCActionContext<T = unknown> = {
+  id: string;
   index: number;
-  isListFocused: boolean;
-  isCellActive: boolean;
+  isCollectionFocused: boolean;
+  isItemActive: boolean;
   data: T;
 };
 
-type KCLCellAction<T> = (ctx: KCLCellContext<T>) => void;
-```
-
-## `createKCLController(options?)`
-
-```ts
-createKCLController(options?: KCLControllerOptions): KCLController;
-
-type KCLControllerOptions = {
-  itemCount?: number;
-  activeIndex?: number;
-  focused?: boolean;
-  orientation?: KCLOrientation;
-  selectDefaultIndex?: (itemCount: number) => number;
+type KCActionBinding<T = unknown> = {
+  sequence: KeySequence | string;
+  action: KCItemAction<T> | KCLCommandAction;
+  command?: KCLCommandName;
+  preventDefault?: boolean;
+  repeat?: boolean;
 };
 ```
 
-Creates a keyboard-controlled collection controller. The controller owns active row
-state, item count, focus state, and orientation. Empty lists use
-`activeIndex: -1`; non-empty lists default to index `0` unless
-`activeIndex` or `selectDefaultIndex` is provided.
+`KCL*` names remain exported as compatibility aliases where practical.
+Compatibility contexts also include `isListFocused` and `isCellActive`.
 
-## `controller.api.setActiveIndex(next)`
+## `createKCController(options?)`
 
 ```ts
-setActiveIndex(next: number | ((prev: number) => number)): boolean;
+createKCController(options?: KCControllerOptions): KCController;
 ```
 
-Sets the active row index, clamped to the current item count. It returns `true`
-when state changes and `false` when the normalized index is unchanged.
+Creates a keyboard-controlled collection controller. The controller tracks
+registered item ids, the active item id, focus state, orientation, and
+wrap-around behavior.
 
-## `controller.api.setItemCount(itemCount, selectDefaultIndex?)`
+Important options:
+
+- `activeItemId?: string | null`
+- `itemIds?: readonly string[]`
+- `orientation?: KCOrientation`
+- `wrapAround?: boolean`
+- `selectDefaultItemId?: (entries: readonly KCRegisteredEntry[]) => string | null`
+
+Legacy `itemCount`, `activeIndex`, and `selectDefaultIndex` are still accepted.
+
+## Controller APIs
 
 ```ts
-setItemCount(
-  itemCount: number,
-  selectDefaultIndex?: (itemCount: number) => number,
+controller.api.setActiveItemId(next: string | null): boolean;
+controller.api.setActiveIndex(next: number | ((prev: number) => number)): boolean;
+controller.api.setRegisteredEntries(
+  entries: readonly KCRegisteredEntry[],
+  selectDefaultItemId?: (entries: readonly KCRegisteredEntry[]) => string | null,
 ): boolean;
+controller.api.setFocused(focused: boolean): boolean;
+controller.api.setOrientation(orientation: KCOrientation): boolean;
+controller.api.setWrapAround(wrapAround: boolean): boolean;
 ```
 
-Updates the item count and reconciles the active index. If the list becomes
-empty, the active index becomes `-1`. If a previously empty list becomes
-non-empty, `selectDefaultIndex` chooses the initial row when provided.
+`activeItemId` is the public reconciliation anchor. When entries reorder, the
+same id stays active and `activeIndex` is recomputed from the new flattened
+order.
 
-## `controller.api.setFocused(focused)`
+## Commands
 
 ```ts
-setFocused(focused: boolean): boolean;
+controller.commands.moveActive(direction: KCMoveDirection, count?: number): boolean;
 ```
 
-Updates whether the list root is focused. `kcc-dom` calls this from root focus
-and blur events; apps usually do not need to call it directly.
+Movement is position-based, orientation-aware, skips disabled entries, and
+updates `activeItemId`.
 
-## `controller.api.setOrientation(orientation)`
+## `KCCollection`
+
+```tsx
+<KCCollection
+  controller={controller}
+  keymap={nativeKeymap}
+  direction="vertical"
+  wrapAround={false}
+  selectDefaultItemId={(items) => items[0]?.id ?? null}
+>
+  {children}
+</KCCollection>
+```
+
+`KCCollection` owns DOM focus, `aria-activedescendant`, the root keyboard
+listener, native movement routing, registration order, and conflict validation.
+Its `keymap` should contain native structural bindings such as arrow movement.
+
+## `KCItem`
+
+```tsx
+<KCItem id="compose" customActionKeybinds={composeActions}>
+  {(ctx) => <button aria-current={ctx.isItemActive}>Compose</button>}
+</KCItem>
+```
+
+`KCItem` registers one navigable entry. `data` is optional and defaults to
+`undefined`.
+
+## `KCList`
+
+```tsx
+<KCList
+  dataList={rows}
+  getItemId={(row) => row.id}
+  customActionKeybinds={rowActions}
+  renderCell={(ctx) => <Row row={ctx.data} />}
+/>
+```
+
+`KCList` registers one entry per row and inherits direction/default selection
+from the parent collection. Prefer `getItemId` for dynamic data.
+
+## Keymap Helpers
 
 ```ts
-setOrientation(orientation: KCLOrientation): boolean;
+createDefaultKCCollectionKeymap(options?: {
+  overrides?: KCLShortcutOverrides;
+}): KCActionBinding[];
 ```
 
-Sets whether movement commands use vertical or horizontal arrow semantics.
-Vertical lists respond to up/down movement. Horizontal lists respond to
-left/right movement.
-
-## `controller.getState()`
-
-```ts
-getState(): KCLControllerState;
-```
-
-Returns the current controller state snapshot.
-
-## `controller.getCellContext(index, data)`
-
-```ts
-getCellContext<T>(index: number, data: T): KCLCellContext<T>;
-```
-
-Builds the render/action context for one row. This is what
-`KeyboardControlledList` passes to `renderCell`.
-
-## `controller.subscribe(listener)`
-
-```ts
-subscribe(listener: () => void): () => void;
-```
-
-Subscribes to controller state changes. The returned function unsubscribes the
-listener.
-
-## `createDefaultKCLShortcuts()`
-
-```ts
-createDefaultKCLShortcuts(): KCLShortcutValues;
-```
-
-Returns editable shortcut values keyed by the default shortcut ids. This is
-useful for shortcut preference UI.
-
-## `createDefaultKCLKeymap(options?)`
+Creates native movement bindings only: arrows, `Home`, and `End`.
 
 ```ts
 createDefaultKCLKeymap<T>(options?: {
   overrides?: KCLShortcutOverrides;
   onActivate?: KCLCellAction<T>;
   onEdit?: KCLCellAction<T>;
-}): KCLActionBinding<T>[];
+}): KCActionBinding<T>[];
 ```
 
-Creates the default KCL keymap. `overrides` replace default sequences by
-shortcut id. `onActivate` handles the logical row activation shortcut, and
-`onEdit` handles the logical row edit shortcut.
+Legacy helper that includes movement plus activate/edit callbacks. New
+collection code should pass movement bindings to `KCCollection` and app actions
+to `KCItem` or `KCList`.
 
-Invalid or empty shortcut sequences are dropped when the keymap is resolved.
+## Compatibility Wrapper
 
-## `resolveKCLKeymap(bindings)`
-
-```ts
-resolveKCLKeymap<T>(
-  bindings: readonly KCLActionBinding<T>[],
-): KCLKeyBinding<T>[];
-```
-
-Converts KCL action bindings into shortcut-engine bindings. Most React apps use
-`createDefaultKCLKeymap()` and let `kcc-dom` resolve the bindings internally.
-
-## `KeyboardControlledList`
-
-```tsx
-<KeyboardControlledList
-  controller={controller}
-  keymap={keymap}
-  direction="vertical"
-  dataList={rows}
-  renderCell={(ctx) => <Row data={ctx.data} active={ctx.isCellActive} />}
-/>
-```
-
-React binding for a KCC list. It mounts the DOM controller, keeps item count and
-orientation synced, renders each row with `role="option"`, and keeps
-`aria-activedescendant` on the list root.
-
-```ts
-type KeyboardControlledListProps<T> = {
-  controller: KCLController;
-  keymap: readonly KCLActionBinding<T>[];
-  direction: KCLOrientation;
-  renderCell: (ctx: KCLCellContext<T>) => ReactNode;
-  dataList: readonly T[];
-  selectDefaultIndex?: (dataList: readonly T[] | undefined) => number;
-  className?: string;
-};
-```
-
-## `useKCLController(options?)`
-
-```ts
-useKCLController(options?: KCLControllerOptions): KCLController;
-```
-
-Creates one stable KCL controller for a React component instance.
-
-## `useKCLControllerState(controller)`
-
-```ts
-useKCLControllerState(controller: KCLController): KCLControllerState;
-```
-
-Subscribes a React component to controller state using `useSyncExternalStore`.
+`KeyboardControlledList` remains available and is implemented with
+`KCCollection` plus `KCList`. New code should prefer the explicit collection API
+for heterogeneous layouts.

@@ -4,6 +4,8 @@ import {
   type ShortcutBinding,
 } from "@focusgrid/shortcut-engine";
 import type {
+  KCActionContext,
+  KCItemAction,
   KCLCellAction,
   KCLCellContext,
   KCLMoveDirection,
@@ -27,19 +29,23 @@ export type KCLCommandArgs =
   | undefined;
 
 export type KCLShortcutContext = {
+  activeItemId: string | null;
   activeIndex: number;
   itemCount: number;
+  itemIds: readonly string[];
   focused: boolean;
   orientation: KCLOrientation;
 };
 
-export type KCLActionBinding<T> = {
+export type KCActionBinding<T> = {
   sequence: KeySequence | string;
-  action: KCLCellAction<T> | KCLCommandAction;
+  action: KCItemAction<T> | KCLCellAction<T> | KCLCommandAction;
   command?: KCLCommandName;
   preventDefault?: boolean;
   repeat?: boolean;
 };
+
+export type KCLActionBinding<T> = KCActionBinding<T>;
 
 export type KCLResolvedAction<T> =
   | {
@@ -49,7 +55,7 @@ export type KCLResolvedAction<T> =
     }
   | {
       kind: "cell";
-      action: KCLCellAction<T>;
+      action: KCItemAction<T> | KCLCellAction<T>;
       command?: KCLCommandName;
     };
 
@@ -182,6 +188,35 @@ export function createDefaultKCLKeymap<T>(
   });
 }
 
+export function createDefaultKCCollectionKeymap<T>(
+  options: {
+    overrides?: KCLShortcutOverrides;
+  } = {},
+): KCActionBinding<T>[] {
+  const shortcuts = options.overrides ?? {};
+
+  return defaultKCLShortcutActions.flatMap((action) => {
+    if (action.id === "activate" || action.id === "edit") {
+      return [];
+    }
+
+    const sequence = (shortcuts[action.id] ?? action.defaultSequence).trim();
+
+    if (!sequence) {
+      return [];
+    }
+
+    return [
+      {
+        sequence,
+        action: action.action,
+        command: getDefaultCommand(action),
+        repeat: "repeat" in action ? action.repeat : undefined,
+      },
+    ];
+  });
+}
+
 export function resolveKCLKeymap<T>(
   bindings: readonly KCLActionBinding<T>[],
 ): KCLKeyBinding<T>[] {
@@ -209,24 +244,41 @@ export function resolveKCLKeymap<T>(
 
 export function createKCLCellContext<T>(
   state: KCLShortcutContext,
-  dataList: readonly T[],
+  indexOrDataList: number | readonly T[],
+  data?: T,
 ): KCLCellContext<T> | null {
-  const data = dataList[state.activeIndex];
+  if (typeof indexOrDataList !== "number") {
+    const dataList = indexOrDataList;
+    const activeData = dataList[state.activeIndex];
 
-  if (state.activeIndex < 0 || data === undefined) {
+    if (state.activeIndex < 0 || activeData === undefined) {
+      return null;
+    }
+
+    return createKCLCellContext(state, state.activeIndex, activeData);
+  }
+
+  const index = indexOrDataList;
+
+  if (index < 0 || data === undefined) {
     return null;
   }
 
+  const id = state.itemIds?.[index] ?? `item-${index}`;
+
   return {
-    index: state.activeIndex,
+    id,
+    index,
     data,
+    isCollectionFocused: state.focused,
+    isItemActive: state.activeItemId === id,
     isListFocused: state.focused,
-    isCellActive: true,
+    isCellActive: state.activeItemId === id,
   };
 }
 
 function resolveAction<T>(
-  action: KCLCellAction<T> | KCLCommandAction,
+  action: KCItemAction<T> | KCLCellAction<T> | KCLCommandAction,
   command?: KCLCommandName,
 ): KCLResolvedAction<T> {
   if (typeof action === "function") {
@@ -250,6 +302,8 @@ function resolveAction<T>(
     args: action.args,
   };
 }
+
+export type KCActionContextFor<T> = KCActionContext<T>;
 
 function resolveDefaultAction<T>(
   action: KCLDefaultShortcutAction,

@@ -1,5 +1,10 @@
-export { KCLDomController } from "./controller";
-export type { KCLDomControllerOptions, KCLRowDomProps } from "./controller";
-export { getKCLRowId } from "./ids";
+export { KCDomController, KCLDomController } from "./controller";
+export type {
+  KCDomControllerOptions,
+  KCEntryDomProps,
+  KCLDomControllerOptions,
+  KCLRowDomProps,
+} from "./controller";
+export { getKCEntryDomId, getKCLRowId } from "./ids";
 
 export { normalizeKeyboardEvent } from "@focusgrid/shortcut-engine";

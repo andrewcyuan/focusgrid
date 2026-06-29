@@ -222,12 +222,12 @@ test("KCC route keeps focus on the list root and moves active row with arrows", 
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   await expect(alphaList).toBeFocused();
-  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-0$/);
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /alpha-triage$/);
 
   await page.keyboard.press("ArrowDown");
 
   await expect(alphaList).toBeFocused();
-  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-1$/);
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /alpha-review$/);
   await expect(
     page.locator('[data-kcl-pane-id="alpha"] [role="option"]').nth(1),
   ).toHaveAttribute("aria-selected", "true");
@@ -350,7 +350,7 @@ test("KCC pointer selection focuses the list and double click edits rows", async
   await thirdRow.click();
   await expect(alphaList).toBeFocused();
   await expect(thirdRow).toHaveAttribute("aria-selected", "true");
-  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /alpha-ship$/);
   await expect(thirdCheckbox).not.toBeChecked();
 
   await thirdRow.dblclick();
@@ -372,7 +372,7 @@ test("KCC checkbox row descendants keep focus on the list root and select the ro
 
   await expect(alphaList).toBeFocused();
   await expect(thirdRow).toHaveAttribute("aria-selected", "true");
-  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /alpha-ship$/);
   await expect(thirdCheckbox).not.toBeChecked();
 });
 
@@ -390,7 +390,7 @@ test("KCC radio row descendants keep focus on the list root and select the row",
 
   await expect(alphaList).toBeFocused();
   await expect(thirdRow).toHaveAttribute("aria-selected", "true");
-  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /alpha-ship$/);
   await expect(thirdRadio).not.toBeChecked();
 });
 
@@ -408,7 +408,7 @@ test("KCC button-like input row descendants keep focus on the list root and sele
 
   await expect(alphaList).toBeFocused();
   await expect(thirdRow).toHaveAttribute("aria-selected", "true");
-  await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
+  await expect(alphaList).toHaveAttribute("aria-activedescendant", /alpha-ship$/);
 });
 
 test("KCC route exposes FocusGrid shortcuts and pane shortcuts work while list is focused", async ({
@@ -433,5 +433,5 @@ test("KCC route exposes FocusGrid shortcuts and pane shortcuts work while list i
   const activeList = page.locator('.KCLPane[data-active="true"] [role="listbox"]');
   await expect(activeList).toBeFocused();
   await page.keyboard.press("ArrowDown");
-  await expect(activeList).toHaveAttribute("aria-activedescendant", /row-1$/);
+  await expect(activeList).toHaveAttribute("aria-activedescendant", /-review$/);
 });

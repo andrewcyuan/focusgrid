@@ -17,11 +17,14 @@ import {
   type PaneRenderContext,
 } from "@focusgrid/react";
 import {
-  createDefaultKCLKeymap,
+  KCCollection,
+  KCList,
+  createDefaultKCCollectionKeymap,
   createDefaultKCLShortcuts,
   defaultKCLShortcutActions,
-  KeyboardControlledList,
   useKCLController,
+  type KCLActionBinding,
+  type KCActionContext,
   type KCLShortcutId,
   type KCLShortcutValues,
 } from "@focusgrid/kcc-react";
@@ -448,23 +451,35 @@ function KCLTodoPane({
   shortcuts,
 }: PaneComponentProps & { shortcuts: KCLShortcutValues }) {
   const [todos, setTodos] = useState(() => createInitialTodos(paneId));
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const kclController = useKCLController({
-    itemCount: todos.length,
     orientation: "vertical",
   });
   const paneRef = useRef<HTMLElement | null>(null);
-  const keymap = useMemo(
+  const nativeKeymap = useMemo(
     () =>
-      createDefaultKCLKeymap<TodoItem>({
+      createDefaultKCCollectionKeymap({
         overrides: shortcuts,
-        onActivate: (ctx) => {
+      }),
+    [shortcuts],
+  );
+  const todoActions = useMemo<readonly KCLActionBinding<TodoItem>[]>(
+    () => [
+      {
+        sequence: shortcuts.activate,
+        command: "activate",
+        action: (ctx: KCActionContext<TodoItem>) => {
           setTodos((current) => toggleTodo(current, ctx.index));
         },
-        onEdit: (ctx) => {
-          setEditingIndex(ctx.index);
+      },
+      {
+        sequence: shortcuts.edit,
+        command: "edit",
+        action: (ctx: KCActionContext<TodoItem>) => {
+          setEditingId(ctx.id);
         },
-      }),
+      },
+    ],
     [shortcuts],
   );
 
@@ -491,7 +506,7 @@ function KCLTodoPane({
 
     input.focus();
     input.select();
-  }, [editingIndex]);
+  }, [editingId]);
 
   const focusListRoot = () => {
     paneRef.current
@@ -500,7 +515,7 @@ function KCLTodoPane({
   };
 
   const stopEditing = () => {
-    setEditingIndex(null);
+    setEditingId(null);
     requestAnimationFrame(focusListRoot);
   };
 
@@ -525,51 +540,57 @@ function KCLTodoPane({
         <strong>{paneId}</strong>
         <span>{active ? "focused" : "idle"}</span>
       </div>
-      <KeyboardControlledList
+      <KCCollection
         controller={kclController}
-        keymap={keymap}
+        keymap={nativeKeymap}
         direction="vertical"
-        dataList={todos}
-        renderCell={(ctx) => (
-          <div className="KCLTodoRow" data-checked={ctx.data.checked}>
-            <input
-              type="checkbox"
-              tabIndex={-1}
-              readOnly
-              checked={ctx.data.checked}
-            />
-            <input
-              type="radio"
-              tabIndex={-1}
-              readOnly
-              checked={false}
-              name={`${paneId}-todo-row-radio`}
-              aria-label={`Select ${ctx.data.label}`}
-            />
-            <input
-              type="button"
-              tabIndex={-1}
-              value="Row"
-              aria-label={`Row action ${ctx.data.label}`}
-            />
-            {editingIndex === ctx.index ? (
+        className="KCLKeyboardControlledList"
+      >
+        <KCList
+          dataList={todos}
+          getItemId={(todo) => todo.id}
+          customActionKeybinds={todoActions}
+          renderCell={(ctx) => (
+            <div className="KCLTodoRow" data-checked={ctx.data.checked}>
               <input
-                data-kcl-edit-input="true"
-                value={ctx.data.label}
-                spellCheck={false}
-                onChange={(event) => {
-                  setTodos((current) =>
-                    updateTodoLabel(current, ctx.index, event.target.value),
-                  );
-                }}
-                onKeyDown={onEditInputKeyDown}
+                type="checkbox"
+                tabIndex={-1}
+                readOnly
+                checked={ctx.data.checked}
               />
-            ) : (
-              <span>{ctx.data.label}</span>
-            )}
-          </div>
-        )}
-      />
+              <input
+                type="radio"
+                tabIndex={-1}
+                readOnly
+                checked={false}
+                name={`${paneId}-todo-row-radio`}
+                aria-label={`Select ${ctx.data.label}`}
+              />
+              <input
+                type="button"
+                tabIndex={-1}
+                value="Row"
+                aria-label={`Row action ${ctx.data.label}`}
+              />
+              {editingId === ctx.id ? (
+                <input
+                  data-kcl-edit-input="true"
+                  value={ctx.data.label}
+                  spellCheck={false}
+                  onChange={(event) => {
+                    setTodos((current) =>
+                      updateTodoLabel(current, ctx.index, event.target.value),
+                    );
+                  }}
+                  onKeyDown={onEditInputKeyDown}
+                />
+              ) : (
+                <span>{ctx.data.label}</span>
+              )}
+            </div>
+          )}
+        />
+      </KCCollection>
     </section>
   );
 }

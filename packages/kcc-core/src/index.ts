@@ -1,11 +1,24 @@
 export {
+  KCController,
   KCLController,
   clampActiveIndex,
+  createKCActionContext,
+  createKCController,
   createKCLController,
   doesDirectionApply,
   moveActiveIndex,
 } from "./controller";
 export type {
+  KCActionContext,
+  KCCommands,
+  KCControllerApi,
+  KCControllerOptions,
+  KCControllerState,
+  KCItemAction,
+  KCListener,
+  KCMoveDirection,
+  KCOrientation,
+  KCRegisteredEntry,
   KCLCellAction,
   KCLCellContext,
   KCLCommands,
@@ -18,6 +31,7 @@ export type {
 } from "./controller";
 
 export {
+  createDefaultKCCollectionKeymap,
   createDefaultKCLKeymap,
   createDefaultKCLShortcuts,
   createKCLCellContext,
@@ -25,6 +39,8 @@ export {
   resolveKCLKeymap,
 } from "./keymap";
 export type {
+  KCActionBinding,
+  KCActionContextFor,
   KCLActionBinding,
   KCLCommandAction,
   KCLCommandArgs,
