@@ -1,5 +1,5 @@
 {
-  "name": "@focusgrid/kcl-dom",
+  "name": "@focusgrid/kcc-react",
   "version": "0.1.0",
   "type": "module",
   "license": "MIT",
@@ -14,7 +14,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/andrewcyuan/focusgrid.git",
-    "directory": "packages/kcl-dom"
+    "directory": "packages/kcc-react"
   },
   "publishConfig": {
     "access": "public"
@@ -27,16 +27,21 @@
     }
   },
   "scripts": {
-    "build": "tsdown src/index.ts --config ../../tsdown.config.mjs --format esm,cjs --deps.never-bundle @focusgrid/kcl --deps.never-bundle @focusgrid/shortcut-engine",
+    "build": "tsdown src/index.tsx --config ../../tsdown.config.mjs --format esm,cjs --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle @focusgrid/kcc-core --deps.never-bundle @focusgrid/kcc-dom",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
   "dependencies": {
-    "@focusgrid/kcl": "workspace:*",
-    "@focusgrid/shortcut-engine": "workspace:*"
+    "@focusgrid/kcc-core": "workspace:*",
+    "@focusgrid/kcc-dom": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "^2.1.8"
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5"
   }
 }

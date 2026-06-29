@@ -215,10 +215,10 @@ test("horizontal pointer resize continues after dragging outside the handle", as
     .toBeGreaterThan(initialBox!.width + 80);
 });
 
-test("KCL route keeps focus on the list root and moves active row with arrows", async ({
+test("KCC route keeps focus on the list root and moves active row with arrows", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   await expect(alphaList).toBeFocused();
@@ -233,10 +233,10 @@ test("KCL route keeps focus on the list root and moves active row with arrows", 
   ).toHaveAttribute("aria-selected", "true");
 });
 
-test("KCL Space toggles the active todo without moving DOM focus into rows", async ({
+test("KCC Space toggles the active todo without moving DOM focus into rows", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const firstRow = page
@@ -257,10 +257,10 @@ test("KCL Space toggles the active todo without moving DOM focus into rows", asy
   );
 });
 
-test("KCL Enter edits the active todo and returns focus to the list", async ({
+test("KCC Enter edits the active todo and returns focus to the list", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const firstRow = page
@@ -290,8 +290,8 @@ test("KCL Enter edits the active todo and returns focus to the list", async ({
   await expect(firstRow.locator("span")).toHaveText("Buy milk");
 });
 
-test("KCL Escape exits edit mode and preserves typed text", async ({ page }) => {
-  await page.goto("/kcl");
+test("KCC Escape exits edit mode and preserves typed text", async ({ page }) => {
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const firstRow = page
@@ -311,10 +311,10 @@ test("KCL Escape exits edit mode and preserves typed text", async ({ page }) => 
   await expect(firstRow.locator("span")).toHaveText("Preserved");
 });
 
-test("KCL Space inside the edit input inserts text instead of toggling", async ({
+test("KCC Space inside the edit input inserts text instead of toggling", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const firstRow = page
     .locator('[data-kcl-pane-id="alpha"] [role="option"]')
@@ -337,10 +337,10 @@ test("KCL Space inside the edit input inserts text instead of toggling", async (
   await expect(checkbox).not.toBeChecked();
 });
 
-test("KCL pointer selection focuses the list and double click edits rows", async ({
+test("KCC pointer selection focuses the list and double click edits rows", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
@@ -358,10 +358,10 @@ test("KCL pointer selection focuses the list and double click edits rows", async
   await expect(thirdCheckbox).not.toBeChecked();
 });
 
-test("KCL checkbox row descendants keep focus on the list root and select the row", async ({
+test("KCC checkbox row descendants keep focus on the list root and select the row", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
@@ -376,10 +376,10 @@ test("KCL checkbox row descendants keep focus on the list root and select the ro
   await expect(thirdCheckbox).not.toBeChecked();
 });
 
-test("KCL radio row descendants keep focus on the list root and select the row", async ({
+test("KCC radio row descendants keep focus on the list root and select the row", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
@@ -394,10 +394,10 @@ test("KCL radio row descendants keep focus on the list root and select the row",
   await expect(thirdRadio).not.toBeChecked();
 });
 
-test("KCL button-like input row descendants keep focus on the list root and select the row", async ({
+test("KCC button-like input row descendants keep focus on the list root and select the row", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
   const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
   const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
@@ -411,12 +411,12 @@ test("KCL button-like input row descendants keep focus on the list root and sele
   await expect(alphaList).toHaveAttribute("aria-activedescendant", /row-2$/);
 });
 
-test("KCL route exposes FocusGrid shortcuts and pane shortcuts work while list is focused", async ({
+test("KCC route exposes FocusGrid shortcuts and pane shortcuts work while list is focused", async ({
   page,
 }) => {
-  await page.goto("/kcl");
+  await page.goto("/kcc");
 
-  await expect(page.getByRole("heading", { name: "KCL rows" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "KCC rows" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "FocusGrid panes" }),
   ).toBeVisible();

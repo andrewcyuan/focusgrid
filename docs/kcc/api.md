@@ -1,15 +1,15 @@
 # API
 
 The functions meant to be used in a scriptable / programmatic way, as opposed
-to human input. These APIs live in `@focusgrid/kcl`, `@focusgrid/kcl-dom`, and
-`@focusgrid/kcl-react`.
+to human input. These APIs live in `@focusgrid/kcc-core`, `@focusgrid/kcc-dom`, and
+`@focusgrid/kcc-react`.
 
 ```tsx
 import {
   KeyboardControlledList,
   createDefaultKCLKeymap,
   useKCLController,
-} from "@focusgrid/kcl-react";
+} from "@focusgrid/kcc-react";
 
 const controller = useKCLController({
   itemCount: rows.length,
@@ -66,7 +66,7 @@ type KCLControllerOptions = {
 };
 ```
 
-Creates a keyboard-controlled list controller. The controller owns active row
+Creates a keyboard-controlled collection controller. The controller owns active row
 state, item count, focus state, and orientation. Empty lists use
 `activeIndex: -1`; non-empty lists default to index `0` unless
 `activeIndex` or `selectDefaultIndex` is provided.
@@ -99,7 +99,7 @@ non-empty, `selectDefaultIndex` chooses the initial row when provided.
 setFocused(focused: boolean): boolean;
 ```
 
-Updates whether the list root is focused. `kcl-dom` calls this from root focus
+Updates whether the list root is focused. `kcc-dom` calls this from root focus
 and blur events; apps usually do not need to call it directly.
 
 ## `controller.api.setOrientation(orientation)`
@@ -172,7 +172,7 @@ resolveKCLKeymap<T>(
 ```
 
 Converts KCL action bindings into shortcut-engine bindings. Most React apps use
-`createDefaultKCLKeymap()` and let `kcl-dom` resolve the bindings internally.
+`createDefaultKCLKeymap()` and let `kcc-dom` resolve the bindings internally.
 
 ## `KeyboardControlledList`
 
@@ -186,7 +186,7 @@ Converts KCL action bindings into shortcut-engine bindings. Most React apps use
 />
 ```
 
-React binding for a KCL list. It mounts the DOM controller, keeps item count and
+React binding for a KCC list. It mounts the DOM controller, keeps item count and
 orientation synced, renders each row with `role="option"`, and keeps
 `aria-activedescendant` on the list root.
 

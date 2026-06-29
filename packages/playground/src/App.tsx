@@ -24,7 +24,7 @@ import {
   useKCLController,
   type KCLShortcutId,
   type KCLShortcutValues,
-} from "@focusgrid/kcl-react";
+} from "@focusgrid/kcc-react";
 import {
   useEffect,
   useMemo,
@@ -39,7 +39,7 @@ import {
   toggleTodo,
   updateTodoLabel,
   type TodoItem,
-} from "./kcl-todos";
+} from "./kcc-todos";
 
 function createInitialState(): FocusGridControllerState {
   return {
@@ -79,7 +79,7 @@ const paneComponents: Record<string, PaneComponent> = {
 };
 
 export function App() {
-  return window.location.pathname === "/kcl" ? (
+  return window.location.pathname === "/kcc" ? (
     <KCLPlayground />
   ) : (
     <FocusGridPlayground />
@@ -234,12 +234,12 @@ function KCLSidebar({
   return (
     <aside className="Sidebar">
       <div className="SidebarHeader">
-        <h1>Focusgrid KCL</h1>
+        <h1>Focusgrid KCC</h1>
         <span>Pane and list shortcuts</span>
       </div>
 
       <div className="SidebarSection">
-        <h2>KCL rows</h2>
+        <h2>KCC rows</h2>
         <div className="ShortcutList">
           {defaultKCLShortcutActions.map((action) => (
             <label className="ShortcutBinder" key={action.id}>
@@ -395,7 +395,7 @@ function KCLToolbar({
         <a className="ToolbarLink" href="/">
           FocusGrid
         </a>
-        <span className="ToolbarMode">KCL todo lists</span>
+        <span className="ToolbarMode">KCC todo lists</span>
       </div>
       <div className="ToolbarMeta">
         <span>Active: {state.activePaneId ?? "none"}</span>

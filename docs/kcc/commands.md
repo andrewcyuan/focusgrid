@@ -1,11 +1,11 @@
 # Commands
 
 Commands are named actions intended for keyboard shortcuts and other human
-input. KCL has one built-in controller command for movement, plus logical row
+input. KCC has one built-in controller command for movement, plus logical row
 actions that are usually supplied by the app through `createDefaultKCLKeymap()`.
 
 ```ts
-import { createKCLController } from "@focusgrid/kcl";
+import { createKCLController } from "@focusgrid/kcc-core";
 
 const controller = createKCLController({
   itemCount: 3,
@@ -176,5 +176,5 @@ const keymap: KCLActionBinding<Row>[] = [
 ```
 
 Function actions receive the current active row context. Command actions are
-handled by KCL itself when they refer to `moveActive`; logical `activate` and
+handled by KCC itself when they refer to `moveActive`; logical `activate` and
 `edit` are useful when paired with app callbacks from the default keymap.

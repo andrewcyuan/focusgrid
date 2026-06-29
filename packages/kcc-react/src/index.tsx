@@ -12,8 +12,8 @@ import {
   type KCLCellContext,
   type KCLControllerState,
   type KCLOrientation,
-} from "@focusgrid/kcl";
-import { KCLDomController } from "@focusgrid/kcl-dom";
+} from "@focusgrid/kcc-core";
+import { KCLDomController } from "@focusgrid/kcc-dom";
 
 export type KeyboardControlledListProps<T> = {
   controller: KCLController;
@@ -167,10 +167,10 @@ export type {
   KCLShortcutId,
   KCLShortcutOverrides,
   KCLShortcutValues,
-} from "@focusgrid/kcl";
+} from "@focusgrid/kcc-core";
 export {
   createDefaultKCLKeymap,
   createDefaultKCLShortcuts,
   createKCLController,
   defaultKCLShortcutActions,
-} from "@focusgrid/kcl";
+} from "@focusgrid/kcc-core";

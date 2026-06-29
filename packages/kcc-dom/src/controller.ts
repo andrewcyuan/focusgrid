@@ -5,7 +5,7 @@ import {
   type KCLActionBinding,
   type KCLControllerState,
   type KCLResolvedAction,
-} from "@focusgrid/kcl";
+} from "@focusgrid/kcc-core";
 import {
   KeyRouter,
   isModifierOnlyKey,

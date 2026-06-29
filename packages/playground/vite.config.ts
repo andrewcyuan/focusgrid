@@ -53,21 +53,21 @@ export default defineConfig({
         ),
       },
       {
-        find: "@focusgrid/kcl",
+        find: "@focusgrid/kcc-core",
         replacement: fileURLToPath(
-          new URL("../kcl-core/src/index.ts", import.meta.url),
+          new URL("../kcc-core/src/index.ts", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/kcl-dom",
+        find: "@focusgrid/kcc-dom",
         replacement: fileURLToPath(
-          new URL("../kcl-dom/src/index.ts", import.meta.url),
+          new URL("../kcc-dom/src/index.ts", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/kcl-react",
+        find: "@focusgrid/kcc-react",
         replacement: fileURLToPath(
-          new URL("../kcl-react/src/index.tsx", import.meta.url),
+          new URL("../kcc-react/src/index.tsx", import.meta.url),
         ),
       },
     ],

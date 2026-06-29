@@ -1,9 +1,9 @@
-# KCL implementation plan
+# KCC implementation plan
 
-KCL (keyboard controllable list) is a web library to make it easy to build keyboard-controlled lists for things like command palettes, file trees, etc. This library abstracts away the annoying parts of keyboard shortcut binding, handling DOM focus and ARIA so that clients can simply define the components and actions they want to happen.
+KCC (KeyboardControlledCollection) is a web library to make it easy to build keyboard-controlled collections for things like command palettes, file trees, etc. This library abstracts away the annoying parts of keyboard shortcut binding, handling DOM focus and ARIA so that clients can simply define the components and actions they want to happen.
 
 New paradigm:
-KCL owns the active index / cursor.
+KCC owns the active index / cursor.
 Cell actions (defined by the client) taken are effected on the active cell at that moment.
 
 Focus lives on list root; and row activity is done with aria list.
@@ -16,7 +16,7 @@ New package that rips out the shortcut detection logic from focusgrid.
 
 1. listens for given KeySequence[] and lets others fall through
 2. routes matched key sequences to typed action results / handlers, without
-   owning focusgrid or KCL-specific command execution
+   owning focusgrid or KCC-specific command execution
 3. exposes strongly typed sdk for parsing strings into KeySequence and KeySequence types
 
 
@@ -86,18 +86,18 @@ type KCLProps<T> = {
 
 ## Package responsibilities
 
-KCL should keep as much behavior as possible in `kcl-core` and `kcl-dom`.
-`kcl-core` owns framework-agnostic state, typed command surfaces, keymap/action
-contracts, and list behavior. `kcl-dom` owns browser-specific concerns like DOM
+KCL should keep as much behavior as possible in `kcc-core` and `kcc-dom`.
+`kcc-core` owns framework-agnostic state, typed command surfaces, keymap/action
+contracts, and list behavior. `kcc-dom` owns browser-specific concerns like DOM
 focus, keyboard event capture, ARIA wiring, and translating browser events into
 the core SDK.
 
-Framework packages such as `kcl-react` should be thin bindings over those typed
+Framework packages such as `kcc-react` should be thin bindings over those typed
 SDKs. They should adapt framework lifecycle and rendering APIs to the core and
-DOM packages, without becoming the place where KCL behavior lives. This keeps it
+DOM packages, without becoming the place where KCC behavior lives. This keeps it
 straightforward to add another web framework binding later, such as
 `kcl-svelte`, by reusing the same strongly typed core and DOM contracts.
 
 ## Playground
 
-Make `/kcl` route on playground which is a copy of the main playground, but with KCLs with some sample actions instead of textboxes. And the sidebar panel will have different settings to control the KCLs.
+Make `/kcc` route on playground which is a copy of the main playground, but with KCCs with some sample actions instead of textboxes. And the sidebar panel will have different settings to control the KCLs.

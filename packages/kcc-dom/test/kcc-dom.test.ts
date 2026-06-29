@@ -3,7 +3,7 @@ import {
   createDefaultKCLKeymap,
   createKCLController,
   type KCLActionBinding,
-} from "@focusgrid/kcl";
+} from "@focusgrid/kcc-core";
 import { KCLDomController } from "../src";
 
 type Listener = (event: KeyboardEvent) => void;

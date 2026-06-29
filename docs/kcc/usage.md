@@ -1,16 +1,16 @@
-# KCL Playground Todo Example
+# KCC Playground Todo Example
 
-The `/kcl` playground demonstrates a keyboard-controlled todo list inside each
+The `/kcc` playground demonstrates a keyboard-controlled todo list inside each
 FocusGrid pane. It treats the list like a file tree: the list root owns focus in
 row mode, arrow keys move the active row, `Space` activates the row, and `Enter`
 opens inline editing.
 
-We created the playground to be a good model of how clients can use KCL.
+We created the playground to be a good model of how clients can use KCC.
 
 ## Data Model
 
 The playground keeps todo data as plain immutable state. Row actions receive the
-active row index from KCL and update only that item.
+active row index from KCC and update only that item.
 
 ```ts
 export type TodoItem = {
@@ -38,7 +38,7 @@ export function updateTodoLabel(
 
 ## Keymap Wiring
 
-KCL's default row shortcuts are declared in `@focusgrid/kcl`:
+KCC's default row shortcuts are declared in `@focusgrid/kcc-core`:
 
 ```ts
 {
@@ -74,12 +74,12 @@ const keymap = useMemo(
 );
 ```
 
-The shortcut sidebar edits the same `shortcuts` object, so changing the KCL row
+The shortcut sidebar edits the same `shortcuts` object, so changing the KCC row
 bindings immediately rebuilds this keymap.
 
 ## Focus Model
 
-In row mode, DOM focus stays on the KCL list root:
+In row mode, DOM focus stays on the KCC list root:
 
 ```tsx
 useEffect(() => {
@@ -172,7 +172,7 @@ Each row renders a read-only checkbox and either a label or an edit input.
 
 ## Editable Targets
 
-`kcl-dom` listens in the capture phase so list shortcuts win while the list root
+`kcc-dom` listens in the capture phase so list shortcuts win while the list root
 is focused. It deliberately ignores keydown events from editable descendants.
 That lets `Space` insert a space in the inline input instead of toggling the
 checkbox, while `Space` on the list root still activates the active row.

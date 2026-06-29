@@ -3,9 +3,9 @@ import {
   createInitialTodos,
   toggleTodo,
   updateTodoLabel,
-} from "../src/kcl-todos";
+} from "../src/kcc-todos";
 
-describe("KCL todo playground helpers", () => {
+describe("KCC todo playground helpers", () => {
   it("creates pane-specific initial todos", () => {
     expect(createInitialTodos("alpha")).toEqual([
       {
