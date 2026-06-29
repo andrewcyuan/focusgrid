@@ -1,140 +1,4 @@
-# Keyboard Controlled Components Plan
-
-This document captures the planned transition from the current
-`KeyboardControlledList` API to a broader keyboard-controlled components model.
-The goal is to keep the deterministic focus and keyboard behavior already built
-for KCL, while making the primitive composable enough for heterogeneous
-production layouts such as an email client's left menu bar.
-
-The current `KeyboardControlledList<T>` API works well for one homogeneous list.
-It becomes awkward when a single keyboard-controlled surface contains static
-content, buttons, several lists with different data types, headings, spacing,
-and "more" controls. The new model should let those pieces compose in normal
-React layout while still producing one deterministic keyboard navigation model.
-
-## Plan 1: Rename Packages and Public API
-
-### Goal
-
-Rename the KCL surface from "keyboard controlled collection" to "keyboard controlled
-components" so the public API matches the broader abstraction.
-
-The current list API should become the simple list-shaped receiver inside a
-larger collection model, rather than the top-level concept.
-
-### Proposed Names
-
-Package names:
-
-```txt
-@focusgrid/keyboard-controlled-components
-@focusgrid/keyboard-controlled-components-dom
-@focusgrid/keyboard-controlled-components-react
-```
-
-Shorter package names are also worth considering before publishing:
-
-```txt
-@focusgrid/kcc
-@focusgrid/kcc-dom
-@focusgrid/kcc-react
-```
-
-Public React components:
-
-```ts
-KeyboardControlledCollection -> KCCollection
-KeyboardControlledList -> KCList
-KeyboardControlledItem -> KCItem
-KeyboardControlledStaticItem -> KCStaticItem
-```
-
-Controller/API names should follow the same prefix:
-
-```ts
-KCLController -> KCController
-KCLControllerState -> KCControllerState
-KCLActionBinding -> KCActionBinding
-KCLCellContext -> KCItemContext
-```
-
-### Migration Shape
-
-1. Introduce the new names as aliases first.
-2. Keep the old package and exports working during the transition.
-3. Move internal files and docs after the alias layer is stable.
-4. Remove old names only before the first stable public release, or after a
-   documented deprecation period if this has already shipped.
-
-### Concrete Work
-
-1. Add new package entrypoints.
-
-   Either rename the existing packages:
-
-   ```txt
-   packages/kcc-core -> packages/kcc-core
-   packages/kcc-dom -> packages/kcc-dom
-   packages/kcc-react -> packages/kcc-react
-   ```
-
-   Or keep the file layout initially and expose renamed package names through
-   package metadata and exports.
-
-2. Update package names in:
-
-   ```txt
-   package.json
-   pnpm-lock.yaml
-   pnpm-workspace.yaml
-   tsconfig.base.json
-   vitest.config.ts
-   docs
-   README.md
-   playground
-   tests
-   ```
-
-3. Add export aliases before removing old symbols.
-
-   Example:
-
-   ```ts
-   export {
-     KeyboardControlledCollection,
-     KeyboardControlledCollection as KCCollection,
-     KeyboardControlledList,
-     KeyboardControlledList as KCList,
-   };
-   ```
-
-4. Rename docs after the API has the new names:
-
-   ```txt
-   docs/kcc -> docs/keyboardControlledComponents
-   ```
-
-5. Update playground examples to use the new names. The playground should show
-   both a simple `KCList` and a heterogeneous `KCCollection` layout.
-
-### Compatibility Concerns
-
-- Existing KCL tests should continue to pass under alias exports before any
-  deeper behavior changes.
-- The current `KeyboardControlledList<T>` can remain as a compatibility wrapper
-  over `KCCollection` plus `KCList`.
-- Documentation should avoid implying that `KCList` owns the whole keyboard
-  surface once `KCCollection` exists.
-
-### Testing Plan
-
-- Type tests or compile-time usage examples should verify old and new imports.
-- Existing KCL core/dom/react tests should pass unchanged during the alias
-  phase.
-- Add a narrow regression test proving `KCList` remains usable as the simple
-  homogeneous list case.
-
-## Plan 2: Rearchitect Around `KCCollection`
+## Rearchitect Around `KCCollection`
 
 ### Goal
 
@@ -219,14 +83,15 @@ render switches over unrelated domain data.
 - `controller`
 - `keymap` for native structural navigation
 - `direction`
-- `selectDefaultIndex`
+- `selectDefaultItemId`
 - `className`
 - `wrapAround`
 
 `KCCollection` owns:
 
 - DOM focus on the collection root
-- active item index or active item id
+- active item id as the public cursor identity
+- internal item ordering for directional movement
 - item count reconciliation
 - native movement commands
 - ARIA root attributes
@@ -242,17 +107,20 @@ The collection keymap should be limited to native structural behavior:
 
 Application behavior should live in action bindings, not `onActivate` props.
 
+VERY IMPORTANT: we have already implemented the logic for KCCollection in KeyboardControlledList. This should be first a rename, then removing some capabilities, then finally converting to the provider structure (exposing controller and native keymap in a react useContext).
+
 ### Receiver Responsibilities
 
 `KCItem` props:
 
 ```ts
-type KCItemProps = {
+type KCItemProps<T = undefined> = {
   id?: string;
   className?: string;
   disabled?: boolean;
-  customActionKeybinds?: readonly KCActionBinding[];
-  children: ReactNode | ((ctx: KCItemContext) => ReactNode);
+  data?: T;
+  customActionKeybinds?: readonly KCActionBinding<T>[];
+  children: ReactNode | ((ctx: KCActionContext<T>) => ReactNode);
 };
 ```
 
@@ -261,22 +129,54 @@ type KCItemProps = {
 ```ts
 type KCListProps<T> = {
   dataList: readonly T[];
-  renderCell: (ctx: KCListCellContext<T>) => ReactNode;
-  direction?: KCOrientation;
-  selectDefaultIndex?: (dataList: readonly T[] | undefined) => number;
+  renderCell: (ctx: KCActionContext<T>) => ReactNode;
   className?: string;
   customActionKeybinds?: readonly KCActionBinding<T>[];
   getItemId?: (data: T, index: number) => string;
 };
 ```
 
-`KCList` can keep a `direction` prop for rendering and local semantics, but the
-first implementation should treat list rows as inline entries in the parent
-collection's active order.
+`KCList` should not accept its own `direction` in the first implementation.
+Inline `KCList` rows inherit the parent `KCCollection` direction because they
+are part of the same flattened traversal surface.
+
+`KCList` should also not accept `selectDefaultIndex` in the first
+implementation. Inline lists are part of one flattened collection, so a
+list-local default selection is ambiguous. Default selection belongs to
+`KCCollection`.
+
+Because stable ids are the public item identity, the collection-level default
+selection prop should be id-based:
+
+```ts
+selectDefaultItemId?: (items: readonly KCRegisteredEntry[]) => string | null;
+```
+
+The implementation can translate that id to an internal position after
+registration order is known.
+
+A per-list direction or per-list default selection implies a nested or contained
+focus scope. For example, if the collection is vertical but one child list is
+horizontal, arrow-key behavior has to decide whether vertical keys enter/leave
+the list while horizontal keys move inside it. That is a different feature than
+inline composition and should be deferred until contained scopes are
+intentionally designed.
+
+Default rule:
+
+```txt
+Inline KCList direction = parent KCCollection direction
+Inline KCList default selection = parent KCCollection selectDefaultItemId
+```
+
+Future rule:
+
+```txt
+Contained KCList direction = explicit scope-local direction
+Contained KCList default selection = explicit scope-local default selection
+```
 
 ### Actions
-
-There should be no `onActivate` prop in the core component API.
 
 Activation, editing, deletion, opening menus, and other application behavior
 should be expressed through action bindings:
@@ -289,14 +189,48 @@ type KCActionBinding<T = unknown> = {
 };
 
 type KCItemAction<T = unknown> = (ctx: KCActionContext<T>) => void;
+
+type KCActionContext<T = unknown> = {
+  id: string;
+  isCollectionFocused: boolean;
+  isItemActive: boolean;
+  data: T;
+};
 ```
 
-For a `KCItem`, `ctx.data` is absent unless explicitly provided.
+`KCActionContext` should be the renamed successor to the current
+`KCLCellContext`. It should keep the same basic shape of "active item plus
+domain data", but use stable ids as the public item identity instead of exposing
+indices as the primary contract.
+
+For a `KCItem<T>`, `ctx.data` is the optional `data` prop. For a `KCItem`
+without a `data` prop, `T` defaults to `undefined`.
 
 For a `KCList<T>` row, `ctx.data` is that row's domain value.
 
 Native movement actions should remain separate from custom action bindings so
 custom action bindings can be validated against structural navigation.
+
+Indices may still exist internally in core/dom to support ordered movement,
+`aria-activedescendant` reconciliation, and efficient lookup, but public actions
+should prefer stable ids. This avoids making application code depend on a row's
+temporary position inside a changing composite collection.
+
+`KCItem` and `KCList` should not install their own shortcut listeners in the
+inline model. They register custom action bindings with the collection. The
+collection's single keyboard listener determines which registered entry is
+active and then routes matching custom actions for that entry.
+
+Routing order:
+
+1. Normalize the keyboard event at the `KCCollection` root.
+2. Try native collection movement bindings first.
+3. If a native binding matches, run the structural command and stop.
+4. Find the active registered entry.
+5. Resolve that entry's custom action bindings.
+6. If a custom binding matches, run it with that entry's action context.
+
+Native collection bindings always win over custom bindings.
 
 ### Focus Model
 
@@ -313,6 +247,11 @@ moves to the next registered item.
 
 This is the right default for sidebars, menus, command palettes, file pickers,
 and other composite but linear surfaces.
+
+Individual `KCList` instances should also not own independent keydown listeners
+in the inline model. A single DOM focus owner should imply a single keyboard
+event capture point. This keeps event ordering, conflict validation, pending
+multi-stroke shortcuts, and `preventDefault` behavior deterministic.
 
 Nested focus should be a later explicit feature, not the baseline model.
 
@@ -341,6 +280,28 @@ Prefer a context registry:
 
 The registry must preserve rendered order. If basic mount order is not reliable
 enough for dynamic layouts, registered DOM nodes can be sorted by document order.
+
+Registered entries should carry enough metadata for centralized action routing:
+
+```ts
+type KCRegisteredEntry<T = unknown> = {
+  id: string;
+  element: HTMLElement | null;
+  disabled?: boolean;
+  data: T;
+  getActionKeybinds?: () => readonly KCActionBinding<T>[];
+};
+```
+
+Every registered entry should have a stable id. `KCItem` can use its explicit
+`id` prop or a generated id for static one-off controls. `KCList<T>` should
+strongly encourage `getItemId` for dynamic data; generated index-based ids can
+exist as a convenience, but docs should identify them as less stable when rows
+are inserted, removed, or reordered.
+
+`KCItem<T>` registers one entry and attaches its optional `data` prop to the
+action context. `KCList<T>` registers one entry per row and attaches that row's
+`T` value to the action context.
 
 ### ARIA Model
 
@@ -374,35 +335,49 @@ should not hard-code listbox forever.
 Rules:
 
 - Native collection bindings win.
-- Conflicts should throw or warn in development.
+- Conflicts should warn in development.
+- Conflicts should also warn in production.
 - Production behavior should be deterministic.
-- Custom bindings in the same inline collection should not conflict unless a
-  clear priority rule exists.
+- Custom bindings in the same inline collection should warn when they conflict
+  unless a clear priority rule exists.
 - Future contained scopes may reuse keys because scope entry changes the active
   routing context.
 
 ### State Reconciliation
 
-The current controller uses `activeIndex`. That is enough for a homogeneous
-list, but a composite collection should strongly consider stable item ids.
+The current controller uses `activeIndex`. The composite collection should move
+the public state model to stable item ids.
 
 Recommended direction:
 
 ```ts
 type KCControllerState = {
   activeItemId: string | null;
-  activeIndex: number;
   itemCount: number;
   focused: boolean;
   orientation: KCOrientation;
 };
 ```
 
-`activeIndex` is useful for movement and compatibility. `activeItemId` is useful
-when inboxes, labels, or static controls are inserted or removed.
+`activeItemId` should be the public reconciliation anchor. It stays meaningful
+when inboxes, labels, or static controls are inserted, removed, or reordered.
 
-If item ids are omitted, generated ids can preserve current behavior, but docs
-should encourage stable ids for dynamic data.
+Core/dom may keep an internal active index or id-to-index lookup because ordered
+movement still needs positions. That index should not be the main public action
+contract.
+
+Public imperative APIs should also be id-based:
+
+```ts
+setActiveItemId(next: string | null): boolean;
+```
+
+Movement commands can continue to operate directionally because they are
+position-based by nature, but they should update `activeItemId` as the public
+state result.
+
+If item ids are omitted, generated ids can preserve simple static behavior, but
+docs should encourage stable ids for dynamic data.
 
 ### Implementation Phases
 
@@ -414,35 +389,23 @@ should encourage stable ids for dynamic data.
 
 2. Implement `KCItem` as the smallest receiver.
 
-   It should register one entry, render children, receive active state, and run
-   custom actions for that entry.
+   It should register one entry, render children, receive active state, and
+   expose custom actions to the collection. It should not install a shortcut
+   listener.
 
 3. Rebuild `KCList<T>` as a receiver.
 
    It should map `dataList<T>` into a sequence of registered entries and keep
-   the current render-cell ergonomics.
+   the current render-cell ergonomics. It should inherit `direction` and
+   default selection from the parent collection and should not install a
+   shortcut listener.
 
 4. Add conflict validation.
 
    Validate custom action bindings against collection native bindings and
    duplicate custom bindings in the same inline scope.
 
-5. Preserve old `KeyboardControlledList<T>`.
-
-   Implement it as:
-
-   ```tsx
-   <KCCollection controller={controller} keymap={keymap} direction={direction}>
-     <KCList
-       dataList={dataList}
-       renderCell={renderCell}
-       selectDefaultIndex={selectDefaultIndex}
-       className={className}
-     />
-   </KCCollection>
-   ```
-
-6. Update playground and docs.
+5. Update playground and docs.
 
    Add an email-sidebar example that proves heterogeneous layout, multiple data
    types, static content, and custom actions work together.
@@ -455,14 +418,18 @@ Core tests:
 - movement from one list into the next item after the list
 - clamping at start/end
 - `wrapAround`
+- list rows inherit parent collection direction
 - active item reconciliation when a registered list shrinks
 - active item reconciliation by stable id when data changes
 - custom action receives the correct item/list row context
-- conflict validation rejects native/custom collisions
+- conflict validation warns for native/custom collisions
+- native movement bindings win over registered custom bindings
 
 DOM tests:
 
 - focus stays on the collection root
+- keyboard events are handled by the collection root listener, not per-list
+  listeners
 - `aria-activedescendant` follows active registered entries
 - pointer click focuses the root and activates the clicked entry
 - keyboard movement crosses `KCItem` and `KCList` boundaries
@@ -474,7 +441,6 @@ React tests:
 - `KCList<T>` registers one entry per row
 - non-KC children render but do not register entries
 - dynamic insertion/removal preserves focus by stable id
-- old `KeyboardControlledList<T>` compatibility wrapper behaves like before
 
 Browser regression tests:
 
