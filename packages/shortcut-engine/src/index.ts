@@ -1,4 +1,9 @@
-export { normalizeKeyboardEvent, isModifierOnlyKey } from "./dom";
+export {
+  normalizeKeyboardEvent,
+  isModifierOnlyKey,
+  routeKeyboardEvent,
+} from "./dom";
+export type { KeyboardEventRouteOptions } from "./dom";
 export { createKeyStroke, normalizeKeyName, strokeToId } from "./normalize";
 export {
   normalizeKeySequenceInput,

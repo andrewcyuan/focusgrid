@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   KeyRouter,
   createKeyStroke,
@@ -7,6 +7,7 @@ import {
   normalizeKeySequenceInput,
   normalizeKeyboardEvent,
   parseKeySequence,
+  routeKeyboardEvent,
   strokeToId,
   validateKeySequenceInput,
 } from "../src";
@@ -19,6 +20,18 @@ function keyboardEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
     altKey: input.altKey ?? false,
     shiftKey: input.shiftKey ?? false,
   } as KeyboardEvent;
+}
+
+function routableKeyboardEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
+  return {
+    key: input.key ?? "",
+    ctrlKey: input.ctrlKey ?? false,
+    metaKey: input.metaKey ?? false,
+    altKey: input.altKey ?? false,
+    shiftKey: input.shiftKey ?? false,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+  } as unknown as KeyboardEvent;
 }
 
 describe("key normalization", () => {
@@ -156,6 +169,132 @@ describe("DOM keyboard event normalization", () => {
     expect(isModifierOnlyKey("Control")).toBe(true);
     expect(isModifierOnlyKey("AltGraph")).toBe(true);
     expect(isModifierOnlyKey("B")).toBe(false);
+  });
+});
+
+describe("routeKeyboardEvent", () => {
+  const ctx = {
+    active: true,
+  };
+
+  it("ignores modifier-only events without routing or preventing", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("Shift-X"),
+        action: "active.run",
+      },
+    ]);
+    const handle = vi.spyOn(router, "handle");
+    const event = routableKeyboardEvent({ key: "Shift", shiftKey: true });
+
+    expect(routeKeyboardEvent(event, router, { context: ctx })).toBeNull();
+    expect(handle).not.toHaveBeenCalled();
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(event.stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it("respects ignored events without routing or preventing", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("X"),
+        action: "active.run",
+      },
+    ]);
+    const handle = vi.spyOn(router, "handle");
+    const event = routableKeyboardEvent({ key: "x" });
+
+    expect(
+      routeKeyboardEvent(event, router, {
+        context: ctx,
+        ignoreEvent: () => true,
+      }),
+    ).toBeNull();
+    expect(handle).not.toHaveBeenCalled();
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(event.stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it("routes normalized browser events and calls onMatch", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("Ctrl-%"),
+        action: "active.run",
+        args: { source: "keyboard" },
+      },
+    ]);
+    const onMatch = vi.fn();
+    const event = routableKeyboardEvent({
+      key: "5",
+      ctrlKey: true,
+      shiftKey: true,
+    });
+
+    expect(routeKeyboardEvent(event, router, { context: ctx, onMatch })).toEqual(
+      {
+        matched: true,
+        pending: false,
+        action: "active.run",
+        args: { source: "keyboard" },
+        preventDefault: true,
+      },
+    );
+    expect(onMatch).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "active.run" }),
+      event,
+    );
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+  });
+
+  it("prevents pending prefixes and invalid continuations", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("Ctrl-B X"),
+        action: "active.run",
+      },
+    ]);
+    const prefix = routableKeyboardEvent({ key: "b", ctrlKey: true });
+    const invalid = routableKeyboardEvent({ key: "z" });
+
+    expect(routeKeyboardEvent(prefix, router, { context: ctx })).toEqual({
+      matched: false,
+      pending: true,
+    });
+    expect(prefix.preventDefault).toHaveBeenCalledTimes(1);
+    expect(prefix.stopPropagation).toHaveBeenCalledTimes(1);
+
+    expect(routeKeyboardEvent(invalid, router, { context: ctx })).toEqual({
+      matched: false,
+      pending: false,
+      preventDefault: true,
+    });
+    expect(invalid.preventDefault).toHaveBeenCalledTimes(1);
+    expect(invalid.stopPropagation).toHaveBeenCalledTimes(1);
+  });
+
+  it("honors preventDefault false on matched shortcuts", () => {
+    const router = new KeyRouter([
+      {
+        sequence: parseKeySequence("X"),
+        action: "active.run",
+        preventDefault: false,
+      },
+    ]);
+    const onMatch = vi.fn();
+    const event = routableKeyboardEvent({ key: "x" });
+
+    expect(routeKeyboardEvent(event, router, { context: ctx, onMatch })).toEqual(
+      {
+        matched: true,
+        pending: false,
+        action: "active.run",
+        args: undefined,
+        preventDefault: false,
+      },
+    );
+    expect(onMatch).toHaveBeenCalledTimes(1);
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(event.stopPropagation).not.toHaveBeenCalled();
   });
 });
 

@@ -9,8 +9,7 @@ import {
 } from "@focusgrid/kcc-core";
 import {
   KeyRouter,
-  isModifierOnlyKey,
-  normalizeKeyboardEvent,
+  routeKeyboardEvent,
   strokeToId,
 } from "@focusgrid/shortcut-engine";
 import { getKCEntryDomId, getKCLRowId } from "./ids";
@@ -81,58 +80,30 @@ export class KCDomController {
   };
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
-    if (isTextEditingEventTarget(event.target, this.rootEl)) {
-      return;
-    }
-
-    if (isModifierOnlyKey(event.key)) {
-      return;
-    }
-
-    const stroke = normalizeKeyboardEvent(event);
     const state = this.controller.getState();
-    const nativeResult = this.nativeRouter.handle(stroke, state);
-
-    if (nativeResult.matched) {
-      if (nativeResult.preventDefault) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-
-      this.runAction(nativeResult.args);
-      return;
-    }
-
-    if (nativeResult.pending || nativeResult.preventDefault) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
+    const nativeResult = routeKeyboardEvent(event, this.nativeRouter, {
+      context: state,
+      ignoreEvent: (currentEvent) =>
+        isTextEditingEventTarget(currentEvent.target, this.rootEl),
+      onMatch: (result) => this.runAction(result.args),
+    });
 
     const activeEntry = this.getActiveEntry();
     const customRouter = this.getCustomRouter(activeEntry);
 
-    if (!customRouter) {
+    if (!customRouter || nativeResult === null || nativeResult.matched) {
       return;
     }
 
-    const customResult = customRouter.handle(stroke, this.controller.getState());
-
-    if (!customResult.matched) {
-      if (customResult.pending || customResult.preventDefault) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-
+    if (nativeResult.pending || nativeResult.preventDefault) {
       return;
     }
 
-    if (customResult.preventDefault) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    this.runAction(customResult.args, activeEntry ?? undefined);
+    routeKeyboardEvent(event, customRouter, {
+      context: this.controller.getState(),
+      onMatch: (result) =>
+        this.runAction(result.args, activeEntry ?? undefined),
+    });
   };
 
   constructor(

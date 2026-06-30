@@ -9,8 +9,7 @@ import {
 } from "@focusgrid/core";
 import {
   KeyRouter,
-  isModifierOnlyKey,
-  normalizeKeyboardEvent,
+  routeKeyboardEvent,
 } from "@focusgrid/shortcut-engine";
 import { isEditableTarget } from "./focus";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
@@ -30,36 +29,24 @@ export class KeyboardListener {
     { paneId: string; direction: PaneResizeDirection; deltaPx: number }
   >();
   private readonly onKey = (event: KeyboardEvent) => {
-    if (isModifierOnlyKey(event.key)) {
-      return;
-    }
+    routeKeyboardEvent(event, this.router, {
+      context: {
+        activePaneId: this.controller.getState().activePaneId,
+        inputFocused: isEditableTarget(event.target),
+        mode: this.mode,
+      },
+      onMatch: (result) => {
+        if (this.scheduleResizeCommand(result.action, result.args)) {
+          return;
+        }
 
-    const stroke = normalizeKeyboardEvent(event);
-    const result = this.router.handle(stroke, {
-      activePaneId: this.controller.getState().activePaneId,
-      inputFocused: isEditableTarget(event.target),
-      mode: this.mode,
+        this.controller.commands.run(
+          result.action,
+          this.controller,
+          result.args,
+        );
+      },
     });
-
-    if (!result.matched) {
-      if (result.pending || result.preventDefault) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-
-      return;
-    }
-
-    if (result.preventDefault) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    if (this.scheduleResizeCommand(result.action, result.args)) {
-      return;
-    }
-
-    this.controller.commands.run(result.action, this.controller, result.args);
   };
 
   constructor(
