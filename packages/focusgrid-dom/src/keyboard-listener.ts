@@ -1,5 +1,7 @@
 import {
   DEFAULT_PANE_RESIZE_DELTA_PX,
+  findPaneNode,
+  paneBlocksResize,
   type KeyBinding,
   type PaneResizeDirection,
   type FocusGridController,
@@ -94,6 +96,15 @@ export class KeyboardListener {
     const paneId = this.controller.getState().activePaneId;
 
     if (!paneId) {
+      return true;
+    }
+
+    if (
+      paneBlocksResize(
+        findPaneNode(this.controller.getState(), paneId),
+        direction,
+      )
+    ) {
       return true;
     }
 

@@ -13,6 +13,8 @@ export {
 } from "./commands/registry";
 export type { PaneResizeCommandArgs } from "./commands/registry";
 export type { CommandContext, CommandHandler } from "./commands/types";
+export { findPaneNode, paneBlocksResize } from "./pane-guards";
+export type { PaneCommandGuards, PaneCommandGuardInput } from "./pane-guards";
 
 export {
   cardinalDirections,
@@ -24,6 +26,7 @@ export {
 export type {
   ResizePaneOptions,
   SplitPaneOptions,
+  UpdatePaneCommandGuardsOptions,
   WrapRootInSplitOptions,
 } from "./layout/operations";
 export {

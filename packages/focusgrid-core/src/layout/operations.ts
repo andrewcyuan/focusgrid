@@ -17,6 +17,7 @@ import type {
   SplitNode,
   FocusGridControllerState,
 } from "./types";
+import type { PaneCommandGuardInput } from "../pane-guards";
 
 export function buildLayoutIndex(root: LayoutNode): LayoutIndex {
   const index: LayoutIndex = {
@@ -133,13 +134,13 @@ export function findPaneInDirection(
   return null;
 }
 
-export type SplitPaneOptions = {
+export type SplitPaneOptions = PaneCommandGuardInput & {
   side: PaneSplitSide;
   newPaneId?: PaneId;
   preserveActivePane?: boolean;
 };
 
-export type WrapRootInSplitOptions = {
+export type WrapRootInSplitOptions = PaneCommandGuardInput & {
   side: PaneSplitSide;
   newPaneId?: PaneId;
   minWidth?: number;
@@ -152,6 +153,8 @@ export type ResizePaneOptions = {
   direction: PaneResizeDirection;
   deltaPx: number;
 };
+
+export type UpdatePaneCommandGuardsOptions = PaneCommandGuardInput;
 
 export function splitPane(
   state: FocusGridControllerState,
@@ -201,6 +204,14 @@ export function splitPane(
       paneId: newPaneId,
       minWidth: node.minWidth,
       minHeight: node.minHeight,
+      noResizeX: options.noResizeX,
+      noResizeY: options.noResizeY,
+      noRemove: options.noRemove,
+      noSplitHorizontal: options.noSplitHorizontal,
+      noSplitVertical: options.noSplitVertical,
+      noSwapX: options.noSwapX,
+      noSwapY: options.noSwapY,
+      noFocus: options.noFocus,
     };
 
     return {
@@ -245,6 +256,14 @@ export function wrapRootInSplit(
     paneId: newPaneId,
     minWidth: options.minWidth,
     minHeight: options.minHeight,
+    noResizeX: options.noResizeX,
+    noResizeY: options.noResizeY,
+    noRemove: options.noRemove,
+    noSplitHorizontal: options.noSplitHorizontal,
+    noSplitVertical: options.noSplitVertical,
+    noSwapX: options.noSwapX,
+    noSwapY: options.noSwapY,
+    noFocus: options.noFocus,
     data: options.data,
   };
   const direction = splitSideToDirection(options.side);
@@ -289,6 +308,48 @@ export function removePane(state: FocusGridControllerState, paneId: PaneId): Foc
     root: activePaneId ? markFocusedPanePath(nextRoot, activePaneId) : nextRoot,
     activePaneId,
   };
+}
+
+export function updatePaneCommandGuards(
+  state: FocusGridControllerState,
+  paneId: PaneId,
+  options: UpdatePaneCommandGuardsOptions,
+): FocusGridControllerState {
+  let didUpdate = false;
+
+  const nextRoot = mapLayout(state.root, (node) => {
+    if (node.kind !== "pane" || node.paneId !== paneId) {
+      return node;
+    }
+
+    const nextPane = {
+      ...node,
+      ...options,
+    };
+
+    if (
+      nextPane.noResizeX === node.noResizeX &&
+      nextPane.noResizeY === node.noResizeY &&
+      nextPane.noRemove === node.noRemove &&
+      nextPane.noSplitHorizontal === node.noSplitHorizontal &&
+      nextPane.noSplitVertical === node.noSplitVertical &&
+      nextPane.noSwapX === node.noSwapX &&
+      nextPane.noSwapY === node.noSwapY &&
+      nextPane.noFocus === node.noFocus
+    ) {
+      return node;
+    }
+
+    didUpdate = true;
+    return nextPane;
+  });
+
+  return didUpdate
+    ? {
+        ...state,
+        root: nextRoot,
+      }
+    : state;
 }
 
 export function closePane(state: FocusGridControllerState, paneId: PaneId): FocusGridControllerState {

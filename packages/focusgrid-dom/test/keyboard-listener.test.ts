@@ -243,6 +243,106 @@ describe("KeyboardListener resize batching", () => {
     listener.destroy();
   });
 
+  it("does not enqueue keyboard resize commands blocked by the active pane axis", () => {
+    vi.useFakeTimers();
+
+    const state = controllerState();
+    if (state.root.kind !== "split") {
+      throw new Error("expected split fixture");
+    }
+    state.root = {
+      ...state.root,
+      children: [
+        {
+          kind: "pane",
+          id: "left-node",
+          paneId: "left",
+          noResizeX: true,
+        },
+        state.root.children[1]!,
+      ],
+    };
+    const controller = createFocusGridController(state);
+    const resize = vi.spyOn(controller.api, "resize");
+    let onKey: ((event: KeyboardEvent) => void) | null = null;
+    const root = {
+      addEventListener: vi.fn((_, listener: EventListener) => {
+        onKey = listener as (event: KeyboardEvent) => void;
+      }),
+      removeEventListener: vi.fn(),
+    } as unknown as HTMLElement;
+    const listener = new KeyboardListener(controller, root, {
+      keymap: [
+        {
+          sequence: parseKeySequence("H"),
+          action: "pane.resizeRight",
+          args: { deltaPx: 10 },
+        },
+      ],
+    });
+
+    listener.mount();
+    onKey?.(keydownEvent("H"));
+    onKey?.(keydownEvent("H"));
+
+    vi.runOnlyPendingTimers();
+
+    expect(resize).not.toHaveBeenCalled();
+
+    listener.destroy();
+  });
+
+  it("still enqueues keyboard resize commands on the unblocked axis", () => {
+    vi.useFakeTimers();
+
+    const state = controllerState();
+    if (state.root.kind !== "split") {
+      throw new Error("expected split fixture");
+    }
+    state.root = {
+      ...state.root,
+      children: [
+        {
+          kind: "pane",
+          id: "left-node",
+          paneId: "left",
+          noResizeY: true,
+        },
+        state.root.children[1]!,
+      ],
+    };
+    const controller = createFocusGridController(state);
+    const resize = vi.spyOn(controller.api, "resize");
+    let onKey: ((event: KeyboardEvent) => void) | null = null;
+    const root = {
+      addEventListener: vi.fn((_, listener: EventListener) => {
+        onKey = listener as (event: KeyboardEvent) => void;
+      }),
+      removeEventListener: vi.fn(),
+    } as unknown as HTMLElement;
+    const listener = new KeyboardListener(controller, root, {
+      keymap: [
+        {
+          sequence: parseKeySequence("H"),
+          action: "pane.resizeRight",
+          args: { deltaPx: 10 },
+        },
+      ],
+    });
+
+    listener.mount();
+    onKey?.(keydownEvent("H"));
+
+    vi.runOnlyPendingTimers();
+
+    expect(resize).toHaveBeenCalledWith("left", {
+      direction: "right",
+      deltaPx: 10,
+    });
+
+    listener.destroy();
+  });
+
   it("runs non-resize commands immediately", () => {
     vi.useFakeTimers();
 

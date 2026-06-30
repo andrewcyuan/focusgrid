@@ -87,6 +87,8 @@ Splits the active pane and inserts the new pane in the requested direction:
 - `pane.splitDown`: inserts the new pane below.
 
 If there is no active pane, these commands do nothing.
+If the active pane has `noSplitHorizontal`, `pane.splitRight` does nothing. If
+the active pane has `noSplitVertical`, `pane.splitDown` does nothing.
 
 ### Closing
 
@@ -96,6 +98,7 @@ controller.commands.run("pane.close", controller);
 
 Removes the active pane from the controller. If there is no active pane or the
 active pane is the last remaining pane, the command does nothing.
+If the active pane has `noRemove`, the command does nothing.
 
 ### Resizing
 
@@ -124,6 +127,8 @@ direction:
 
 `deltaPx` defaults to `DEFAULT_PANE_RESIZE_DELTA_PX` when omitted. If there is
 no active pane or no matching boundary, these commands do nothing.
+If the active pane has `noResizeX`, left/right resize commands do nothing. If
+the active pane has `noResizeY`, up/down resize commands do nothing.
 
 ### Moving Focus
 
@@ -143,7 +148,9 @@ direction:
 - `pane.focusDown`: nearest pane below.
 
 If there is no active pane or no pane in that direction, these commands do
-nothing.
+nothing. Panes with `noFocus` are skipped. When the controller is created with
+`directionalFocusOverflow: true`, moving focus at a grid edge wraps to the
+opposite side and still skips panes with `noFocus`.
 
 ### Swapping
 
@@ -163,4 +170,7 @@ preserving layout slots and split sizes:
 - `pane.swapDown`: nearest pane below.
 
 If there is no active pane or no pane in that direction, these commands do
+nothing.
+If either the active pane or directional target pane has `noSwapX`, left/right
+swap commands do nothing. If either pane has `noSwapY`, up/down swap commands do
 nothing.

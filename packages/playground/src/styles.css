@@ -144,7 +144,7 @@ textarea {
   display: flex;
   flex: 1;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   min-width: 0;
 }
@@ -153,6 +153,45 @@ textarea {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.ToolbarMenu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.ToolbarMenu summary {
+  list-style: none;
+  border: 1px solid #b8c2d4;
+  border-radius: 6px;
+  background: #172033;
+  color: white;
+  cursor: pointer;
+  padding: 7px 12px;
+  user-select: none;
+}
+
+.ToolbarMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.ToolbarMenuPanel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 8px;
+  width: min(360px, calc(100vw - 24px));
+  border: 1px solid #c7cfdd;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 16px 32px rgb(23 32 51 / 18%);
+  padding: 10px;
+}
+
+.ToolbarMenuPanel .ToolbarButtonGroup {
+  flex-wrap: wrap;
 }
 
 .ToolbarActions label {
@@ -173,6 +212,28 @@ textarea {
   background: white;
   color: #172033;
   padding: 7px 28px 7px 10px;
+}
+
+.GuardToggles {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.Toolbar .GuardToggle {
+  border-color: #c7cfdd;
+  background: #f8fafc;
+  color: #2c3548;
+  padding: 6px 9px;
+}
+
+.Toolbar .GuardToggle[data-active="true"] {
+  border-color: #244f9e;
+  background: #2b6de8;
+  color: white;
 }
 
 .ToolbarMeta {

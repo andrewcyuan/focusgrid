@@ -6,6 +6,14 @@ import type {
 import { findPaneInDirection } from "../layout/operations";
 import type { FocusGridController } from "../controller";
 import type { DefaultPaneCommand } from "../keyboard/default-pane-keymap";
+import {
+  findPaneForFocusCommand,
+  findPaneNode,
+  getPaneCommandGuards,
+  paneBlocksResize,
+  paneBlocksSplit,
+  paneBlocksSwap,
+} from "../pane-guards";
 import type { CommandHandler } from "./types";
 
 export const DEFAULT_PANE_RESIZE_DELTA_PX = 24;
@@ -50,6 +58,7 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   commands.register("pane.splitRight", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
+    if (paneBlocksSplit(findPaneNode(state, active), "right")) return;
 
     controller.api.split(active, { side: "right" });
   });
@@ -57,6 +66,7 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   commands.register("pane.splitDown", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
+    if (paneBlocksSplit(findPaneNode(state, active), "down")) return;
 
     controller.api.split(active, { side: "down" });
   });
@@ -64,6 +74,7 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   commands.register("pane.close", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
+    if (getPaneCommandGuards(findPaneNode(state, active)).noRemove) return;
 
     controller.api.remove(active);
   });
@@ -93,7 +104,9 @@ function registerPaneFocusCommand(
     const active = state.activePaneId;
     if (!active) return;
 
-    const target = findPaneInDirection(controller.getState(), active, direction);
+    const target = findPaneForFocusCommand(controller.getState(), active, direction, {
+      overflow: controller.directionalFocusOverflow,
+    });
 
     if (!target) return;
 
@@ -113,6 +126,8 @@ function registerPaneSwapCommand(
     const target = findPaneInDirection(controller.getState(), active, direction);
 
     if (!target) return;
+    if (paneBlocksSwap(findPaneNode(state, active), direction)) return;
+    if (paneBlocksSwap(findPaneNode(state, target), direction)) return;
 
     controller.api.swap(active, target);
   });
@@ -126,6 +141,7 @@ function registerPaneResizeCommand(
   commands.register<PaneResizeCommandArgs>(name, ({ controller, state }, args) => {
     const active = state.activePaneId;
     if (!active) return;
+    if (paneBlocksResize(findPaneNode(state, active), direction)) return;
 
     controller.api.resize(active, {
       direction,

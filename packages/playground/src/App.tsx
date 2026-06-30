@@ -2,7 +2,9 @@ import {
   createDefaultPaneKeymap,
   defaultPaneShortcutActions,
   paneSplitSides,
+  findPaneNode,
   type LayoutNode,
+  type PaneCommandGuardInput,
   type PaneShortcutId,
   type PaneShortcutValues,
   type FocusGridController,
@@ -293,6 +295,7 @@ function Toolbar({
 }) {
   const state = useControllerState(controller);
   const paneIds = useMemo(() => collectPaneIds(state.root), [state.root]);
+  const activePane = findPaneNode(state, state.activePaneId);
   const swapTargets = useMemo(
     () => paneIds.filter((paneId) => paneId !== state.activePaneId),
     [paneIds, state.activePaneId],
@@ -307,60 +310,96 @@ function Toolbar({
     setSwapTargetId(swapTargets[0] ?? "");
   }, [swapTargetId, swapTargets]);
 
+  const toggleActivePaneGuard = useCallback(
+    (key: PaneCommandGuardKey) => {
+      const activePaneId = state.activePaneId;
+
+      if (!activePaneId || !activePane) {
+        return;
+      }
+
+      controller.api.updatePaneCommandGuards(activePaneId, {
+        [key]: !activePane[key],
+      });
+    },
+    [activePane, controller, state.activePaneId],
+  );
+
   return (
     <header className="Toolbar">
-      <button type="button" onClick={onToggleSidebar}>
-        {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-      </button>
       <div className="ToolbarActions">
-        <div className="ToolbarButtonGroup" aria-label="Wrap root in split">
-          {paneSplitSides.map((side) => (
+        <details className="ToolbarMenu">
+          <summary>Actions</summary>
+          <div className="ToolbarMenuPanel">
+            <button type="button" onClick={onToggleSidebar}>
+              {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            </button>
+            <div className="ToolbarButtonGroup" aria-label="Wrap root in split">
+              {paneSplitSides.map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  onClick={() => {
+                    controller.api.wrapRootInSplit({
+                      side,
+                      minWidth:
+                        side === "left" || side === "right" ? 180 : undefined,
+                      minHeight:
+                        side === "up" || side === "down" ? 120 : undefined,
+                      preserveActivePane: true,
+                    });
+                  }}
+                >
+                  Root {side}
+                </button>
+              ))}
+            </div>
+            <label>
+              <span>Swap active with</span>
+              <select
+                value={swapTargetId}
+                disabled={swapTargets.length === 0}
+                onChange={(event) => setSwapTargetId(event.target.value)}
+              >
+                {swapTargets.map((paneId) => (
+                  <option key={paneId} value={paneId}>
+                    {paneId}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
-              key={side}
               type="button"
+              disabled={!state.activePaneId || !swapTargetId}
               onClick={() => {
-                controller.api.wrapRootInSplit({
-                  side,
-                  minWidth:
-                    side === "left" || side === "right" ? 180 : undefined,
-                  minHeight: side === "up" || side === "down" ? 120 : undefined,
-                  preserveActivePane: true,
-                });
+                const activePaneId = state.activePaneId;
+
+                if (!activePaneId || !swapTargetId) {
+                  return;
+                }
+
+                controller.api.swap(activePaneId, swapTargetId);
               }}
             >
-              Root {side}
+              Swap
+            </button>
+          </div>
+        </details>
+        <div className="GuardToggles" aria-label="Active pane command guards">
+          {paneGuardToggles.map((guard) => (
+            <button
+              className="GuardToggle"
+              data-active={activePane?.[guard.key] === true}
+              aria-pressed={activePane?.[guard.key] === true}
+              disabled={!activePane}
+              key={guard.key}
+              type="button"
+              onClick={() => toggleActivePaneGuard(guard.key)}
+            >
+              {guard.label}
             </button>
           ))}
         </div>
-        <label>
-          <span>Swap active with</span>
-          <select
-            value={swapTargetId}
-            disabled={swapTargets.length === 0}
-            onChange={(event) => setSwapTargetId(event.target.value)}
-          >
-            {swapTargets.map((paneId) => (
-              <option key={paneId} value={paneId}>
-                {paneId}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          disabled={!state.activePaneId || !swapTargetId}
-          onClick={() => {
-            const activePaneId = state.activePaneId;
-
-            if (!activePaneId || !swapTargetId) {
-              return;
-            }
-
-            controller.api.swap(activePaneId, swapTargetId);
-          }}
-        >
-          Swap
-        </button>
       </div>
       <div className="ToolbarMeta">
         <span>Active: {state.activePaneId ?? "none"}</span>
@@ -371,6 +410,19 @@ function Toolbar({
     </header>
   );
 }
+
+type PaneCommandGuardKey = keyof PaneCommandGuardInput;
+
+const paneGuardToggles: { key: PaneCommandGuardKey; label: string }[] = [
+  { key: "noResizeX", label: "No resize X" },
+  { key: "noResizeY", label: "No resize Y" },
+  { key: "noRemove", label: "No remove" },
+  { key: "noSplitHorizontal", label: "No split right" },
+  { key: "noSplitVertical", label: "No split down" },
+  { key: "noSwapX", label: "No swap X" },
+  { key: "noSwapY", label: "No swap Y" },
+  { key: "noFocus", label: "No focus" },
+];
 
 function collectPaneIds(root: LayoutNode): string[] {
   if (root.kind === "pane") {
