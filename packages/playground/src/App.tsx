@@ -23,7 +23,6 @@ import {
   KCItem,
   KCList,
   createDefaultKCCollectionKeymap,
-  createDefaultKCLShortcuts,
   defaultKCLShortcutActions,
   useKCLController,
   type KCLActionBinding,
@@ -40,7 +39,12 @@ import {
   type ChangeEvent,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
+import {
+  loadSavedKCLShortcuts,
+  loadSavedShortcuts,
+  saveKCLShortcuts,
+  saveShortcuts,
+} from "./shortcuts";
 import {
   createInitialTodos,
   toggleTodoById,
@@ -142,7 +146,7 @@ function FocusGridPlayground() {
 function KCLPlayground() {
   const controller = useFocusGridController(createInitialState);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [kclShortcuts, setKclShortcuts] = useState(createDefaultKCLShortcuts());
+  const [kclShortcuts, setKclShortcuts] = useState(loadSavedKCLShortcuts());
   const [focusGridShortcuts, setFocusGridShortcuts] = useState(
     loadSavedShortcuts(),
   );
@@ -154,6 +158,10 @@ function KCLPlayground() {
   useEffect(() => {
     saveShortcuts(focusGridShortcuts);
   }, [focusGridShortcuts]);
+
+  useEffect(() => {
+    saveKCLShortcuts(kclShortcuts);
+  }, [kclShortcuts]);
 
   return (
     <div className="AppShell" data-sidebar-open={sidebarOpen}>

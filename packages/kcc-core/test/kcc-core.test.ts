@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  createDefaultKCCollectionKeymap,
   createDefaultKCLKeymap,
   createDefaultKCLShortcuts,
   createKCLCellContext,
   createKCLController,
+  defaultKCLShortcutActions,
   parseKeySequence,
   resolveKCLKeymap,
   type KCLControllerState,
@@ -176,6 +178,17 @@ describe("KCLController", () => {
 });
 
 describe("KCL keymaps", () => {
+  it("creates typed default shortcut values from the exported actions", () => {
+    expect(createDefaultKCLShortcuts()).toEqual(
+      Object.fromEntries(
+        defaultKCLShortcutActions.map((action) => [
+          action.id,
+          action.defaultSequence,
+        ]),
+      ),
+    );
+  });
+
   it("creates default movement, activation, and edit bindings", () => {
     const activate = vi.fn();
     const edit = vi.fn();
@@ -216,6 +229,109 @@ describe("KCL keymaps", () => {
       command: "edit",
       action: edit,
     });
+  });
+
+  it("applies default KCL keymap overrides and omits invalid or empty bindings", () => {
+    const activate = vi.fn();
+    const resolved = resolveKCLKeymap(
+      createDefaultKCLKeymap<string>({
+        overrides: {
+          "move-down": "J",
+          "move-left": "Ctrl+",
+          activate: "Ctrl+A",
+          edit: "",
+        },
+        onActivate: activate,
+      }),
+    );
+
+    expect(resolved).toHaveLength(6);
+    expect(
+      resolved.find(
+        (binding) =>
+          binding.args.kind === "command" &&
+          binding.args.args?.direction === "down",
+      ),
+    ).toMatchObject({
+      sequence: parseKeySequence("J"),
+    });
+    expect(
+      resolved.some(
+        (binding) =>
+          binding.args.kind === "command" &&
+          binding.args.args?.direction === "left",
+      ),
+    ).toBe(false);
+    expect(
+      resolved.find(
+        (binding) =>
+          binding.args.kind === "cell" && binding.args.command === "activate",
+      ),
+    ).toMatchObject({
+      sequence: parseKeySequence("Ctrl-A"),
+      args: {
+        kind: "cell",
+        command: "activate",
+        action: activate,
+      },
+    });
+    expect(
+      resolved.some(
+        (binding) =>
+          binding.args.kind === "command" && binding.args.command === "edit",
+      ),
+    ).toBe(false);
+  });
+
+  it("applies collection keymap movement overrides and omits invalid or empty bindings", () => {
+    const resolved = resolveKCLKeymap(
+      createDefaultKCCollectionKeymap({
+        overrides: {
+          "move-up": "K",
+          "move-down": "",
+          "move-left": "Ctrl+",
+          "move-right": "L",
+          activate: "A",
+          edit: "E",
+        },
+      }),
+    );
+
+    expect(resolved).toHaveLength(4);
+    expect(
+      resolved.find(
+        (binding) =>
+          binding.args.kind === "command" &&
+          binding.args.args?.direction === "up",
+      ),
+    ).toMatchObject({
+      sequence: parseKeySequence("K"),
+    });
+    expect(
+      resolved.find(
+        (binding) =>
+          binding.args.kind === "command" &&
+          binding.args.args?.direction === "right",
+      ),
+    ).toMatchObject({
+      sequence: parseKeySequence("L"),
+    });
+    expect(
+      resolved.some(
+        (binding) =>
+          binding.args.kind === "command" &&
+          (binding.args.args?.direction === "down" ||
+            binding.args.args?.direction === "left"),
+      ),
+    ).toBe(false);
+    expect(
+      resolved.some(
+        (binding) =>
+          binding.args.kind === "command" &&
+          (binding.args.command === "activate" ||
+            binding.args.command === "edit"),
+      ),
+    ).toBe(false);
   });
 
   it("drops invalid or empty shortcut bindings", () => {

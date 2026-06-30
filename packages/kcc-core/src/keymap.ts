@@ -175,11 +175,17 @@ export function createDefaultKCLKeymap<T>(
       return [];
     }
 
+    const validation = validateKeySequenceInput(sequence);
+
+    if (!validation.ok) {
+      return [];
+    }
+
     const resolvedAction = resolveDefaultAction(action, options);
 
     return [
       {
-        sequence,
+        sequence: validation.sequence,
         action: resolvedAction,
         command: getDefaultCommand(action),
         repeat: "repeat" in action ? action.repeat : undefined,
@@ -206,9 +212,15 @@ export function createDefaultKCCollectionKeymap<T>(
       return [];
     }
 
+    const validation = validateKeySequenceInput(sequence);
+
+    if (!validation.ok) {
+      return [];
+    }
+
     return [
       {
-        sequence,
+        sequence: validation.sequence,
         action: action.action,
         command: getDefaultCommand(action),
         repeat: "repeat" in action ? action.repeat : undefined,

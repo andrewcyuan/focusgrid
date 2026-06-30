@@ -233,6 +233,48 @@ test("KCC route keeps focus on the list root and moves active row with arrows", 
   ).toHaveAttribute("aria-selected", "true");
 });
 
+test("saved KCC shortcuts override row movement, activation, and edit", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "focusgrid.playground.kcl-shortcuts",
+      JSON.stringify({
+        "move-down": "J",
+        activate: "Shift+A",
+        edit: "E",
+      }),
+    );
+  });
+
+  await page.goto("/kcc");
+
+  await expect(page.getByLabel("Move down")).toHaveValue("J");
+  await expect(page.getByLabel("Activate row")).toHaveValue("Shift-A");
+  await expect(page.getByLabel("Edit row")).toHaveValue("E");
+
+  const alphaList = page.locator('[data-kcl-pane-id="alpha"] [role="listbox"]');
+  const rows = page.locator('[data-kcl-pane-id="alpha"] [role="option"]');
+  const secondRow = rows.nth(1);
+  const secondCheckbox = secondRow.locator('input[type="checkbox"]');
+
+  await expect(alphaList).toBeFocused();
+
+  await page.keyboard.press("j");
+  await expect(alphaList).toHaveAttribute(
+    "aria-activedescendant",
+    /alpha-review$/,
+  );
+  await expect(secondRow).toHaveAttribute("aria-selected", "true");
+
+  await page.keyboard.press("Shift+A");
+  await expect(alphaList).toBeFocused();
+  await expect(secondCheckbox).not.toBeChecked();
+
+  await page.keyboard.press("e");
+  await expect(secondRow.locator('[data-kcl-edit-input="true"]')).toBeFocused();
+});
+
 test("KCC Space toggles the active todo without moving DOM focus into rows", async ({
   page,
 }) => {
