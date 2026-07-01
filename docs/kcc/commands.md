@@ -20,17 +20,11 @@ controller.getState().activeItemId; // "inbox"
 ## Shared Types
 
 ```ts
-type KCMoveDirection =
-  | "up"
-  | "down"
-  | "left"
-  | "right"
-  | "start"
-  | "end";
+type KCMoveDirection = "up" | "down" | "left" | "right" | "start" | "end";
 
-type KCLCommandName = "moveActive" | "activate" | "edit";
+type KCCommandName = "moveActive" | "activate" | "edit";
 
-type KCLCommandArgs =
+type KCCommandArgs =
   | {
       direction: KCMoveDirection;
       count?: number;
@@ -39,8 +33,8 @@ type KCLCommandArgs =
 
 type KCActionBinding<T> = {
   sequence: KeySequence | string;
-  action: KCItemAction<T> | KCLCommandAction;
-  command?: KCLCommandName;
+  action: KCItemAction<T> | KCCommandAction;
+  command?: KCCommandName;
   preventDefault?: boolean;
   repeat?: boolean;
 };
@@ -120,8 +114,5 @@ The collection routes keyboard events in this order:
 
 Native collection bindings always win. Conflicts warn and remain deterministic.
 
-## Legacy Helper
-
-`createDefaultKCLKeymap()` still creates the older combined list keymap with
-movement plus activate/edit callbacks. New collection code should split native
-movement and receiver actions explicitly.
+Activation, editing, deletion, and other app-specific behavior should be
+attached to `KCItem` or `KCList` through `customActionKeybinds`.

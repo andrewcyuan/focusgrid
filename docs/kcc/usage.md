@@ -6,8 +6,8 @@ item, `Space` activates the active todo, and `Enter` opens inline editing.
 
 ## Data Model
 
-Todo rows have stable ids. KCC exposes both `ctx.id` and a compatibility
-`ctx.index`; app code should prefer ids when reconciling dynamic collections.
+Todo rows have stable ids. KCC exposes `ctx.id` as the reconciliation anchor and
+`ctx.index` as derived ordering data for rendering.
 
 ```ts
 export type TodoItem = {
@@ -24,20 +24,20 @@ Native movement bindings belong to `KCCollection`:
 ```tsx
 const nativeKeymap = useMemo(
   () => createDefaultKCCollectionKeymap({ overrides: shortcuts }),
-  [shortcuts],
+  [shortcuts]
 );
 ```
 
 Application behavior belongs to receiver action bindings:
 
 ```tsx
-const todoActions = useMemo<readonly KCLActionBinding<TodoItem>[]>(
+const todoActions = useMemo<readonly KCActionBinding<TodoItem>[]>(
   () => [
     {
       sequence: shortcuts.activate,
       command: "activate",
       action: (ctx) => {
-        setTodos((current) => toggleTodo(current, ctx.index));
+        setTodos((current) => toggleTodoById(current, ctx.id));
       },
     },
     {
@@ -48,7 +48,7 @@ const todoActions = useMemo<readonly KCLActionBinding<TodoItem>[]>(
       },
     },
   ],
-  [shortcuts],
+  [shortcuts]
 );
 ```
 
@@ -60,9 +60,7 @@ movement binding wins and KCC warns.
 DOM focus stays on the `KCCollection` root while navigating:
 
 ```tsx
-paneRef.current
-  ?.querySelector<HTMLElement>(".KCLKeyboardControlledList")
-  ?.focus();
+paneRef.current?.querySelector<HTMLElement>(".KCCollectionRoot")?.focus();
 ```
 
 When edit mode starts, the active row renders an input. A follow-up effect
@@ -71,7 +69,7 @@ focuses that input and selects the whole label.
 ```tsx
 useEffect(() => {
   const input = paneRef.current?.querySelector<HTMLInputElement>(
-    '[data-kcl-edit-input="true"]',
+    '[data-kc-edit-input="true"]'
   );
 
   if (!input) {
@@ -89,17 +87,17 @@ useEffect(() => {
 
 ```tsx
 <KCCollection
-  controller={kclController}
+  controller={kcController}
   keymap={nativeKeymap}
   direction="vertical"
-  className="KCLKeyboardControlledList"
+  className="KCCollectionRoot"
 >
   <KCList
     dataList={todos}
     getItemId={(todo) => todo.id}
     customActionKeybinds={todoActions}
     renderCell={(ctx) => (
-      <div className="KCLTodoRow" data-checked={ctx.data.checked}>
+      <div className="KCTodoRow" data-checked={ctx.data.checked}>
         <input
           type="checkbox"
           tabIndex={-1}
@@ -108,12 +106,12 @@ useEffect(() => {
         />
         {editingId === ctx.id ? (
           <input
-            data-kcl-edit-input="true"
+            data-kc-edit-input="true"
             value={ctx.data.label}
             spellCheck={false}
             onChange={(event) => {
               setTodos((current) =>
-                updateTodoLabel(current, ctx.index, event.target.value),
+                updateTodoLabelById(current, ctx.id, event.target.value)
               );
             }}
             onKeyDown={onEditInputKeyDown}

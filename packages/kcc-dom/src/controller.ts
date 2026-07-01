@@ -1,18 +1,18 @@
 import {
   KCController,
-  createKCLCellContext,
-  resolveKCLKeymap,
+  createKCActionContext,
+  resolveKCKeymap,
   type KCActionBinding,
   type KCControllerState,
   type KCRegisteredEntry,
-  type KCLResolvedAction,
+  type KCResolvedAction,
 } from "@focusgrid/kcc-core";
 import {
   KeyRouter,
   routeKeyboardEvent,
   strokeToId,
 } from "@focusgrid/shortcut-engine";
-import { getKCEntryDomId, getKCLRowId } from "./ids";
+import { getKCEntryDomId } from "./ids";
 
 export type KCDomControllerOptions = {
   keymap?: readonly KCActionBinding<unknown>[];
@@ -21,7 +21,7 @@ export type KCDomControllerOptions = {
   getEntryDomId?: (
     rootId: string,
     entry: KCRegisteredEntry,
-    index: number,
+    index: number
   ) => string;
 };
 
@@ -31,31 +31,22 @@ export type KCEntryDomProps = {
   "aria-selected": "true" | "false";
   tabIndex: -1;
   onPointerDown: (
-    event: Pick<PointerEvent, "preventDefault" | "target">,
+    event: Pick<PointerEvent, "preventDefault" | "target">
   ) => void;
   onClick: (event: Pick<MouseEvent, "target">) => void;
   onDoubleClick: (event: Pick<MouseEvent, "target">) => void;
 };
 
-export type KCLDomControllerOptions<T> = {
-  keymap?: readonly KCActionBinding<T>[];
-  dataList?: readonly T[];
-  entries?: readonly KCRegisteredEntry[];
-  rootId?: string;
-};
-
-export type KCLRowDomProps = KCEntryDomProps;
-
 export class KCDomController {
   private nativeRouter: KeyRouter<
     KCControllerState,
     string,
-    KCLResolvedAction<unknown>
+    KCResolvedAction<unknown>
   >;
   private customRouter: KeyRouter<
     KCControllerState,
     string,
-    KCLResolvedAction<unknown>
+    KCResolvedAction<unknown>
   > | null = null;
   private customRouterEntryId: string | null = null;
   private customRouterSignature = "";
@@ -66,7 +57,7 @@ export class KCDomController {
   private readonly getEntryDomId: (
     rootId: string,
     entry: KCRegisteredEntry,
-    index: number,
+    index: number
   ) => string;
   private unsubscribe?: () => void;
   private conflictSignature = "";
@@ -109,7 +100,7 @@ export class KCDomController {
   constructor(
     private readonly controller: KCController,
     private readonly rootEl: HTMLElement,
-    options: KCDomControllerOptions = {},
+    options: KCDomControllerOptions = {}
   ) {
     this.keymap = options.keymap ?? [];
     this.entries = options.entries ?? [];
@@ -117,7 +108,7 @@ export class KCDomController {
     this.getEntryDomId =
       options.getEntryDomId ??
       ((currentRootId, entry) => getKCEntryDomId(currentRootId, entry.id));
-    this.nativeRouter = new KeyRouter(resolveKCLKeymap(this.keymap));
+    this.nativeRouter = new KeyRouter(resolveKCKeymap(this.keymap));
   }
 
   mount(): void {
@@ -133,7 +124,7 @@ export class KCDomController {
     this.rootEl.setAttribute("role", "listbox");
     this.rootEl.setAttribute(
       "aria-orientation",
-      this.controller.getState().orientation,
+      this.controller.getState().orientation
     );
     this.syncAria();
 
@@ -162,7 +153,7 @@ export class KCDomController {
   update(options: KCDomControllerOptions): void {
     if (options.keymap) {
       this.keymap = options.keymap;
-      this.nativeRouter = new KeyRouter(resolveKCLKeymap(this.keymap));
+      this.nativeRouter = new KeyRouter(resolveKCKeymap(this.keymap));
     }
 
     this.entries = options.entries ?? this.entries;
@@ -204,17 +195,6 @@ export class KCDomController {
     };
   }
 
-  getRowProps(index: number): KCLRowDomProps {
-    const entryId =
-      this.controller.getState().itemIds[index] ?? `item-${clampDomIndex(index)}`;
-    const props = this.getEntryProps(entryId);
-
-    return {
-      ...props,
-      id: getKCLRowId(this.rootEl.id || this.rootId, index),
-    };
-  }
-
   private syncAria(): void {
     const state = this.controller.getState();
     this.rootEl.setAttribute("aria-orientation", state.orientation);
@@ -226,15 +206,14 @@ export class KCDomController {
 
     const activeEntry = this.getActiveEntry();
     const activeDomId =
-      activeEntry?.element?.id ??
-      this.resolveEntryDomId(state.activeItemId);
+      activeEntry?.element?.id ?? this.resolveEntryDomId(state.activeItemId);
 
     this.rootEl.setAttribute("aria-activedescendant", activeDomId);
   }
 
   private runAction(
-    action: KCLResolvedAction<unknown> | undefined,
-    explicitEntry?: KCRegisteredEntry,
+    action: KCResolvedAction<unknown> | undefined,
+    explicitEntry?: KCRegisteredEntry
   ): void {
     if (!action) {
       return;
@@ -270,23 +249,16 @@ export class KCDomController {
       return;
     }
 
-    const index = this.controller.getState().itemIds.indexOf(entry.id);
-    const ctx = createKCLCellContext(
-      this.controller.getState(),
-      index,
-      entry.data,
+    action.action(
+      createKCActionContext(this.controller.getState(), entry.id, entry.data)
     );
-
-    if (ctx) {
-      action.action(ctx);
-    }
   }
 
   private runCommandAction(command: "activate" | "edit"): void {
     const activeEntry = this.getActiveEntry();
     const customActions = activeEntry?.getActionKeybinds?.() ?? [];
 
-    for (const binding of resolveKCLKeymap(customActions)) {
+    for (const binding of resolveKCKeymap(customActions)) {
       const action = binding.args;
 
       if (action?.kind === "cell" && action.command === command) {
@@ -318,7 +290,7 @@ export class KCDomController {
           element: null,
           data: undefined,
         },
-        index,
+        index
       );
     }
 
@@ -326,10 +298,10 @@ export class KCDomController {
   }
 
   private getCustomRouter(
-    activeEntry: KCRegisteredEntry | null,
-  ): KeyRouter<KCControllerState, string, KCLResolvedAction<unknown>> | null {
+    activeEntry: KCRegisteredEntry | null
+  ): KeyRouter<KCControllerState, string, KCResolvedAction<unknown>> | null {
     const bindings = activeEntry?.getActionKeybinds?.() ?? [];
-    const signature = serializeResolvedBindings(resolveKCLKeymap(bindings));
+    const signature = serializeResolvedBindings(resolveKCKeymap(bindings));
 
     if (
       this.customRouter &&
@@ -342,7 +314,7 @@ export class KCDomController {
     this.customRouterEntryId = activeEntry?.id ?? null;
     this.customRouterSignature = signature;
     this.customRouter = activeEntry
-      ? new KeyRouter(resolveKCLKeymap(bindings))
+      ? new KeyRouter(resolveKCKeymap(bindings))
       : null;
 
     return this.customRouter;
@@ -353,28 +325,27 @@ export class KCDomController {
     const customSequences = new Map<string, string>();
     const warnings: string[] = [];
 
-    for (const binding of resolveKCLKeymap(this.keymap)) {
-      nativeSequences.set(
-        serializeSequence(binding.sequence),
-        binding.action,
-      );
+    for (const binding of resolveKCKeymap(this.keymap)) {
+      nativeSequences.set(serializeSequence(binding.sequence), binding.action);
     }
 
     for (const entry of this.entries) {
-      for (const binding of resolveKCLKeymap(entry.getActionKeybinds?.() ?? [])) {
+      for (const binding of resolveKCKeymap(
+        entry.getActionKeybinds?.() ?? []
+      )) {
         const sequence = serializeSequence(binding.sequence);
         const nativeAction = nativeSequences.get(sequence);
         const existingCustom = customSequences.get(sequence);
 
         if (nativeAction) {
           warnings.push(
-            `KCC custom action "${entry.id}" uses "${sequence}", which conflicts with native "${nativeAction}". Native collection bindings win.`,
+            `KCC custom action "${entry.id}" uses "${sequence}", which conflicts with native "${nativeAction}". Native collection bindings win.`
           );
         }
 
         if (existingCustom) {
           warnings.push(
-            `KCC custom action "${entry.id}" uses "${sequence}", which also belongs to "${existingCustom}". The active item still scopes routing, but duplicate collection bindings can be ambiguous.`,
+            `KCC custom action "${entry.id}" uses "${sequence}", which also belongs to "${existingCustom}". The active item still scopes routing, but duplicate collection bindings can be ambiguous.`
           );
         }
 
@@ -399,54 +370,25 @@ export class KCDomController {
   }
 }
 
-export class KCLDomController<T> extends KCDomController {
-  constructor(
-    controller: KCController,
-    rootEl: HTMLElement,
-    options: KCLDomControllerOptions<T> = {},
-  ) {
-    const entries: readonly KCRegisteredEntry<unknown>[] =
-      options.entries ??
-      (options.dataList ?? []).map((data, index) => ({
-        id: `item-${index}`,
-        element: null,
-        data,
-        getActionKeybinds: () =>
-          (options.keymap ?? []) as readonly KCActionBinding<unknown>[],
-      }));
-
-    super(controller, rootEl, {
-      keymap: options.keymap as readonly KCActionBinding<unknown>[] | undefined,
-      entries,
-      rootId: options.rootId,
-      getEntryDomId: (rootId, _entry, index) => getKCLRowId(rootId, index),
-    });
-  }
-}
-
 function serializeResolvedBindings(
-  bindings: ReturnType<typeof resolveKCLKeymap>,
+  bindings: ReturnType<typeof resolveKCKeymap>
 ): string {
   return bindings
-    .map((binding) => `${serializeSequence(binding.sequence)}:${binding.action}`)
+    .map(
+      (binding) => `${serializeSequence(binding.sequence)}:${binding.action}`
+    )
     .join("|");
 }
 
-function serializeSequence(sequence: readonly Parameters<typeof strokeToId>[0][]): string {
+function serializeSequence(
+  sequence: readonly Parameters<typeof strokeToId>[0][]
+): string {
   return sequence.map((stroke) => strokeToId(stroke)).join(" ");
-}
-
-function clampDomIndex(index: number): number {
-  if (!Number.isFinite(index)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.trunc(index));
 }
 
 function isTextEditingEventTarget(
   target: EventTarget | null,
-  rootEl: HTMLElement,
+  rootEl: HTMLElement
 ): boolean {
   if (!target || target === rootEl || !("tagName" in target)) {
     return false;

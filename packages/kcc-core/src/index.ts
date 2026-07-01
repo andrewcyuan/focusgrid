@@ -1,10 +1,8 @@
 export {
   KCController,
-  KCLController,
   clampActiveIndex,
   createKCActionContext,
   createKCController,
-  createKCLController,
   doesDirectionApply,
   moveActiveIndex,
 } from "./controller";
@@ -19,39 +17,27 @@ export type {
   KCMoveDirection,
   KCOrientation,
   KCRegisteredEntry,
-  KCLCellAction,
-  KCLCellContext,
-  KCLCommands,
-  KCLControllerApi,
-  KCLControllerOptions,
-  KCLControllerState,
-  KCLListener,
-  KCLMoveDirection,
-  KCLOrientation,
 } from "./controller";
 
 export {
   createDefaultKCCollectionKeymap,
-  createDefaultKCLKeymap,
-  createDefaultKCLShortcuts,
-  createKCLCellContext,
-  defaultKCLShortcutActions,
-  resolveKCLKeymap,
+  createDefaultKCShortcuts,
+  defaultKCShortcutActions,
+  resolveKCKeymap,
 } from "./keymap";
 export type {
   KCActionBinding,
   KCActionContextFor,
-  KCLActionBinding,
-  KCLCommandAction,
-  KCLCommandArgs,
-  KCLCommandName,
-  KCLDefaultShortcutAction,
-  KCLKeyBinding,
-  KCLResolvedAction,
-  KCLShortcutContext,
-  KCLShortcutId,
-  KCLShortcutOverrides,
-  KCLShortcutValues,
+  KCCommandAction,
+  KCCommandArgs,
+  KCCommandName,
+  KCDefaultShortcutAction,
+  KCKeyBinding,
+  KCResolvedAction,
+  KCShortcutContext,
+  KCShortcutId,
+  KCShortcutOverrides,
+  KCShortcutValues,
 } from "./keymap";
 
 export {

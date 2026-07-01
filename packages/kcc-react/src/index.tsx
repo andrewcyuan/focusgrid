@@ -26,9 +26,7 @@ export type KCCollectionProps = {
   controller: KCController;
   keymap: readonly KCActionBinding<unknown>[];
   direction: KCOrientation;
-  selectDefaultItemId?: (
-    items: readonly KCRegisteredEntry[],
-  ) => string | null;
+  selectDefaultItemId?: (items: readonly KCRegisteredEntry[]) => string | null;
   className?: string;
   wrapAround?: boolean;
   children: ReactNode;
@@ -51,16 +49,6 @@ export type KCListProps<T> = {
   getItemId?: (data: T, index: number) => string;
 };
 
-export type KeyboardControlledListProps<T> = {
-  controller: KCController;
-  keymap: readonly KCActionBinding<T>[];
-  direction: KCOrientation;
-  renderCell: (ctx: KCActionContext<T>) => ReactNode;
-  dataList: readonly T[];
-  selectDefaultIndex?: (dataList: readonly T[] | undefined) => number;
-  className?: string;
-};
-
 type KCCollectionContextValue = {
   controller: KCController;
   rootId: string;
@@ -71,14 +59,16 @@ type KCCollectionContextValue = {
     "aria-selected": "true" | "false";
     tabIndex: -1;
     onPointerDown: (
-      event: Pick<PointerEvent, "preventDefault" | "target">,
+      event: Pick<PointerEvent, "preventDefault" | "target">
     ) => void;
     onClick: (event: Pick<MouseEvent, "target">) => void;
     onDoubleClick: (event: Pick<MouseEvent, "target">) => void;
   };
 };
 
-const KCCollectionContext = createContext<KCCollectionContextValue | null>(null);
+const KCCollectionContext = createContext<KCCollectionContextValue | null>(
+  null
+);
 
 export function KCCollection({
   controller,
@@ -94,7 +84,7 @@ export function KCCollection({
   const registryRef = useRef(new Map<string, KCRegisteredEntry<unknown>>());
   const state = useKCControllerState(controller);
   const [entries, setEntries] = useState<readonly KCRegisteredEntry<unknown>[]>(
-    [],
+    []
   );
   const rootId = useMemo(() => createRootId(), []);
 
@@ -156,7 +146,7 @@ export function KCCollection({
         publishEntries();
       };
     },
-    [publishEntries],
+    [publishEntries]
   );
 
   const getEntryProps = useCallback(
@@ -171,10 +161,12 @@ export function KCCollection({
         id: `${rootId}-item-${sanitizeDomIdPart(entryId)}`,
         role: "option" as const,
         "aria-selected":
-          state.activeItemId === entryId ? ("true" as const) : ("false" as const),
+          state.activeItemId === entryId
+            ? ("true" as const)
+            : ("false" as const),
         tabIndex: -1 as const,
         onPointerDown: (
-          event: Pick<PointerEvent, "preventDefault" | "target">,
+          event: Pick<PointerEvent, "preventDefault" | "target">
         ) => event.preventDefault(),
         onClick: (_event: Pick<MouseEvent, "target">) => {
           controller.api.setActiveItemId(entryId);
@@ -182,7 +174,7 @@ export function KCCollection({
         onDoubleClick: (_event: Pick<MouseEvent, "target">) => undefined,
       };
     },
-    [controller, rootId, state.activeItemId],
+    [controller, rootId, state.activeItemId]
   );
 
   const contextValue = useMemo<KCCollectionContextValue>(
@@ -192,7 +184,7 @@ export function KCCollection({
       registerEntry,
       getEntryProps,
     }),
-    [controller, rootId, registerEntry, getEntryProps],
+    [controller, rootId, registerEntry, getEntryProps]
   );
 
   const rootClassName = className
@@ -307,59 +299,8 @@ function KCListRow<T>({
   );
 }
 
-export function KeyboardControlledList<T>({
-  controller,
-  keymap,
-  direction,
-  renderCell,
-  dataList,
-  selectDefaultIndex,
-  className,
-}: KeyboardControlledListProps<T>) {
-  const nativeKeymap = useMemo(() => keymap.filter(isNativeBinding), [keymap]);
-  const customActionKeybinds = useMemo(
-    () => keymap.filter(isCustomActionBinding),
-    [keymap],
-  );
-  const selectDefaultItemId = useCallback(
-    (items: readonly KCRegisteredEntry<unknown>[]) => {
-      if (items.length === 0) {
-        return null;
-      }
-
-      const index = selectDefaultIndex
-        ? selectDefaultIndex(dataList.slice(0, items.length))
-        : 0;
-
-      return items[clampReactIndex(index, items.length)]?.id ?? null;
-    },
-    [dataList, selectDefaultIndex],
-  );
-
-  const rootClassName = className
-    ? `KCLKeyboardControlledList ${className}`
-    : "KCLKeyboardControlledList";
-
-  return (
-    <KCCollection
-      controller={controller}
-      keymap={nativeKeymap as readonly KCActionBinding<unknown>[]}
-      direction={direction}
-      selectDefaultItemId={selectDefaultItemId}
-      className={rootClassName}
-    >
-      <KCList
-        dataList={dataList}
-        getItemId={(_data, index) => `item-${index}`}
-        customActionKeybinds={customActionKeybinds}
-        renderCell={renderCell}
-      />
-    </KCCollection>
-  );
-}
-
 export function useKCController(
-  options?: Parameters<typeof createKCController>[0],
+  options?: Parameters<typeof createKCController>[0]
 ): KCController {
   const ref = useRef<KCController | null>(null);
 
@@ -370,19 +311,15 @@ export function useKCController(
   return ref.current;
 }
 
-export const useKCLController = useKCController;
-
 export function useKCControllerState(
-  controller: KCController,
+  controller: KCController
 ): KCControllerState {
   return useSyncExternalStore(
     (listener) => controller.subscribe(listener),
     () => controller.getState(),
-    () => controller.getState(),
+    () => controller.getState()
   );
 }
-
-export const useKCLControllerState = useKCControllerState;
 
 function useRequiredKCCollectionContext(): KCCollectionContextValue {
   const context = useContext(KCCollectionContext);
@@ -399,12 +336,12 @@ function useStableGeneratedId(prefix: string): string {
 
   return useMemo(
     () => `kc-${prefix}-${sanitizeDomIdPart(reactId)}`,
-    [prefix, reactId],
+    [prefix, reactId]
   );
 }
 
 function sortEntriesByDocumentOrder(
-  entries: readonly KCRegisteredEntry<unknown>[],
+  entries: readonly KCRegisteredEntry<unknown>[]
 ): readonly KCRegisteredEntry<unknown>[] {
   return [...entries].sort((left, right) => {
     if (!left.element || !right.element || left.element === right.element) {
@@ -423,33 +360,6 @@ function sortEntriesByDocumentOrder(
 
     return 0;
   });
-}
-
-function isNativeBinding<T>(binding: KCActionBinding<T>): boolean {
-  if (typeof binding.action === "function") {
-    return false;
-  }
-
-  const command =
-    typeof binding.action === "string" ? binding.action : binding.action.command;
-
-  return command === "moveActive";
-}
-
-function isCustomActionBinding<T>(binding: KCActionBinding<T>): boolean {
-  return !isNativeBinding(binding);
-}
-
-function clampReactIndex(index: number, itemCount: number): number {
-  if (itemCount === 0) {
-    return -1;
-  }
-
-  if (!Number.isFinite(index)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(Math.trunc(index), itemCount - 1));
 }
 
 let nextRootId = 0;
@@ -477,27 +387,16 @@ export type {
   KCMoveDirection,
   KCOrientation,
   KCRegisteredEntry,
-  KCLActionBinding,
-  KCLCellAction,
-  KCLCellContext,
-  KCLCommandAction,
-  KCLCommandArgs,
-  KCLCommandName,
-  KCLController,
-  KCLControllerApi,
-  KCLControllerOptions,
-  KCLControllerState,
-  KCLMoveDirection,
-  KCLOrientation,
-  KCLShortcutId,
-  KCLShortcutOverrides,
-  KCLShortcutValues,
+  KCCommandAction,
+  KCCommandArgs,
+  KCCommandName,
+  KCShortcutId,
+  KCShortcutOverrides,
+  KCShortcutValues,
 } from "@focusgrid/kcc-core";
 export {
   createDefaultKCCollectionKeymap,
-  createDefaultKCLKeymap,
-  createDefaultKCLShortcuts,
+  createDefaultKCShortcuts,
   createKCController,
-  createKCLController,
-  defaultKCLShortcutActions,
+  defaultKCShortcutActions,
 } from "@focusgrid/kcc-core";

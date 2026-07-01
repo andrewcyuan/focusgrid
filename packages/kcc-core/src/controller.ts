@@ -36,13 +36,7 @@ export type KCActionContext<T = unknown> = {
   data: T;
 };
 
-export type KCLCellContext<T> = KCActionContext<T> & {
-  isListFocused: boolean;
-  isCellActive: boolean;
-};
-
 export type KCItemAction<T = unknown> = (ctx: KCActionContext<T>) => void;
-export type KCLCellAction<T> = (ctx: KCLCellContext<T>) => void;
 
 export type KCControllerApi = {
   setActiveItemId(next: string | null): boolean;
@@ -50,12 +44,8 @@ export type KCControllerApi = {
   setRegisteredEntries(
     entries: readonly KCRegisteredEntry[],
     selectDefaultItemId?: (
-      entries: readonly KCRegisteredEntry[],
-    ) => string | null,
-  ): boolean;
-  setItemCount(
-    itemCount: number,
-    selectDefaultIndex?: (itemCount: number) => number,
+      entries: readonly KCRegisteredEntry[]
+    ) => string | null
   ): boolean;
   setFocused(focused: boolean): boolean;
   setOrientation(orientation: KCOrientation): boolean;
@@ -67,16 +57,13 @@ export type KCCommands = {
 };
 
 export type KCControllerOptions = {
-  itemCount?: number;
   itemIds?: readonly string[];
-  activeIndex?: number;
   activeItemId?: string | null;
   focused?: boolean;
   orientation?: KCOrientation;
   wrapAround?: boolean;
-  selectDefaultIndex?: (itemCount: number) => number;
   selectDefaultItemId?: (
-    entries: readonly KCRegisteredEntry[],
+    entries: readonly KCRegisteredEntry[]
   ) => string | null;
 };
 
@@ -92,15 +79,11 @@ export class KCController {
   constructor(options: KCControllerOptions = {}) {
     const entries = createInitialEntries(options);
     const selectDefaultItemId =
-      options.selectDefaultItemId ??
-      createDefaultItemSelector(options.selectDefaultIndex);
+      options.selectDefaultItemId ?? createDefaultItemSelector;
     const activeItemId = defaultActiveItemId(
       entries,
-      options.activeItemId ??
-        (options.activeIndex === undefined
-          ? null
-          : activeItemIdFromIndex(entries, options.activeIndex)),
-      selectDefaultItemId,
+      options.activeItemId ?? null,
+      selectDefaultItemId
     );
 
     this.entries = entries;
@@ -121,7 +104,7 @@ export class KCController {
             focused: this.state.focused,
             orientation: this.state.orientation,
             wrapAround: this.state.wrapAround,
-          }),
+          })
         );
       },
       setActiveIndex: (next) => {
@@ -137,7 +120,7 @@ export class KCController {
           this.state.activeItemId,
           this.entries,
           entries,
-          selectDefaultItemIdForEntries,
+          selectDefaultItemIdForEntries
         );
 
         this.entries = entries;
@@ -149,31 +132,7 @@ export class KCController {
             focused: this.state.focused,
             orientation: this.state.orientation,
             wrapAround: this.state.wrapAround,
-          }),
-        );
-      },
-      setItemCount: (nextItemCount, selectDefaultIndexForCount) => {
-        const entries = createCountEntries(nextItemCount);
-        const selectDefaultItemIdForEntries = selectDefaultIndexForCount
-          ? createDefaultItemSelector(selectDefaultIndexForCount)
-          : undefined;
-        const activeItemId = reconcileActiveItemId(
-          this.state.activeItemId,
-          this.entries,
-          entries,
-          selectDefaultItemIdForEntries,
-        );
-
-        this.entries = entries;
-
-        return this.commit(
-          createState({
-            entries,
-            activeItemId,
-            focused: this.state.focused,
-            orientation: this.state.orientation,
-            wrapAround: this.state.wrapAround,
-          }),
+          })
         );
       },
       setFocused: (focused) =>
@@ -195,7 +154,12 @@ export class KCController {
 
     this.commands = {
       moveActive: (direction, count = 1) => {
-        const next = moveActiveItemId(this.entries, this.state, direction, count);
+        const next = moveActiveItemId(
+          this.entries,
+          this.state,
+          direction,
+          count
+        );
 
         if (next === this.state.activeItemId) {
           return false;
@@ -232,10 +196,6 @@ export class KCController {
     return createKCActionContext(this.state, id, data);
   }
 
-  getCellContext<T>(index: number, data: T): KCLCellContext<T> {
-    return createKCLCellContext(this.state, index, data) as KCLCellContext<T>;
-  }
-
   subscribe(listener: KCListener): () => void {
     this.listeners.add(listener);
 
@@ -267,12 +227,16 @@ export class KCController {
   }
 }
 
-export function createKCController(options?: KCControllerOptions): KCController {
+export function createKCController(
+  options?: KCControllerOptions
+): KCController {
   return new KCController(options);
 }
 
 export function clampActiveIndex(index: number, itemCount: number): number {
-  const normalizedItemCount = normalizeItemCount(itemCount);
+  const normalizedItemCount = Number.isFinite(itemCount)
+    ? Math.max(0, Math.trunc(itemCount))
+    : 0;
 
   if (normalizedItemCount === 0) {
     return -1;
@@ -288,7 +252,7 @@ export function clampActiveIndex(index: number, itemCount: number): number {
 export function moveActiveIndex(
   state: Pick<KCControllerState, "activeIndex" | "itemCount" | "orientation">,
   direction: KCMoveDirection,
-  count = 1,
+  count = 1
 ): number {
   if (state.itemCount === 0 || state.activeIndex < 0) {
     return -1;
@@ -313,7 +277,7 @@ export function moveActiveIndex(
 
 export function doesDirectionApply(
   orientation: KCOrientation,
-  direction: KCMoveDirection,
+  direction: KCMoveDirection
 ): boolean {
   if (orientation === "vertical") {
     return direction === "up" || direction === "down";
@@ -325,7 +289,7 @@ export function doesDirectionApply(
 export function createKCActionContext<T>(
   state: KCControllerState,
   id: string,
-  data: T,
+  data: T
 ): KCActionContext<T> {
   const index = state.itemIds.indexOf(id);
 
@@ -335,33 +299,6 @@ export function createKCActionContext<T>(
     data,
     isCollectionFocused: state.focused,
     isItemActive: state.activeItemId === id,
-  };
-}
-
-export function createKCLCellContext<T>(
-  state: KCControllerState,
-  indexOrDataList: number | readonly T[],
-  data?: T,
-): KCLCellContext<T> | null {
-  if (typeof indexOrDataList !== "number") {
-    const dataList = indexOrDataList;
-    const activeData = dataList[state.activeIndex];
-
-    if (state.activeIndex < 0 || activeData === undefined) {
-      return null;
-    }
-
-    return createKCLCellContext(state, state.activeIndex, activeData);
-  }
-
-  const index = indexOrDataList;
-  const id = state.itemIds[index] ?? `item-${index}`;
-  const ctx = createKCActionContext(state, id, data as T);
-
-  return {
-    ...ctx,
-    isListFocused: ctx.isCollectionFocused,
-    isCellActive: ctx.isItemActive,
   };
 }
 
@@ -392,29 +329,17 @@ function createState({
 }
 
 function createInitialEntries(
-  options: KCControllerOptions,
+  options: KCControllerOptions
 ): readonly KCRegisteredEntry[] {
-  if (options.itemIds) {
-    return options.itemIds.map((id) => ({
-      id,
-      element: null,
-      data: undefined,
-    }));
-  }
-
-  return createCountEntries(options.itemCount ?? 0);
-}
-
-function createCountEntries(itemCount: number): readonly KCRegisteredEntry[] {
-  return Array.from({ length: normalizeItemCount(itemCount) }, (_, index) => ({
-    id: `item-${index}`,
+  return (options.itemIds ?? []).map((id) => ({
+    id,
     element: null,
     data: undefined,
   }));
 }
 
 function normalizeEntries(
-  entries: readonly KCRegisteredEntry[],
+  entries: readonly KCRegisteredEntry[]
 ): readonly KCRegisteredEntry[] {
   const seen = new Set<string>();
 
@@ -439,9 +364,7 @@ function normalizeEntries(
 function defaultActiveItemId(
   entries: readonly KCRegisteredEntry[],
   requested: string | null,
-  selectDefaultItemId: (
-    entries: readonly KCRegisteredEntry[],
-  ) => string | null,
+  selectDefaultItemId: (entries: readonly KCRegisteredEntry[]) => string | null
 ): string | null {
   return (
     normalizeActiveItemId(entries, requested) ??
@@ -455,9 +378,7 @@ function reconcileActiveItemId(
   previousActiveItemId: string | null,
   previousEntries: readonly KCRegisteredEntry[],
   nextEntries: readonly KCRegisteredEntry[],
-  selectDefaultItemId?: (
-    entries: readonly KCRegisteredEntry[],
-  ) => string | null,
+  selectDefaultItemId?: (entries: readonly KCRegisteredEntry[]) => string | null
 ): string | null {
   if (nextEntries.length === 0) {
     return null;
@@ -472,7 +393,7 @@ function reconcileActiveItemId(
   if (previousEntries.length === 0 && selectDefaultItemId) {
     const selected = normalizeActiveItemId(
       nextEntries,
-      selectDefaultItemId(nextEntries),
+      selectDefaultItemId(nextEntries)
     );
 
     if (selected) {
@@ -485,7 +406,10 @@ function reconcileActiveItemId(
     : -1;
 
   if (previousIndex >= 0) {
-    return nextEntries[clampActiveIndex(previousIndex, nextEntries.length)]?.id ?? null;
+    return (
+      nextEntries[clampActiveIndex(previousIndex, nextEntries.length)]?.id ??
+      null
+    );
   }
 
   return firstEnabledEntry(nextEntries)?.id ?? null;
@@ -493,7 +417,7 @@ function reconcileActiveItemId(
 
 function normalizeActiveItemId(
   entries: readonly KCRegisteredEntry[],
-  id: string | null,
+  id: string | null
 ): string | null {
   if (!id) {
     return null;
@@ -508,7 +432,7 @@ function moveActiveItemId(
   entries: readonly KCRegisteredEntry[],
   state: KCControllerState,
   direction: KCMoveDirection,
-  count = 1,
+  count = 1
 ): string | null {
   if (entries.length === 0 || state.activeIndex < 0) {
     return null;
@@ -548,7 +472,7 @@ function nextMovableIndex(
   entries: readonly KCRegisteredEntry[],
   currentIndex: number,
   delta: number,
-  wrapAround: boolean,
+  wrapAround: boolean
 ): number {
   let nextIndex = currentIndex;
 
@@ -574,13 +498,13 @@ function nextMovableIndex(
 }
 
 function firstEnabledEntry(
-  entries: readonly KCRegisteredEntry[],
+  entries: readonly KCRegisteredEntry[]
 ): KCRegisteredEntry | undefined {
   return entries.find((entry) => !entry.disabled);
 }
 
 function lastEnabledEntry(
-  entries: readonly KCRegisteredEntry[],
+  entries: readonly KCRegisteredEntry[]
 ): KCRegisteredEntry | undefined {
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index];
@@ -595,37 +519,23 @@ function lastEnabledEntry(
 
 function activeItemIdFromIndex(
   entries: readonly KCRegisteredEntry[],
-  index: number,
+  index: number
 ): string | null {
   return entries[clampActiveIndex(index, entries.length)]?.id ?? null;
 }
 
 function createDefaultItemSelector(
-  selectDefaultIndex: ((itemCount: number) => number) | undefined,
-): (entries: readonly KCRegisteredEntry[]) => string | null {
-  return (entries) => {
-    if (entries.length === 0) {
-      return null;
-    }
+  entries: readonly KCRegisteredEntry[]
+): string | null {
+  if (entries.length === 0) {
+    return null;
+  }
 
-    const index = selectDefaultIndex
-      ? selectDefaultIndex(entries.length)
-      : 0;
-
-    return entries[clampActiveIndex(index, entries.length)]?.id ?? null;
-  };
+  return entries[0]?.id ?? null;
 }
 
 function getDirectionDelta(direction: KCMoveDirection): number {
   return direction === "up" || direction === "left" ? -1 : 1;
-}
-
-function normalizeItemCount(itemCount: number): number {
-  if (!Number.isFinite(itemCount)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.trunc(itemCount));
 }
 
 function normalizeMoveCount(count: number): number {
@@ -636,25 +546,13 @@ function normalizeMoveCount(count: number): number {
   return Math.max(1, Math.trunc(count));
 }
 
-function arrayShallowEqual<T>(left: readonly T[], right: readonly T[]): boolean {
+function arrayShallowEqual<T>(
+  left: readonly T[],
+  right: readonly T[]
+): boolean {
   if (left.length !== right.length) {
     return false;
   }
 
   return left.every((value, index) => value === right[index]);
 }
-
-export {
-  KCController as KCLController,
-  createKCController as createKCLController,
-};
-
-export type {
-  KCCommands as KCLCommands,
-  KCControllerApi as KCLControllerApi,
-  KCControllerOptions as KCLControllerOptions,
-  KCControllerState as KCLControllerState,
-  KCListener as KCLListener,
-  KCMoveDirection as KCLMoveDirection,
-  KCOrientation as KCLOrientation,
-};

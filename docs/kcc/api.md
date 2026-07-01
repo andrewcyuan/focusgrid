@@ -66,15 +66,12 @@ type KCActionContext<T = unknown> = {
 
 type KCActionBinding<T = unknown> = {
   sequence: KeySequence | string;
-  action: KCItemAction<T> | KCLCommandAction;
-  command?: KCLCommandName;
+  action: KCItemAction<T> | KCCommandAction;
+  command?: KCCommandName;
   preventDefault?: boolean;
   repeat?: boolean;
 };
 ```
-
-`KCL*` names remain exported as compatibility aliases where practical.
-Compatibility contexts also include `isListFocused` and `isCellActive`.
 
 ## `createKCController(options?)`
 
@@ -93,8 +90,6 @@ Important options:
 - `orientation?: KCOrientation`
 - `wrapAround?: boolean`
 - `selectDefaultItemId?: (entries: readonly KCRegisteredEntry[]) => string | null`
-
-Legacy `itemCount`, `activeIndex`, and `selectDefaultIndex` are still accepted.
 
 ## Controller APIs
 
@@ -170,26 +165,8 @@ from the parent collection. Prefer `getItemId` for dynamic data.
 
 ```ts
 createDefaultKCCollectionKeymap(options?: {
-  overrides?: KCLShortcutOverrides;
+  overrides?: KCShortcutOverrides;
 }): KCActionBinding[];
 ```
 
 Creates native movement bindings only: arrows, `Home`, and `End`.
-
-```ts
-createDefaultKCLKeymap<T>(options?: {
-  overrides?: KCLShortcutOverrides;
-  onActivate?: KCLCellAction<T>;
-  onEdit?: KCLCellAction<T>;
-}): KCActionBinding<T>[];
-```
-
-Legacy helper that includes movement plus activate/edit callbacks. New
-collection code should pass movement bindings to `KCCollection` and app actions
-to `KCItem` or `KCList`.
-
-## Compatibility Wrapper
-
-`KeyboardControlledList` remains available and is implemented with
-`KCCollection` plus `KCList`. New code should prefer the explicit collection API
-for heterogeneous layouts.

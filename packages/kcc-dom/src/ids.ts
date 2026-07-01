@@ -1,7 +1,3 @@
-export function getKCLRowId(rootId: string, index: number): string {
-  return `${rootId}-row-${index}`;
-}
-
 export function getKCEntryDomId(rootId: string, entryId: string): string {
   return `${rootId}-item-${sanitizeDomIdPart(entryId)}`;
 }

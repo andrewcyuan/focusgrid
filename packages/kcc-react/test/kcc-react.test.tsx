@@ -4,48 +4,46 @@ import {
   KCCollection,
   KCItem,
   KCList,
-  KeyboardControlledList,
-  createDefaultKCLKeymap,
-  createKCLController,
-  useKCLController,
-  useKCLControllerState,
+  createKCController,
+  useKCController,
+  useKCControllerState,
   type KCActionContext,
 } from "../src";
 
-describe("KeyboardControlledList", () => {
-  it("passes KCL cell context to renderCell", () => {
-    const controller = createKCLController({
-      itemCount: 2,
-      activeIndex: 1,
+describe("KC React bindings", () => {
+  it("passes KC action context to list rows", () => {
+    const controller = createKCController({
+      itemIds: ["alpha", "beta"],
+      activeItemId: "beta",
       focused: true,
     });
     const contexts: Array<KCActionContext<string>> = [];
 
     const markup = renderToStaticMarkup(
-      <KeyboardControlledList
-        controller={controller}
-        keymap={createDefaultKCLKeymap()}
-        direction="vertical"
-        dataList={["alpha", "beta"]}
-        renderCell={(ctx) => {
-          contexts.push(ctx);
-          return <span>{ctx.data}</span>;
-        }}
-      />,
+      <KCCollection controller={controller} keymap={[]} direction="vertical">
+        <KCList
+          dataList={["alpha", "beta"]}
+          getItemId={(item) => item}
+          renderCell={(ctx) => {
+            contexts.push(ctx);
+            return <span>{ctx.data}</span>;
+          }}
+        />
+      </KCCollection>
     );
 
     expect(markup).toContain("<span>alpha</span>");
     expect(markup).toContain("<span>beta</span>");
     expect(contexts).toEqual([
       {
-        id: "item-0",
+        id: "alpha",
         index: 0,
         data: "alpha",
         isCollectionFocused: true,
         isItemActive: false,
       },
       {
-        id: "item-1",
+        id: "beta",
         index: 1,
         data: "beta",
         isCollectionFocused: true,
@@ -54,38 +52,15 @@ describe("KeyboardControlledList", () => {
     ]);
   });
 
-  it("renders row roles and active data attributes before DOM effects mount", () => {
-    const controller = createKCLController({ itemCount: 2, activeIndex: 0 });
-
-    const markup = renderToStaticMarkup(
-      <KeyboardControlledList
-        controller={controller}
-        keymap={[]}
-        direction="vertical"
-        dataList={["alpha", "beta"]}
-        renderCell={(ctx) => ctx.data}
-      />,
-    );
-
-    expect(markup).toContain('role="option"');
-    expect(markup).toContain('aria-selected="true"');
-    expect(markup).toContain('data-kc-item-id="item-0"');
-    expect(markup).toContain('data-active="true"');
-  });
-
   it("renders collection items, lists, and static children in one surface", () => {
-    const controller = createKCLController({
+    const controller = createKCController({
       itemIds: ["compose", "inbox-primary", "labels-more"],
       activeItemId: "inbox-primary",
       focused: true,
     });
 
     const markup = renderToStaticMarkup(
-      <KCCollection
-        controller={controller}
-        keymap={[]}
-        direction="vertical"
-      >
+      <KCCollection controller={controller} keymap={[]} direction="vertical">
         <h2>Mail</h2>
         <KCItem id="compose">Compose</KCItem>
         <KCList
@@ -94,7 +69,7 @@ describe("KeyboardControlledList", () => {
           renderCell={(ctx) => ctx.data.label}
         />
         <KCItem id="labels-more">More</KCItem>
-      </KCCollection>,
+      </KCCollection>
     );
 
     expect(markup).toContain("<h2>Mail</h2>");
@@ -104,35 +79,38 @@ describe("KeyboardControlledList", () => {
     expect(markup).toContain('data-kc-item-id="labels-more"');
   });
 
-  it("creates a stable controller with useKCLController", () => {
-    let controllerFromHook: ReturnType<typeof createKCLController> | null = null;
+  it("creates a stable controller with useKCController", () => {
+    let controllerFromHook: ReturnType<typeof createKCController> | null = null;
 
     function TestApp() {
-      const controller = useKCLController({ itemCount: 3, activeIndex: 2 });
+      const controller = useKCController({
+        itemIds: ["a", "b", "c"],
+        activeItemId: "c",
+      });
       controllerFromHook = controller;
 
       return (
-        <KeyboardControlledList
-          controller={controller}
-          keymap={[]}
-          direction="vertical"
-          dataList={["a", "b", "c"]}
-          renderCell={(ctx) => ctx.data}
-        />
+        <KCCollection controller={controller} keymap={[]} direction="vertical">
+          <KCList
+            dataList={["a", "b", "c"]}
+            getItemId={(item) => item}
+            renderCell={(ctx) => ctx.data}
+          />
+        </KCCollection>
       );
     }
 
     renderToStaticMarkup(<TestApp />);
 
-    expect(controllerFromHook?.getState().activeIndex).toBe(2);
+    expect(controllerFromHook?.getState().activeItemId).toBe("c");
   });
 
   it("reads controller state from the hook", () => {
-    const controller = createKCLController({ itemCount: 1 });
+    const controller = createKCController({ itemIds: ["a"] });
     let activeIndex: number | undefined;
 
     function TestApp() {
-      activeIndex = useKCLControllerState(controller).activeIndex;
+      activeIndex = useKCControllerState(controller).activeIndex;
       return null;
     }
 

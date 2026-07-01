@@ -44,12 +44,18 @@ export function buildLayoutIndex(root: LayoutNode): LayoutIndex {
   }
 }
 
-export function findSplitNode(root: LayoutNode, splitId: NodeId): SplitNode | null {
+export function findSplitNode(
+  root: LayoutNode,
+  splitId: NodeId
+): SplitNode | null {
   const node = buildLayoutIndex(root).nodeById.get(splitId);
   return node?.kind === "split" ? node : null;
 }
 
-export function focusPane(state: FocusGridControllerState, paneId: PaneId): FocusGridControllerState {
+export function focusPane(
+  state: FocusGridControllerState,
+  paneId: PaneId
+): FocusGridControllerState {
   if (!buildLayoutIndex(state.root).paneNodeByPaneId.has(paneId)) {
     return state;
   }
@@ -70,7 +76,7 @@ export function focusPane(state: FocusGridControllerState, paneId: PaneId): Focu
 export function focusPaneInDirection(
   state: FocusGridControllerState,
   paneId: PaneId,
-  direction: PaneFocusDirection,
+  direction: PaneFocusDirection
 ): FocusGridControllerState {
   const targetPaneId = findPaneInDirection(state, paneId, direction);
 
@@ -83,14 +89,14 @@ export function focusPaneInDirection(
       ...state,
       root: markFocusedPanePath(state.root, paneId),
     },
-    targetPaneId,
+    targetPaneId
   );
 }
 
 export function findPaneInDirection(
   state: FocusGridControllerState,
   paneId: PaneId,
-  direction: PaneFocusDirection,
+  direction: PaneFocusDirection
 ): PaneId | null {
   const index = buildLayoutIndex(state.root);
   const paneNode = index.paneNodeByPaneId.get(paneId);
@@ -117,7 +123,7 @@ export function findPaneInDirection(
         sibling,
         layout.panes,
         activePane,
-        direction,
+        direction
       );
 
       if (!targetPaneId) {
@@ -159,24 +165,8 @@ export type UpdatePaneCommandGuardsOptions = PaneCommandGuardInput;
 export function splitPane(
   state: FocusGridControllerState,
   paneId: PaneId,
-  options: SplitPaneOptions,
-): FocusGridControllerState;
-export function splitPane(
-  state: FocusGridControllerState,
-  paneId: PaneId,
-  direction: Direction,
-  newPaneId: PaneId,
-): FocusGridControllerState;
-export function splitPane(
-  state: FocusGridControllerState,
-  paneId: PaneId,
-  optionsOrDirection: SplitPaneOptions | Direction,
-  legacyNewPaneId?: PaneId,
+  options: SplitPaneOptions
 ): FocusGridControllerState {
-  const options =
-    typeof optionsOrDirection === "string"
-      ? directionToSplitOptions(optionsOrDirection, legacyNewPaneId)
-      : optionsOrDirection;
   const newPaneId = options.newPaneId ?? createId("pane");
   const direction = splitSideToDirection(options.side);
   const index = buildLayoutIndex(state.root);
@@ -230,7 +220,9 @@ export function splitPane(
     return state;
   }
 
-  const activePaneId = options.preserveActivePane ? state.activePaneId : newPaneId;
+  const activePaneId = options.preserveActivePane
+    ? state.activePaneId
+    : newPaneId;
 
   return {
     ...state,
@@ -241,7 +233,7 @@ export function splitPane(
 
 export function wrapRootInSplit(
   state: FocusGridControllerState,
-  options: WrapRootInSplitOptions,
+  options: WrapRootInSplitOptions
 ): FocusGridControllerState {
   const newPaneId = options.newPaneId ?? createId("pane");
   const index = buildLayoutIndex(state.root);
@@ -277,7 +269,9 @@ export function wrapRootInSplit(
         : [state.root, newPane],
     sizes: [0.5, 0.5],
   };
-  const activePaneId = options.preserveActivePane ? state.activePaneId : newPaneId;
+  const activePaneId = options.preserveActivePane
+    ? state.activePaneId
+    : newPaneId;
 
   return {
     ...state,
@@ -286,7 +280,10 @@ export function wrapRootInSplit(
   };
 }
 
-export function removePane(state: FocusGridControllerState, paneId: PaneId): FocusGridControllerState {
+export function removePane(
+  state: FocusGridControllerState,
+  paneId: PaneId
+): FocusGridControllerState {
   const panes = collectPaneIds(state.root);
 
   if (!panes.includes(paneId) || panes.length <= 1) {
@@ -313,7 +310,7 @@ export function removePane(state: FocusGridControllerState, paneId: PaneId): Foc
 export function updatePaneCommandGuards(
   state: FocusGridControllerState,
   paneId: PaneId,
-  options: UpdatePaneCommandGuardsOptions,
+  options: UpdatePaneCommandGuardsOptions
 ): FocusGridControllerState {
   let didUpdate = false;
 
@@ -352,14 +349,17 @@ export function updatePaneCommandGuards(
     : state;
 }
 
-export function closePane(state: FocusGridControllerState, paneId: PaneId): FocusGridControllerState {
+export function closePane(
+  state: FocusGridControllerState,
+  paneId: PaneId
+): FocusGridControllerState {
   return removePane(state, paneId);
 }
 
 export function swapPanes(
   state: FocusGridControllerState,
   firstPaneId: PaneId,
-  secondPaneId: PaneId,
+  secondPaneId: PaneId
 ): FocusGridControllerState {
   if (firstPaneId === secondPaneId) {
     return state;
@@ -406,7 +406,7 @@ export function swapPanes(
 export function swapPaneInDirection(
   state: FocusGridControllerState,
   paneId: PaneId,
-  direction: PaneSwapDirection,
+  direction: PaneSwapDirection
 ): FocusGridControllerState {
   const targetPaneId = findPaneInDirection(state, paneId, direction);
 
@@ -422,7 +422,7 @@ export function resizeHandle(
   splitId: NodeId,
   index: number,
   deltaPx: number,
-  snapshotSizes?: number[],
+  snapshotSizes?: number[]
 ): FocusGridControllerState {
   let didResize = false;
 
@@ -437,14 +437,17 @@ export function resizeHandle(
       return node;
     }
 
-    const baseSizes = normalizeSizes(snapshotSizes ?? node.sizes, node.children.length);
+    const baseSizes = normalizeSizes(
+      snapshotSizes ?? node.sizes,
+      node.children.length
+    );
     const deltaRatio = deltaPx / totalPx;
     const nextSizes = [...baseSizes];
     nextSizes[index] += deltaRatio;
     nextSizes[index + 1] -= deltaRatio;
 
     const minSizes = node.children.map((child) =>
-      getMinRatio(child, node.direction, totalPx),
+      getMinRatio(child, node.direction, totalPx)
     );
     const currentSizes = normalizeSizes(node.sizes, node.children.length);
     const clamped = clampAdjacentPair(nextSizes, minSizes, index);
@@ -454,7 +457,7 @@ export function resizeHandle(
         sizes: clamped,
       },
       node.direction,
-      totalPx,
+      totalPx
     );
 
     if (fitted.kind !== "split" || sizesEqual(fitted.sizes, currentSizes)) {
@@ -478,24 +481,8 @@ export function resizeHandle(
 export function resizePane(
   state: FocusGridControllerState,
   paneId: PaneId,
-  options: ResizePaneOptions,
-): FocusGridControllerState;
-export function resizePane(
-  state: FocusGridControllerState,
-  paneId: PaneId,
-  direction: PaneResizeDirection,
-  deltaPx: number,
-): FocusGridControllerState;
-export function resizePane(
-  state: FocusGridControllerState,
-  paneId: PaneId,
-  optionsOrDirection: ResizePaneOptions | PaneResizeDirection,
-  legacyDeltaPx?: number,
+  options: ResizePaneOptions
 ): FocusGridControllerState {
-  const options =
-    typeof optionsOrDirection === "string"
-      ? { direction: optionsOrDirection, deltaPx: legacyDeltaPx ?? 0 }
-      : optionsOrDirection;
   const index = buildLayoutIndex(state.root);
   const paneNode = index.paneNodeByPaneId.get(paneId);
 
@@ -503,7 +490,11 @@ export function resizePane(
     return state;
   }
 
-  const boundary = resolvePaneResizeBoundary(index, paneNode.id, options.direction);
+  const boundary = resolvePaneResizeBoundary(
+    index,
+    paneNode.id,
+    options.direction
+  );
 
   if (!boundary) {
     return state;
@@ -513,18 +504,8 @@ export function resizePane(
     state,
     boundary.splitId,
     boundary.index,
-    boundary.deltaPxSign * options.deltaPx,
+    boundary.deltaPxSign * options.deltaPx
   );
-}
-
-function directionToSplitOptions(
-  direction: Direction,
-  newPaneId?: PaneId,
-): SplitPaneOptions {
-  return {
-    side: direction === "horizontal" ? "right" : "down",
-    newPaneId,
-  };
 }
 
 function splitSideToDirection(side: PaneSplitSide): Direction {
@@ -551,13 +532,15 @@ export function collectPaneIds(root: LayoutNode): PaneId[] {
 function resolvePaneResizeBoundary(
   index: LayoutIndex,
   nodeId: NodeId,
-  direction: PaneResizeDirection,
+  direction: PaneResizeDirection
 ): { splitId: NodeId; index: number; deltaPxSign: 1 | -1 } | null {
   let currentId = nodeId;
   let parent = index.parentByNodeId.get(currentId) ?? null;
 
   while (parent) {
-    const childIndex = parent.children.findIndex((child) => child.id === currentId);
+    const childIndex = parent.children.findIndex(
+      (child) => child.id === currentId
+    );
 
     if (childIndex === -1) {
       return null;
@@ -568,8 +551,8 @@ function resolvePaneResizeBoundary(
         childIndex > 0
           ? childIndex - 1
           : childIndex < parent.children.length - 1
-            ? childIndex
-            : null;
+          ? childIndex
+          : null;
 
       if (boundaryIndex !== null) {
         return {
@@ -590,7 +573,7 @@ function resolvePaneResizeBoundary(
 function findDirectionalSibling(
   parent: SplitNode,
   childId: NodeId,
-  direction: PaneFocusDirection,
+  direction: PaneFocusDirection
 ): LayoutNode | null {
   const childIndex = parent.children.findIndex((child) => child.id === childId);
 
@@ -625,7 +608,7 @@ function findTargetPaneInSubtree(
   subtree: LayoutNode,
   panes: ComputedPane[],
   activePane: ComputedPane,
-  direction: PaneFocusDirection,
+  direction: PaneFocusDirection
 ): PaneId | null {
   const subtreePaneIds = new Set(collectPaneIds(subtree));
   const candidates = panes.filter((pane) => subtreePaneIds.has(pane.paneId));
@@ -642,7 +625,7 @@ function findTargetPaneInSubtree(
       edge: getEnteringEdge(pane.rect, direction),
       perpendicularDistance: Math.abs(
         getPerpendicularCenter(pane.rect, direction) -
-          getPerpendicularCenter(activePane.rect, direction),
+          getPerpendicularCenter(activePane.rect, direction)
       ),
       focusMemoryRank: getFocusMemoryRank(subtree, pane.paneId),
       centerDistance:
@@ -674,7 +657,7 @@ function getFocusMemoryRank(subtree: LayoutNode, paneId: PaneId): number {
   }
 
   const rememberedChild = subtree.children.find(
-    (child) => child.id === subtree.lastFocusedChildId,
+    (child) => child.id === subtree.lastFocusedChildId
   );
 
   if (!rememberedChild || !collectPaneIds(rememberedChild).includes(paneId)) {
@@ -709,14 +692,14 @@ function getEnteringEdge(rect: Rect, direction: PaneFocusDirection): number {
 function compareEnteringEdge(
   a: number,
   b: number,
-  direction: PaneFocusDirection,
+  direction: PaneFocusDirection
 ): number {
   return direction === "left" || direction === "up" ? b - a : a - b;
 }
 
 function getPerpendicularCenter(
   rect: Rect,
-  direction: PaneFocusDirection,
+  direction: PaneFocusDirection
 ): number {
   const center = getRectCenter(rect);
   return isHorizontalDirection(direction) ? center.y : center.x;
@@ -741,7 +724,10 @@ function isPositiveBoundaryDirection(direction: PaneResizeDirection): boolean {
   return direction === "right" || direction === "down";
 }
 
-function getSplitAxisSize(state: FocusGridControllerState, splitId: NodeId): number {
+function getSplitAxisSize(
+  state: FocusGridControllerState,
+  splitId: NodeId
+): number {
   const split = findSplitNode(state.root, splitId);
   const rect = findSplitRect(
     state.root,
@@ -751,7 +737,7 @@ function getSplitAxisSize(state: FocusGridControllerState, splitId: NodeId): num
       width: Math.max(0, state.container.width),
       height: Math.max(0, state.container.height),
     },
-    splitId,
+    splitId
   );
 
   if (!split || !rect) {
@@ -764,7 +750,7 @@ function getSplitAxisSize(state: FocusGridControllerState, splitId: NodeId): num
 function findSplitRect(
   node: LayoutNode,
   rect: Rect,
-  splitId: NodeId,
+  splitId: NodeId
 ): Rect | null {
   if (node.kind === "pane") {
     return null;
@@ -813,12 +799,14 @@ function findSplitRect(
 }
 
 function axisEnd(rect: Rect, direction: Direction): number {
-  return direction === "horizontal" ? rect.x + rect.width : rect.y + rect.height;
+  return direction === "horizontal"
+    ? rect.x + rect.width
+    : rect.y + rect.height;
 }
 
 function mapLayout(
   node: LayoutNode,
-  mapper: (node: LayoutNode) => LayoutNode,
+  mapper: (node: LayoutNode) => LayoutNode
 ): LayoutNode {
   if (node.kind === "pane") {
     return mapper(node);
@@ -837,7 +825,7 @@ function markFocusedPanePath(root: LayoutNode, paneId: PaneId): LayoutNode {
 
 function markFocusedPanePathInner(
   node: LayoutNode,
-  paneId: PaneId,
+  paneId: PaneId
 ): { node: LayoutNode; contains: boolean } {
   if (node.kind === "pane") {
     return {
@@ -918,7 +906,10 @@ function removePaneNode(node: LayoutNode, paneId: PaneId): LayoutNode | null {
 }
 
 function normalizeSizes(sizes: number[], expectedLength: number): number[] {
-  const fallback = Array.from({ length: expectedLength }, () => 1 / expectedLength);
+  const fallback = Array.from(
+    { length: expectedLength },
+    () => 1 / expectedLength
+  );
 
   if (sizes.length !== expectedLength) {
     return fallback;
@@ -944,7 +935,7 @@ function sizesEqual(a: number[], b: number[]): boolean {
 function getMinRatio(
   node: LayoutNode,
   direction: Direction,
-  totalPx: number,
+  totalPx: number
 ): number {
   if (totalPx <= 0) {
     return 0;
@@ -955,28 +946,31 @@ function getMinRatio(
 
 function getMinimumAxisSize(node: LayoutNode, direction: Direction): number {
   if (node.kind === "pane") {
-    return direction === "horizontal" ? node.minWidth ?? 0 : node.minHeight ?? 0;
+    return direction === "horizontal"
+      ? node.minWidth ?? 0
+      : node.minHeight ?? 0;
   }
 
   if (node.direction === direction) {
     return (
       node.children.reduce(
         (sum, child) => sum + getMinimumAxisSize(child, direction),
-        0,
-      ) + Math.max(0, node.children.length - 1) * HANDLE_SIZE
+        0
+      ) +
+      Math.max(0, node.children.length - 1) * HANDLE_SIZE
     );
   }
 
   return Math.max(
     0,
-    ...node.children.map((child) => getMinimumAxisSize(child, direction)),
+    ...node.children.map((child) => getMinimumAxisSize(child, direction))
   );
 }
 
 function fitNodeToAxisSize(
   node: LayoutNode,
   direction: Direction,
-  axisSize: number,
+  axisSize: number
 ): LayoutNode {
   if (node.kind === "pane") {
     return node;
@@ -997,7 +991,7 @@ function fitNodeToAxisSize(
   const handleTotal = Math.max(0, node.children.length - 1) * HANDLE_SIZE;
   const contentSize = Math.max(0, axisSize - handleTotal);
   const minSizes = node.children.map((child) =>
-    getMinimumAxisSize(child, direction),
+    getMinimumAxisSize(child, direction)
   );
   const fittedSizes = fitSizesToMinimums(sizes, minSizes, contentSize);
   let changed = !sizesEqual(fittedSizes, sizes);
@@ -1021,7 +1015,7 @@ function fitNodeToAxisSize(
 function fitSizesToMinimums(
   sizes: number[],
   minSizes: number[],
-  contentSize: number,
+  contentSize: number
 ): number[] {
   const normalized = normalizeSizes(sizes, sizes.length);
 
@@ -1049,7 +1043,8 @@ function fitSizesToMinimums(
         continue;
       }
 
-      const weight = remainingWeight > 0 ? normalized[index]! / remainingWeight : 0;
+      const weight =
+        remainingWeight > 0 ? normalized[index]! / remainingWeight : 0;
       const allocated = remainingSize * weight;
       const minSize = minSizes[index] ?? 0;
 
@@ -1068,7 +1063,8 @@ function fitSizesToMinimums(
       continue;
     }
 
-    const weight = remainingWeight > 0 ? normalized[index]! / remainingWeight : 0;
+    const weight =
+      remainingWeight > 0 ? normalized[index]! / remainingWeight : 0;
     out[index] = Math.max(0, remainingSize * weight);
   }
 
@@ -1084,7 +1080,7 @@ function fitSizesToMinimums(
 function clampAdjacentPair(
   sizes: number[],
   minSizes: number[],
-  index: number,
+  index: number
 ): number[] {
   const out = [...sizes];
   const pairTotal = out[index]! + out[index + 1]!;

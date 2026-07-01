@@ -2,6 +2,8 @@
 
 This is a web library with react bindings to make keyboard native interfaces in the web.
 
+NEVER support legacy versions of the library; this simply bloats the library. You may bring up breaking changes, but we generally DONT care about them because this library is used internally right now.
+
 ## Code practices
 
 - Always check before adding dependencies. This is a library so dependencies should be kept at a minimum

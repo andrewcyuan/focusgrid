@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  createDefaultKCLKeymap,
-  createKCLController,
-  type KCLActionBinding,
+  createDefaultKCCollectionKeymap,
+  createKCController,
+  type KCActionBinding,
+  type KCRegisteredEntry,
 } from "@focusgrid/kcc-core";
-import { KCLDomController } from "../src";
+import { KCDomController } from "../src";
 
 type Listener = (event: KeyboardEvent) => void;
 
@@ -42,6 +43,25 @@ function rootElement() {
   return { root, listeners, attributes, ownerDocument };
 }
 
+function entries(
+  keybinds: readonly KCActionBinding<unknown>[] = []
+): readonly KCRegisteredEntry[] {
+  return [
+    {
+      id: "alpha",
+      element: null,
+      data: "alpha",
+      getActionKeybinds: () => keybinds,
+    },
+    {
+      id: "beta",
+      element: null,
+      data: "beta",
+      getActionKeybinds: () => keybinds,
+    },
+  ];
+}
+
 function keydownEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
   return {
     key: input.key ?? "",
@@ -55,31 +75,38 @@ function keydownEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
   } as unknown as KeyboardEvent;
 }
 
-describe("KCLDomController", () => {
+describe("KCDomController", () => {
   it("mounts focusable listbox ARIA and keeps activedescendant in sync", () => {
-    const controller = createKCLController({ itemCount: 3, activeIndex: 1 });
+    const controller = createKCController({
+      itemIds: ["alpha", "beta"],
+      activeItemId: "beta",
+    });
     const { root, attributes } = rootElement();
-    const domController = new KCLDomController(controller, root);
+    const domController = new KCDomController(controller, root, {
+      entries: entries(),
+    });
 
     domController.mount();
 
     expect(root.tabIndex).toBe(0);
     expect(attributes.get("role")).toBe("listbox");
     expect(attributes.get("aria-orientation")).toBe("vertical");
-    expect(attributes.get("aria-activedescendant")).toBe("todos-row-1");
+    expect(attributes.get("aria-activedescendant")).toBe("todos-item-beta");
 
-    controller.api.setActiveIndex(2);
-    expect(attributes.get("aria-activedescendant")).toBe("todos-row-2");
+    controller.api.setActiveItemId("alpha");
+    expect(attributes.get("aria-activedescendant")).toBe("todos-item-alpha");
 
-    controller.api.setItemCount(0);
+    controller.api.setRegisteredEntries([]);
+    domController.update({ entries: [] });
     expect(attributes.has("aria-activedescendant")).toBe(false);
   });
 
   it("registers keyboard handling in capture phase and ignores modifier-only keys", () => {
-    const controller = createKCLController({ itemCount: 2 });
+    const controller = createKCController({ itemIds: ["alpha", "beta"] });
     const { root, listeners } = rootElement();
-    const domController = new KCLDomController(controller, root, {
-      keymap: createDefaultKCLKeymap(),
+    const domController = new KCDomController(controller, root, {
+      keymap: createDefaultKCCollectionKeymap(),
+      entries: entries(),
     });
 
     domController.mount();
@@ -87,21 +114,22 @@ describe("KCLDomController", () => {
     expect(root.addEventListener).toHaveBeenCalledWith(
       "keydown",
       expect.any(Function),
-      { capture: true },
+      { capture: true }
     );
 
     const shift = keydownEvent({ key: "Shift", shiftKey: true });
     listeners.get("keydown")?.(shift);
 
     expect(shift.preventDefault).not.toHaveBeenCalled();
-    expect(controller.getState().activeIndex).toBe(0);
+    expect(controller.getState().activeItemId).toBe("alpha");
   });
 
   it("runs movement commands and prevents matched keyboard events", () => {
-    const controller = createKCLController({ itemCount: 3 });
+    const controller = createKCController({ itemIds: ["alpha", "beta"] });
     const { root, listeners } = rootElement();
-    const domController = new KCLDomController(controller, root, {
-      keymap: createDefaultKCLKeymap(),
+    const domController = new KCDomController(controller, root, {
+      keymap: createDefaultKCCollectionKeymap(),
+      entries: entries(),
     });
     const event = keydownEvent({ key: "ArrowDown" });
 
@@ -110,16 +138,21 @@ describe("KCLDomController", () => {
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
     expect(event.stopPropagation).toHaveBeenCalledTimes(1);
-    expect(controller.getState().activeIndex).toBe(1);
+    expect(controller.getState().activeItemId).toBe("beta");
   });
 
   it("ignores keyboard routing from editable descendants", () => {
     const action = vi.fn();
-    const controller = createKCLController({ itemCount: 2 });
+    const controller = createKCController({ itemIds: ["alpha", "beta"] });
     const { root, listeners } = rootElement();
-    const domController = new KCLDomController(controller, root, {
-      dataList: ["alpha", "beta"],
-      keymap: createDefaultKCLKeymap({ onActivate: action }),
+    const domController = new KCDomController(controller, root, {
+      entries: entries([
+        {
+          sequence: "Space",
+          command: "activate",
+          action,
+        },
+      ]),
     });
     const input = {
       tagName: "INPUT",
@@ -135,212 +168,36 @@ describe("KCLDomController", () => {
 
     expect(action).not.toHaveBeenCalled();
     expect(event.preventDefault).not.toHaveBeenCalled();
-    expect(controller.getState().activeIndex).toBe(0);
+    expect(controller.getState().activeItemId).toBe("alpha");
   });
 
-  it.each([
-    ["checkbox", "checkbox"],
-    ["radio", "radio"],
-    ["button-like input", "button"],
-  ])("routes keyboard events from %s descendants through the list", (_, type) => {
+  it("runs custom actions for the active entry", () => {
     const action = vi.fn();
-    const controller = createKCLController({ itemCount: 2 });
+    const controller = createKCController({
+      itemIds: ["alpha", "beta"],
+      activeItemId: "beta",
+    });
     const { root, listeners } = rootElement();
-    const domController = new KCLDomController(controller, root, {
-      dataList: ["alpha", "beta"],
-      keymap: createDefaultKCLKeymap({ onActivate: action }),
+    const domController = new KCDomController(controller, root, {
+      entries: entries([
+        {
+          sequence: "Enter",
+          command: "activate",
+          action,
+        },
+      ]),
     });
-    const target = {
-      tagName: "INPUT",
-      getAttribute: (name: string) => (name === "type" ? type : null),
-    };
-    const event = keydownEvent({
-      key: " ",
-      target: target as unknown as EventTarget,
-    });
+    const event = keydownEvent({ key: "Enter" });
 
     domController.mount();
     listeners.get("keydown")?.(event);
 
-    expect(action).toHaveBeenCalledTimes(1);
-    expect(event.preventDefault).toHaveBeenCalledTimes(1);
-  });
-
-  it("consumes pending prefixes and invalid continuations", () => {
-    const controller = createKCLController({ itemCount: 1 });
-    const keymap: KCLActionBinding<string>[] = [
-      {
-        sequence: "Ctrl-B Enter",
-        action: "activate",
-      },
-    ];
-    const { root, listeners } = rootElement();
-    const domController = new KCLDomController(controller, root, { keymap });
-
-    domController.mount();
-
-    const prefix = keydownEvent({ key: "b", ctrlKey: true });
-    listeners.get("keydown")?.(prefix);
-    expect(prefix.preventDefault).toHaveBeenCalledTimes(1);
-
-    const invalid = keydownEvent({ key: "z" });
-    listeners.get("keydown")?.(invalid);
-    expect(invalid.preventDefault).toHaveBeenCalledTimes(1);
-  });
-
-  it("runs cell actions with current active row data", () => {
-    const action = vi.fn();
-    const controller = createKCLController({ itemCount: 2, activeIndex: 1 });
-    const { root, listeners } = rootElement();
-    const domController = new KCLDomController(controller, root, {
-      dataList: ["alpha", "beta"],
-      keymap: [
-        {
-          sequence: "Enter",
-          action,
-        },
-      ],
-    });
-
-    domController.mount();
-    listeners.get("keydown")?.(keydownEvent({ key: "Enter" }));
-
     expect(action).toHaveBeenCalledWith({
-      id: "item-1",
+      id: "beta",
       index: 1,
       data: "beta",
       isCollectionFocused: false,
       isItemActive: true,
-      isListFocused: false,
-      isCellActive: true,
     });
-  });
-
-  it("warns on native/custom conflicts and lets native movement win", () => {
-    const action = vi.fn();
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const controller = createKCLController({
-      itemIds: ["compose", "inbox"],
-      activeItemId: "compose",
-    });
-    const { root, listeners } = rootElement();
-    const entries = [
-      {
-        id: "compose",
-        element: null,
-        data: "compose",
-        getActionKeybinds: () => [
-          {
-            sequence: "Down",
-            action,
-          },
-        ],
-      },
-      {
-        id: "inbox",
-        element: null,
-        data: "inbox",
-      },
-    ];
-    const domController = new KCLDomController(controller, root, {
-      keymap: createDefaultKCLKeymap(),
-      entries,
-    });
-
-    domController.mount();
-    domController.update({
-      keymap: createDefaultKCLKeymap(),
-      entries,
-    });
-    listeners.get("keydown")?.(keydownEvent({ key: "ArrowDown" }));
-
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("conflicts with native"),
-    );
-    expect(action).not.toHaveBeenCalled();
-    expect(controller.getState().activeItemId).toBe("inbox");
-
-    warn.mockRestore();
-  });
-
-  it("focuses the root and updates active index from row pointer props", () => {
-    const edit = vi.fn();
-    const controller = createKCLController({ itemCount: 2 });
-    const { root } = rootElement();
-    const domController = new KCLDomController(controller, root, {
-      dataList: ["alpha", "beta"],
-      keymap: createDefaultKCLKeymap({ onEdit: edit }),
-    });
-
-    domController.mount();
-    const row = domController.getRowProps(1);
-    const pointer = { preventDefault: vi.fn(), target: root };
-    const click = { target: root };
-
-    row.onPointerDown(pointer);
-    row.onClick(click);
-
-    expect(pointer.preventDefault).toHaveBeenCalledTimes(1);
-    expect(root.focus).toHaveBeenCalledTimes(1);
-    expect(controller.getState().activeIndex).toBe(1);
-
-    row.onDoubleClick(click);
-    expect(edit).toHaveBeenCalledWith({
-      id: "item-1",
-      index: 1,
-      data: "beta",
-      isCollectionFocused: false,
-      isItemActive: true,
-      isListFocused: false,
-      isCellActive: true,
-    });
-  });
-
-  it.each([
-    ["checkbox", "checkbox"],
-    ["radio", "radio"],
-    ["button-like input", "button"],
-  ])("keeps %s row descendants controlled by the list root", (_, type) => {
-    const controller = createKCLController({ itemCount: 2 });
-    const { root } = rootElement();
-    const domController = new KCLDomController(controller, root);
-    const target = {
-      tagName: "INPUT",
-      getAttribute: (name: string) => (name === "type" ? type : null),
-    } as unknown as EventTarget;
-
-    domController.mount();
-    const row = domController.getRowProps(1);
-    const pointer = { preventDefault: vi.fn(), target };
-    const click = { target };
-
-    row.onPointerDown(pointer);
-    row.onClick(click);
-
-    expect(pointer.preventDefault).toHaveBeenCalledTimes(1);
-    expect(root.focus).toHaveBeenCalledTimes(1);
-    expect(controller.getState().activeIndex).toBe(1);
-  });
-
-  it("allows text input row descendants to keep focus and skip row selection", () => {
-    const controller = createKCLController({ itemCount: 2 });
-    const { root } = rootElement();
-    const domController = new KCLDomController(controller, root);
-    const input = {
-      tagName: "INPUT",
-      getAttribute: (name: string) => (name === "type" ? "text" : null),
-    } as unknown as EventTarget;
-
-    domController.mount();
-    const row = domController.getRowProps(1);
-    const pointer = { preventDefault: vi.fn(), target: input };
-    const click = { target: input };
-
-    row.onPointerDown(pointer);
-    row.onClick(click);
-
-    expect(pointer.preventDefault).not.toHaveBeenCalled();
-    expect(root.focus).not.toHaveBeenCalled();
-    expect(controller.getState().activeIndex).toBe(0);
   });
 });

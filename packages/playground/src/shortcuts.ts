@@ -4,14 +4,14 @@ import {
   type PaneShortcutValues,
 } from "@focusgrid/core";
 import {
-  createDefaultKCLShortcuts,
-  defaultKCLShortcutActions,
-  type KCLShortcutValues,
+  createDefaultKCShortcuts,
+  defaultKCShortcutActions,
+  type KCShortcutValues,
 } from "@focusgrid/kcc-core";
 import { normalizeKeySequenceInput } from "@focusgrid/shortcut-engine";
 
 const shortcutStorageKey = "focusgrid.playground.shortcuts";
-const kclShortcutStorageKey = "focusgrid.playground.kcl-shortcuts";
+const kcShortcutStorageKey = "focusgrid.playground.kc-shortcuts";
 
 export function loadSavedShortcuts(): PaneShortcutValues {
   const defaults = createDefaultPaneShortcuts();
@@ -38,7 +38,7 @@ export function loadSavedShortcuts(): PaneShortcutValues {
             : action.defaultSequence;
         return shortcuts;
       },
-      { ...defaults },
+      { ...defaults }
     );
   } catch {
     return defaults;
@@ -53,11 +53,11 @@ export function saveShortcuts(shortcuts: PaneShortcutValues): void {
   }
 }
 
-export function loadSavedKCLShortcuts(): KCLShortcutValues {
-  const defaults = createDefaultKCLShortcuts();
+export function loadSavedKCShortcuts(): KCShortcutValues {
+  const defaults = createDefaultKCShortcuts();
 
   try {
-    const saved = window.localStorage.getItem(kclShortcutStorageKey);
+    const saved = window.localStorage.getItem(kcShortcutStorageKey);
 
     if (!saved) {
       return defaults;
@@ -69,7 +69,7 @@ export function loadSavedKCLShortcuts(): KCLShortcutValues {
       return defaults;
     }
 
-    return defaultKCLShortcutActions.reduce<KCLShortcutValues>(
+    return defaultKCShortcutActions.reduce<KCShortcutValues>(
       (shortcuts, action) => {
         const value = (parsed as Record<string, unknown>)[action.id];
         shortcuts[action.id] =
@@ -78,18 +78,18 @@ export function loadSavedKCLShortcuts(): KCLShortcutValues {
             : action.defaultSequence;
         return shortcuts;
       },
-      { ...defaults },
+      { ...defaults }
     );
   } catch {
     return defaults;
   }
 }
 
-export function saveKCLShortcuts(shortcuts: KCLShortcutValues): void {
+export function saveKCShortcuts(shortcuts: KCShortcutValues): void {
   try {
     window.localStorage.setItem(
-      kclShortcutStorageKey,
-      JSON.stringify(shortcuts),
+      kcShortcutStorageKey,
+      JSON.stringify(shortcuts)
     );
   } catch {
     // The playground should keep working when storage is unavailable.
