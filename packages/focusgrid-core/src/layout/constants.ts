@@ -1,1 +1,1 @@
-export const HANDLE_SIZE = 6;
+export const HANDLE_SIZE = 3;

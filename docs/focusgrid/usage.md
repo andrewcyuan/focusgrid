@@ -136,7 +136,7 @@ controller.api.wrapRootInSplit({
   side,
   minWidth: side === "left" || side === "right" ? 180 : undefined,
   minHeight: side === "up" || side === "down" ? 120 : undefined,
-  noRemove: side === "left",
+  canRemove: side !== "left",
   preserveActivePane: true,
 });
 
@@ -147,25 +147,25 @@ Keyboard shortcuts use commands through the keymap. UI controls use
 `controller.api`. Keeping those paths separate makes it clear which behavior is
 scriptable and which behavior is human input.
 
-Pane command guards can be set on pane nodes, on `paneDefaults`, or when
+Pane command capabilities can be set on pane nodes, on `paneDefaults`, or when
 creating new panes:
 
 ```ts
 const controller = createFocusGridController(initialState, {
   directionalFocusOverflow: true,
   paneDefaults: {
-    noRemove: true,
+    canRemove: false,
   },
 });
 
 controller.api.split("editor", {
   side: "right",
   newPaneId: "preview",
-  noFocus: true,
-  noRemove: false,
+  canFocus: false,
+  canRemove: true,
 });
 ```
 
-The default keyboard commands honor those guards. Direct `controller.api` calls
+The default keyboard commands honor those capabilities. Direct `controller.api` calls
 remain programmatic operations and can still focus, resize, split, remove, or
-swap guarded panes.
+swap panes that have disabled default command capabilities.

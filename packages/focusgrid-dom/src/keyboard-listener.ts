@@ -1,7 +1,7 @@
 import {
   DEFAULT_PANE_RESIZE_DELTA_PX,
   findPaneNode,
-  paneBlocksResize,
+  paneAllowsResize,
   type KeyBinding,
   type PaneResizeDirection,
   type FocusGridController,
@@ -16,12 +16,10 @@ import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
 export type KeyboardListenerOptions = {
   keymap?: KeyBinding[];
-  mode?: "normal" | "insert" | "resize";
 };
 
 export class KeyboardListener {
   private readonly router: KeyRouter<ShortcutContext>;
-  private readonly mode: "normal" | "insert" | "resize";
   private mounted = false;
   private pendingResizeFrame: FrameRequest | null = null;
   private readonly pendingResizeCommands = new Map<
@@ -33,7 +31,6 @@ export class KeyboardListener {
       context: {
         activePaneId: this.controller.getState().activePaneId,
         inputFocused: isEditableTarget(event.target),
-        mode: this.mode,
       },
       onMatch: (result) => {
         if (this.scheduleResizeCommand(result.action, result.args)) {
@@ -55,7 +52,6 @@ export class KeyboardListener {
     options: KeyboardListenerOptions = {},
   ) {
     this.router = new KeyRouter(options.keymap ?? []);
-    this.mode = options.mode ?? "normal";
   }
 
   mount(): void {
@@ -68,6 +64,10 @@ export class KeyboardListener {
   }
 
   destroy(): void {
+    if (!this.mounted) {
+      return;
+    }
+
     this.rootEl.removeEventListener("keydown", this.onKey, { capture: true });
     this.cancelPendingResizeFrame();
     this.mounted = false;
@@ -87,7 +87,7 @@ export class KeyboardListener {
     }
 
     if (
-      paneBlocksResize(
+      !paneAllowsResize(
         findPaneNode(this.controller.getState(), paneId),
         direction,
       )

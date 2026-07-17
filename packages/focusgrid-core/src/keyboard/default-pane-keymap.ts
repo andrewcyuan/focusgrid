@@ -8,7 +8,6 @@ export type ShortcutContext = {
   activePaneId: PaneId | null;
   activePaneType?: string;
   inputFocused: boolean;
-  mode: "normal" | "insert" | "resize";
 };
 
 export type KeyBinding<
@@ -151,6 +150,16 @@ export type PaneShortcutValues = Record<PaneShortcutId, string>;
 export type CreateDefaultPaneKeymapOptions = {
   overrides?: PaneShortcutOverrides;
 };
+export type PaneShortcutValidationError = {
+  id: PaneShortcutId;
+  command: DefaultPaneCommand;
+  sequence: string;
+  message: string;
+};
+export type CreateDefaultPaneKeymapResult = {
+  keymap: KeyBinding<DefaultPaneCommand>[];
+  errors: PaneShortcutValidationError[];
+};
 
 export function createDefaultPaneShortcuts(): PaneShortcutValues {
   return Object.fromEntries(
@@ -163,32 +172,43 @@ export function createDefaultPaneShortcuts(): PaneShortcutValues {
 
 export function createDefaultPaneKeymap(
   options: CreateDefaultPaneKeymapOptions = {},
-): KeyBinding<DefaultPaneCommand>[] {
+): CreateDefaultPaneKeymapResult {
   const shortcuts = options.overrides ?? {};
+  const keymap: KeyBinding<DefaultPaneCommand>[] = [];
+  const errors: PaneShortcutValidationError[] = [];
 
-  return defaultPaneShortcutActions.flatMap((action) => {
+  for (const action of defaultPaneShortcutActions) {
     const sequence = (shortcuts[action.id] ?? action.defaultSequence).trim();
     const args = "args" in action ? action.args : undefined;
     const repeat = "repeat" in action ? action.repeat : undefined;
 
     if (!sequence) {
-      return [];
+      continue;
     }
 
     const validation = validateKeySequenceInput(sequence);
 
     if (!validation.ok) {
-      return [];
+      errors.push({
+        id: action.id,
+        command: action.command,
+        sequence,
+        message: validation.error,
+      });
+      continue;
     }
 
-    return [
-      {
-        sequence: validation.sequence,
-        action: action.command,
-        args,
-        preventDefault: true,
-        repeat,
-      },
-    ];
-  });
+    keymap.push({
+      sequence: validation.sequence,
+      action: action.command,
+      args,
+      preventDefault: true,
+      repeat,
+    });
+  }
+
+  return {
+    keymap,
+    errors,
+  };
 }

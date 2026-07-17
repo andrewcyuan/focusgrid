@@ -14,7 +14,7 @@ const controllerWithMinimums = createFocusGridController(initialState, {
   paneDefaults: {
     minWidth: 240,
     minHeight: 160,
-    noRemove: true,
+    canRemove: false,
   },
 });
 ```
@@ -30,14 +30,14 @@ type PaneResizeDirection = "left" | "right" | "up" | "down";
 type PaneDefaults = {
   minWidth?: number;
   minHeight?: number;
-  noResizeX?: boolean;
-  noResizeY?: boolean;
-  noRemove?: boolean;
-  noSplitHorizontal?: boolean;
-  noSplitVertical?: boolean;
-  noSwapX?: boolean;
-  noSwapY?: boolean;
-  noFocus?: boolean;
+  canResizeX?: boolean;
+  canResizeY?: boolean;
+  canRemove?: boolean;
+  canSplitHorizontal?: boolean;
+  canSplitVertical?: boolean;
+  canSwapX?: boolean;
+  canSwapY?: boolean;
+  canFocus?: boolean;
 };
 
 type CreateFocusGridControllerOptions = {
@@ -49,15 +49,18 @@ type CreateFocusGridControllerOptions = {
 type SplitPaneOptions = {
   side: PaneSplitSide;
   newPaneId?: PaneId;
+  minWidth?: number;
+  minHeight?: number;
+  data?: unknown;
   preserveActivePane?: boolean;
-  noResizeX?: boolean;
-  noResizeY?: boolean;
-  noRemove?: boolean;
-  noSplitHorizontal?: boolean;
-  noSplitVertical?: boolean;
-  noSwapX?: boolean;
-  noSwapY?: boolean;
-  noFocus?: boolean;
+  canResizeX?: boolean;
+  canResizeY?: boolean;
+  canRemove?: boolean;
+  canSplitHorizontal?: boolean;
+  canSplitVertical?: boolean;
+  canSwapX?: boolean;
+  canSwapY?: boolean;
+  canFocus?: boolean;
 };
 
 type WrapRootInSplitOptions = {
@@ -67,14 +70,14 @@ type WrapRootInSplitOptions = {
   minHeight?: number;
   data?: unknown;
   preserveActivePane?: boolean;
-  noResizeX?: boolean;
-  noResizeY?: boolean;
-  noRemove?: boolean;
-  noSplitHorizontal?: boolean;
-  noSplitVertical?: boolean;
-  noSwapX?: boolean;
-  noSwapY?: boolean;
-  noFocus?: boolean;
+  canResizeX?: boolean;
+  canResizeY?: boolean;
+  canRemove?: boolean;
+  canSplitHorizontal?: boolean;
+  canSplitVertical?: boolean;
+  canSwapX?: boolean;
+  canSwapY?: boolean;
+  canFocus?: boolean;
 };
 
 type ResizePaneOptions = {
@@ -83,14 +86,14 @@ type ResizePaneOptions = {
 };
 
 type UpdatePaneCommandGuardsOptions = {
-  noResizeX?: boolean;
-  noResizeY?: boolean;
-  noRemove?: boolean;
-  noSplitHorizontal?: boolean;
-  noSplitVertical?: boolean;
-  noSwapX?: boolean;
-  noSwapY?: boolean;
-  noFocus?: boolean;
+  canResizeX?: boolean;
+  canResizeY?: boolean;
+  canRemove?: boolean;
+  canSplitHorizontal?: boolean;
+  canSplitVertical?: boolean;
+  canSwapX?: boolean;
+  canSwapY?: boolean;
+  canFocus?: boolean;
 };
 ```
 
@@ -98,20 +101,23 @@ type UpdatePaneCommandGuardsOptions = {
 field. Defaults are applied to the initial layout, inherited by panes created
 through `controller.api.split()`, and used for panes inserted through
 `controller.api.wrapRootInSplit()` unless that call supplies explicit values.
-Explicit `false` pane guard values override `true` defaults.
+Omitted capability values are allowed. Explicit `false` values block the
+matching default command, and explicit `true` pane values override `false`
+defaults.
 
-Pane command guards affect Focusgrid's default commands and keyboard behavior,
-not direct `controller.api` calls:
+Pane command capabilities affect Focusgrid's default commands and keyboard
+behavior, not direct `controller.api` calls:
 
-- `noResizeX` / `noResizeY`: block default left/right or up/down resize commands.
-- `noRemove`: blocks the default close command.
-- `noSplitHorizontal` / `noSplitVertical`: block default split-right or split-down commands.
-- `noSwapX` / `noSwapY`: block default swaps when either the active pane or target pane has the matching guard.
-- `noFocus`: prevents default directional focus commands from focusing that pane.
+- `canResizeX` / `canResizeY`: allow default left/right or up/down resize commands.
+- `canRemove`: allows the default close command.
+- `canSplitHorizontal` / `canSplitVertical`: allow default split-right or split-down commands.
+- `canSwapX` / `canSwapY`: allow default swaps when both the active pane and target pane allow the matching axis.
+- `canFocus`: allows default directional focus commands to focus that pane.
 
 `directionalFocusOverflow` defaults to `false`. When set to `true`, default
 directional focus commands wrap from a grid edge to the opposite side. Panes
-with `noFocus` are skipped during both normal and overflow focus search.
+with `canFocus: false` are skipped during both normal and overflow focus
+search.
 
 ## `controller.api.split(paneId, options)`
 
@@ -124,6 +130,8 @@ Splits `paneId` and inserts a new pane on `options.side`. If
 the new pane id when the split succeeds and `null` when `paneId` does not
 exist or `options.newPaneId` already belongs to another pane. By default the
 new pane becomes active, unless `preserveActivePane: true` is provided.
+`minWidth`, `minHeight`, and `data` are copied onto the inserted pane when
+provided.
 
 ## `controller.api.wrapRootInSplit(options)`
 
@@ -190,6 +198,30 @@ updatePaneCommandGuards(
 ): boolean;
 ```
 
-Updates command guard fields on an existing pane. It returns `true` when a
-guard changes and `false` when the pane does not exist or the supplied values
-match the current pane.
+Updates command capability fields on an existing pane. It returns `true` when a
+capability changes and `false` when the pane does not exist or the supplied
+values match the current pane.
+
+## `controller.getPaneData(paneId)`
+
+```ts
+getPaneData<T = unknown>(paneId: PaneId): T | undefined;
+```
+
+Returns the pane's `data` value, or `undefined` when the pane does not exist.
+
+## `controller.api.setPaneData(paneId, data)`
+
+```ts
+setPaneData(paneId: PaneId, data: unknown): boolean;
+```
+
+Updates an existing pane's `data` value. It returns `true` when the value
+changes and `false` when the pane does not exist or the value is unchanged.
+
+## State validation
+
+`createFocusGridController()` and `deserializeFocusGridControllerState()` throw
+`FocusGridStateValidationException` when public state is invalid. Use
+`validateFocusGridControllerState(input)` to inspect structured validation
+errors without throwing.

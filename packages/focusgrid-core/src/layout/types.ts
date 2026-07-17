@@ -21,14 +21,14 @@ export type PaneNode = {
   paneId: PaneId;
   minWidth?: number;
   minHeight?: number;
-  noResizeX?: boolean;
-  noResizeY?: boolean;
-  noRemove?: boolean;
-  noSplitHorizontal?: boolean;
-  noSplitVertical?: boolean;
-  noSwapX?: boolean;
-  noSwapY?: boolean;
-  noFocus?: boolean;
+  canResizeX?: boolean;
+  canResizeY?: boolean;
+  canRemove?: boolean;
+  canSplitHorizontal?: boolean;
+  canSplitVertical?: boolean;
+  canSwapX?: boolean;
+  canSwapY?: boolean;
+  canFocus?: boolean;
   data?: unknown;
 };
 

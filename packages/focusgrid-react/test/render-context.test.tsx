@@ -58,13 +58,13 @@ describe("pane render context", () => {
     expect(contexts).toEqual([
       {
         paneId: "left",
-        rect: { x: 0, y: 0, width: 397, height: 600 },
+        rect: { x: 0, y: 0, width: 398, height: 600 },
         active: false,
         controller,
       },
       {
         paneId: "right",
-        rect: { x: 403, y: 0, width: 397, height: 600 },
+        rect: { x: 401, y: 0, width: 399, height: 600 },
         active: true,
         controller,
       },

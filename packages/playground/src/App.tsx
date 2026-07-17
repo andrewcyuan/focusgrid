@@ -4,7 +4,7 @@ import {
   paneSplitSides,
   findPaneNode,
   type LayoutNode,
-  type PaneCommandGuardInput,
+  type PaneCommandCapabilityInput,
   type PaneShortcutId,
   type PaneShortcutValues,
   type FocusGridController,
@@ -102,7 +102,7 @@ function FocusGridPlayground() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
-    () => createDefaultPaneKeymap({ overrides: shortcuts }),
+    () => createDefaultPaneKeymap({ overrides: shortcuts }).keymap,
     [shortcuts]
   );
 
@@ -151,7 +151,7 @@ function KCPlayground() {
     loadSavedShortcuts()
   );
   const focusGridKeymap = useMemo(
-    () => createDefaultPaneKeymap({ overrides: focusGridShortcuts }),
+    () => createDefaultPaneKeymap({ overrides: focusGridShortcuts }).keymap,
     [focusGridShortcuts]
   );
 
@@ -318,8 +318,8 @@ function Toolbar({
     setSwapTargetId(swapTargets[0] ?? "");
   }, [swapTargetId, swapTargets]);
 
-  const toggleActivePaneGuard = useCallback(
-    (key: PaneCommandGuardKey) => {
+  const toggleActivePaneCapability = useCallback(
+    (key: PaneCommandCapabilityKey) => {
       const activePaneId = state.activePaneId;
 
       if (!activePaneId || !activePane) {
@@ -327,7 +327,7 @@ function Toolbar({
       }
 
       controller.api.updatePaneCommandGuards(activePaneId, {
-        [key]: !activePane[key],
+        [key]: !(activePane[key] ?? true),
       });
     },
     [activePane, controller, state.activePaneId]
@@ -393,18 +393,22 @@ function Toolbar({
             </button>
           </div>
         </details>
-        <div className="GuardToggles" aria-label="Active pane command guards">
-          {paneGuardToggles.map((guard) => (
+        <div className="GuardToggles" aria-label="Active pane command capabilities">
+          {paneCapabilityToggles.map((capability) => (
             <button
               className="GuardToggle"
-              data-active={activePane?.[guard.key] === true}
-              aria-pressed={activePane?.[guard.key] === true}
+              data-active={
+                activePane ? activePane[capability.key] !== false : false
+              }
+              aria-pressed={
+                activePane ? activePane[capability.key] !== false : false
+              }
               disabled={!activePane}
-              key={guard.key}
+              key={capability.key}
               type="button"
-              onClick={() => toggleActivePaneGuard(guard.key)}
+              onClick={() => toggleActivePaneCapability(capability.key)}
             >
-              {guard.label}
+              {capability.label}
             </button>
           ))}
         </div>
@@ -419,17 +423,17 @@ function Toolbar({
   );
 }
 
-type PaneCommandGuardKey = keyof PaneCommandGuardInput;
+type PaneCommandCapabilityKey = keyof PaneCommandCapabilityInput;
 
-const paneGuardToggles: { key: PaneCommandGuardKey; label: string }[] = [
-  { key: "noResizeX", label: "No resize X" },
-  { key: "noResizeY", label: "No resize Y" },
-  { key: "noRemove", label: "No remove" },
-  { key: "noSplitHorizontal", label: "No split right" },
-  { key: "noSplitVertical", label: "No split down" },
-  { key: "noSwapX", label: "No swap X" },
-  { key: "noSwapY", label: "No swap Y" },
-  { key: "noFocus", label: "No focus" },
+const paneCapabilityToggles: { key: PaneCommandCapabilityKey; label: string }[] = [
+  { key: "canResizeX", label: "Can resize X" },
+  { key: "canResizeY", label: "Can resize Y" },
+  { key: "canRemove", label: "Can remove" },
+  { key: "canSplitHorizontal", label: "Can split right" },
+  { key: "canSplitVertical", label: "Can split down" },
+  { key: "canSwapX", label: "Can swap X" },
+  { key: "canSwapY", label: "Can swap Y" },
+  { key: "canFocus", label: "Can focus" },
 ];
 
 function collectPaneIds(root: LayoutNode): string[] {

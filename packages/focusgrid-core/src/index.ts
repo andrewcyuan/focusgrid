@@ -13,8 +13,20 @@ export {
 } from "./commands/registry";
 export type { PaneResizeCommandArgs } from "./commands/registry";
 export type { CommandContext, CommandHandler } from "./commands/types";
-export { findPaneNode, paneBlocksResize } from "./pane-guards";
-export type { PaneCommandGuards, PaneCommandGuardInput } from "./pane-guards";
+export {
+  findPaneNode,
+  getPaneCommandCapabilities,
+  paneAllowsFocus,
+  paneAllowsResize,
+  paneAllowsSplit,
+  paneAllowsSwap,
+} from "./pane-guards";
+export type {
+  PaneCommandCapabilities,
+  PaneCommandCapabilityInput,
+  PaneCommandGuards,
+  PaneCommandGuardInput,
+} from "./pane-guards";
 
 export {
   cardinalDirections,
@@ -33,6 +45,14 @@ export {
   deserializeFocusGridControllerState,
   serializeFocusGridControllerState,
 } from "./layout/serialize";
+export {
+  FocusGridStateValidationException,
+  validateFocusGridControllerState,
+} from "./validation";
+export type {
+  FocusGridStateValidationError,
+  FocusGridStateValidationResult,
+} from "./validation";
 
 export {
   createKeyStroke,
@@ -56,10 +76,12 @@ export {
 } from "./keyboard/default-pane-keymap";
 export type {
   DefaultPaneCommand,
+  CreateDefaultPaneKeymapResult,
   CreateDefaultPaneKeymapOptions,
   PaneShortcutAction,
   PaneShortcutId,
   PaneShortcutOverrides,
+  PaneShortcutValidationError,
   PaneShortcutValues,
   KeyBinding,
   ShortcutContext,

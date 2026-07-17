@@ -17,7 +17,7 @@ import type {
   SplitNode,
   FocusGridControllerState,
 } from "./types";
-import type { PaneCommandGuardInput } from "../pane-guards";
+import type { PaneCommandCapabilityInput } from "../pane-guards";
 
 export function buildLayoutIndex(root: LayoutNode): LayoutIndex {
   const index: LayoutIndex = {
@@ -140,13 +140,16 @@ export function findPaneInDirection(
   return null;
 }
 
-export type SplitPaneOptions = PaneCommandGuardInput & {
+export type SplitPaneOptions = PaneCommandCapabilityInput & {
   side: PaneSplitSide;
   newPaneId?: PaneId;
+  minWidth?: number;
+  minHeight?: number;
+  data?: unknown;
   preserveActivePane?: boolean;
 };
 
-export type WrapRootInSplitOptions = PaneCommandGuardInput & {
+export type WrapRootInSplitOptions = PaneCommandCapabilityInput & {
   side: PaneSplitSide;
   newPaneId?: PaneId;
   minWidth?: number;
@@ -160,7 +163,7 @@ export type ResizePaneOptions = {
   deltaPx: number;
 };
 
-export type UpdatePaneCommandGuardsOptions = PaneCommandGuardInput;
+export type UpdatePaneCommandGuardsOptions = PaneCommandCapabilityInput;
 
 export function splitPane(
   state: FocusGridControllerState,
@@ -192,16 +195,17 @@ export function splitPane(
       kind: "pane",
       id: createId("node"),
       paneId: newPaneId,
-      minWidth: node.minWidth,
-      minHeight: node.minHeight,
-      noResizeX: options.noResizeX,
-      noResizeY: options.noResizeY,
-      noRemove: options.noRemove,
-      noSplitHorizontal: options.noSplitHorizontal,
-      noSplitVertical: options.noSplitVertical,
-      noSwapX: options.noSwapX,
-      noSwapY: options.noSwapY,
-      noFocus: options.noFocus,
+      minWidth: options.minWidth ?? node.minWidth,
+      minHeight: options.minHeight ?? node.minHeight,
+      canResizeX: options.canResizeX,
+      canResizeY: options.canResizeY,
+      canRemove: options.canRemove,
+      canSplitHorizontal: options.canSplitHorizontal,
+      canSplitVertical: options.canSplitVertical,
+      canSwapX: options.canSwapX,
+      canSwapY: options.canSwapY,
+      canFocus: options.canFocus,
+      data: options.data,
     };
 
     return {
@@ -248,14 +252,14 @@ export function wrapRootInSplit(
     paneId: newPaneId,
     minWidth: options.minWidth,
     minHeight: options.minHeight,
-    noResizeX: options.noResizeX,
-    noResizeY: options.noResizeY,
-    noRemove: options.noRemove,
-    noSplitHorizontal: options.noSplitHorizontal,
-    noSplitVertical: options.noSplitVertical,
-    noSwapX: options.noSwapX,
-    noSwapY: options.noSwapY,
-    noFocus: options.noFocus,
+    canResizeX: options.canResizeX,
+    canResizeY: options.canResizeY,
+    canRemove: options.canRemove,
+    canSplitHorizontal: options.canSplitHorizontal,
+    canSplitVertical: options.canSplitVertical,
+    canSwapX: options.canSwapX,
+    canSwapY: options.canSwapY,
+    canFocus: options.canFocus,
     data: options.data,
   };
   const direction = splitSideToDirection(options.side);
@@ -325,14 +329,14 @@ export function updatePaneCommandGuards(
     };
 
     if (
-      nextPane.noResizeX === node.noResizeX &&
-      nextPane.noResizeY === node.noResizeY &&
-      nextPane.noRemove === node.noRemove &&
-      nextPane.noSplitHorizontal === node.noSplitHorizontal &&
-      nextPane.noSplitVertical === node.noSplitVertical &&
-      nextPane.noSwapX === node.noSwapX &&
-      nextPane.noSwapY === node.noSwapY &&
-      nextPane.noFocus === node.noFocus
+      nextPane.canResizeX === node.canResizeX &&
+      nextPane.canResizeY === node.canResizeY &&
+      nextPane.canRemove === node.canRemove &&
+      nextPane.canSplitHorizontal === node.canSplitHorizontal &&
+      nextPane.canSplitVertical === node.canSplitVertical &&
+      nextPane.canSwapX === node.canSwapX &&
+      nextPane.canSwapY === node.canSwapY &&
+      nextPane.canFocus === node.canFocus
     ) {
       return node;
     }

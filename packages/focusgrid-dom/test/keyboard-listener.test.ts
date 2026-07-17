@@ -8,6 +8,7 @@ import {
   normalizeKeyboardEvent,
   parseKeySequence,
 } from "@focusgrid/shortcut-engine";
+import { FocusGridDomController } from "../src/controller";
 import { KeyboardListener } from "../src/keyboard-listener";
 import { PointerResizeController } from "../src/pointer-resize";
 
@@ -257,7 +258,7 @@ describe("KeyboardListener resize batching", () => {
           kind: "pane",
           id: "left-node",
           paneId: "left",
-          noResizeX: true,
+          canResizeX: false,
         },
         state.root.children[1]!,
       ],
@@ -306,7 +307,7 @@ describe("KeyboardListener resize batching", () => {
           kind: "pane",
           id: "left-node",
           paneId: "left",
-          noResizeY: true,
+          canResizeY: false,
         },
         state.root.children[1]!,
       ],
@@ -371,6 +372,46 @@ describe("KeyboardListener resize batching", () => {
     expect(run).toHaveBeenCalledWith("pane.close", controller, undefined);
 
     listener.destroy();
+  });
+});
+
+describe("FocusGridDomController lifecycle", () => {
+  it("mounts and destroys keyboard and resize observers idempotently", () => {
+    const observe = vi.fn();
+    const disconnect = vi.fn();
+    const ResizeObserverMock = vi.fn().mockImplementation(() => ({
+      observe,
+      disconnect,
+    })) as unknown as typeof ResizeObserver;
+    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+
+    const controller = createFocusGridController(controllerState());
+    const root = {
+      tabIndex: -1,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      getBoundingClientRect: vi.fn(() => ({
+        width: 1000,
+        height: 600,
+      })),
+    } as unknown as HTMLElement;
+    const domController = new FocusGridDomController(controller, root, {
+      keymap: [],
+    });
+
+    domController.mount();
+    domController.mount();
+
+    expect(root.tabIndex).toBe(0);
+    expect(root.addEventListener).toHaveBeenCalledTimes(1);
+    expect(observe).toHaveBeenCalledTimes(1);
+    expect(observe).toHaveBeenCalledWith(root);
+
+    domController.destroy();
+    domController.destroy();
+
+    expect(root.removeEventListener).toHaveBeenCalledTimes(1);
+    expect(disconnect).toHaveBeenCalledTimes(1);
   });
 });
 

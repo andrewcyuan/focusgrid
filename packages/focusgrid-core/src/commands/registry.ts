@@ -9,10 +9,10 @@ import type { DefaultPaneCommand } from "../keyboard/default-pane-keymap";
 import {
   findPaneForFocusCommand,
   findPaneNode,
-  getPaneCommandGuards,
-  paneBlocksResize,
-  paneBlocksSplit,
-  paneBlocksSwap,
+  getPaneCommandCapabilities,
+  paneAllowsResize,
+  paneAllowsSplit,
+  paneAllowsSwap,
 } from "../pane-guards";
 import type { CommandHandler } from "./types";
 
@@ -26,10 +26,13 @@ export class CommandRegistry {
   private commands = new Map<string, CommandHandler>();
 
   register<TArgs>(name: string, handler: CommandHandler<TArgs>): () => void {
-    this.commands.set(name, handler as CommandHandler);
+    const registeredHandler = handler as CommandHandler;
+    this.commands.set(name, registeredHandler);
 
     return () => {
-      this.commands.delete(name);
+      if (this.commands.get(name) === registeredHandler) {
+        this.commands.delete(name);
+      }
     };
   }
 
@@ -58,7 +61,7 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   commands.register("pane.splitRight", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
-    if (paneBlocksSplit(findPaneNode(state, active), "right")) return;
+    if (!paneAllowsSplit(findPaneNode(state, active), "right")) return;
 
     controller.api.split(active, { side: "right" });
   });
@@ -66,7 +69,7 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   commands.register("pane.splitDown", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
-    if (paneBlocksSplit(findPaneNode(state, active), "down")) return;
+    if (!paneAllowsSplit(findPaneNode(state, active), "down")) return;
 
     controller.api.split(active, { side: "down" });
   });
@@ -74,7 +77,9 @@ export function createDefaultCommandRegistry(): CommandRegistry {
   commands.register("pane.close", ({ controller, state }) => {
     const active = state.activePaneId;
     if (!active) return;
-    if (getPaneCommandGuards(findPaneNode(state, active)).noRemove) return;
+    if (!getPaneCommandCapabilities(findPaneNode(state, active)).canRemove) {
+      return;
+    }
 
     controller.api.remove(active);
   });
@@ -126,8 +131,8 @@ function registerPaneSwapCommand(
     const target = findPaneInDirection(controller.getState(), active, direction);
 
     if (!target) return;
-    if (paneBlocksSwap(findPaneNode(state, active), direction)) return;
-    if (paneBlocksSwap(findPaneNode(state, target), direction)) return;
+    if (!paneAllowsSwap(findPaneNode(state, active), direction)) return;
+    if (!paneAllowsSwap(findPaneNode(state, target), direction)) return;
 
     controller.api.swap(active, target);
   });
@@ -141,7 +146,7 @@ function registerPaneResizeCommand(
   commands.register<PaneResizeCommandArgs>(name, ({ controller, state }, args) => {
     const active = state.activePaneId;
     if (!active) return;
-    if (paneBlocksResize(findPaneNode(state, active), direction)) return;
+    if (!paneAllowsResize(findPaneNode(state, active), direction)) return;
 
     controller.api.resize(active, {
       direction,

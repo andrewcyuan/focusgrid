@@ -11,44 +11,48 @@ import type {
   PaneSwapDirection,
 } from "./state";
 
-export type PaneCommandGuards = {
-  noResizeX: boolean;
-  noResizeY: boolean;
-  noRemove: boolean;
-  noSplitHorizontal: boolean;
-  noSplitVertical: boolean;
-  noSwapX: boolean;
-  noSwapY: boolean;
-  noFocus: boolean;
+export type PaneCommandCapabilities = {
+  canResizeX: boolean;
+  canResizeY: boolean;
+  canRemove: boolean;
+  canSplitHorizontal: boolean;
+  canSplitVertical: boolean;
+  canSwapX: boolean;
+  canSwapY: boolean;
+  canFocus: boolean;
 };
 
-export const emptyPaneCommandGuards: PaneCommandGuards = {
-  noResizeX: false,
-  noResizeY: false,
-  noRemove: false,
-  noSplitHorizontal: false,
-  noSplitVertical: false,
-  noSwapX: false,
-  noSwapY: false,
-  noFocus: false,
+export const defaultPaneCommandCapabilities: PaneCommandCapabilities = {
+  canResizeX: true,
+  canResizeY: true,
+  canRemove: true,
+  canSplitHorizontal: true,
+  canSplitVertical: true,
+  canSwapX: true,
+  canSwapY: true,
+  canFocus: true,
 };
 
-export type PaneCommandGuardInput = Partial<PaneCommandGuards>;
+export type PaneCommandCapabilityInput = Partial<PaneCommandCapabilities>;
+export type PaneCommandGuards = PaneCommandCapabilities;
+export type PaneCommandGuardInput = PaneCommandCapabilityInput;
 
-export function getPaneCommandGuards(pane: PaneNode | null): PaneCommandGuards {
+export function getPaneCommandCapabilities(
+  pane: PaneNode | null,
+): PaneCommandCapabilities {
   if (!pane) {
-    return emptyPaneCommandGuards;
+    return defaultPaneCommandCapabilities;
   }
 
   return {
-    noResizeX: pane.noResizeX ?? false,
-    noResizeY: pane.noResizeY ?? false,
-    noRemove: pane.noRemove ?? false,
-    noSplitHorizontal: pane.noSplitHorizontal ?? false,
-    noSplitVertical: pane.noSplitVertical ?? false,
-    noSwapX: pane.noSwapX ?? false,
-    noSwapY: pane.noSwapY ?? false,
-    noFocus: pane.noFocus ?? false,
+    canResizeX: pane.canResizeX ?? true,
+    canResizeY: pane.canResizeY ?? true,
+    canRemove: pane.canRemove ?? true,
+    canSplitHorizontal: pane.canSplitHorizontal ?? true,
+    canSplitVertical: pane.canSplitVertical ?? true,
+    canSwapX: pane.canSwapX ?? true,
+    canSwapY: pane.canSwapY ?? true,
+    canFocus: pane.canFocus ?? true,
   };
 }
 
@@ -63,30 +67,38 @@ export function findPaneNode(
   return buildLayoutIndex(state.root).paneNodeByPaneId.get(paneId) ?? null;
 }
 
-export function paneBlocksResize(
+export function paneAllowsResize(
   pane: PaneNode | null,
   direction: PaneResizeDirection,
 ): boolean {
-  const guards = getPaneCommandGuards(pane);
-  return isHorizontalDirection(direction) ? guards.noResizeX : guards.noResizeY;
+  const capabilities = getPaneCommandCapabilities(pane);
+  return isHorizontalDirection(direction)
+    ? capabilities.canResizeX
+    : capabilities.canResizeY;
 }
 
-export function paneBlocksSplit(
+export function paneAllowsSplit(
   pane: PaneNode | null,
   side: PaneSplitSide,
 ): boolean {
-  const guards = getPaneCommandGuards(pane);
+  const capabilities = getPaneCommandCapabilities(pane);
   return isHorizontalDirection(side)
-    ? guards.noSplitHorizontal
-    : guards.noSplitVertical;
+    ? capabilities.canSplitHorizontal
+    : capabilities.canSplitVertical;
 }
 
-export function paneBlocksSwap(
+export function paneAllowsSwap(
   pane: PaneNode | null,
   direction: PaneSwapDirection,
 ): boolean {
-  const guards = getPaneCommandGuards(pane);
-  return isHorizontalDirection(direction) ? guards.noSwapX : guards.noSwapY;
+  const capabilities = getPaneCommandCapabilities(pane);
+  return isHorizontalDirection(direction)
+    ? capabilities.canSwapX
+    : capabilities.canSwapY;
+}
+
+export function paneAllowsFocus(pane: PaneNode | null): boolean {
+  return getPaneCommandCapabilities(pane).canFocus;
 }
 
 export function findPaneForFocusCommand(
@@ -132,9 +144,7 @@ function selectFocusablePane(
   direction: PaneFocusDirection,
 ): PaneId | null {
   for (const candidate of candidates) {
-    const guards = getPaneCommandGuards(findPaneNode(state, candidate.paneId));
-
-    if (!guards.noFocus) {
+    if (paneAllowsFocus(findPaneNode(state, candidate.paneId))) {
       return candidate.paneId;
     }
   }
