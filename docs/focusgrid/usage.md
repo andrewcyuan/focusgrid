@@ -4,6 +4,24 @@ The playground is the smallest useful FocusGrid example: it creates one
 controller, builds a keymap from editable shortcut values, and renders pane
 content from the pane render context.
 
+Focusgrid is published as `@focusgrid/focusgrid` with explicit subpath exports.
+There is no root package export; import the layer you need:
+
+```tsx
+import {
+  createDefaultPaneKeymap,
+  type FocusGridControllerState,
+} from "@focusgrid/focusgrid/core";
+import {
+  FocusGrid,
+  useFocusGridController,
+  type PaneComponent,
+  type PaneComponentProps,
+  type PaneRenderContext,
+} from "@focusgrid/focusgrid/react";
+import "@focusgrid/focusgrid/react/styles.css";
+```
+
 ## Initial layout
 
 FocusGrid starts from serializable state. The playground uses two panes in a
@@ -54,7 +72,7 @@ function FocusGridPlayground() {
   const controller = useFocusGridController(createInitialState);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
-    () => createDefaultPaneKeymap({ overrides: shortcuts }),
+    () => createDefaultPaneKeymap({ overrides: shortcuts }).keymap,
     [shortcuts],
   );
 
