@@ -30,3 +30,4 @@ import "@focusgrid/focusgrid/react/styles.css";
   and [`docs/shortcut-engine/api.md`](docs/shortcut-engine/api.md).
 - Ariakit Adapter: [`docs/ariakit-adapter/usage.md`](docs/ariakit-adapter/usage.md)
   and [`docs/ariakit-adapter/api.md`](docs/ariakit-adapter/api.md).
+- Packaging and local consumer testing: [`docs/packaging.md`](docs/packaging.md).
