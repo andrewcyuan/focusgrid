@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ComputedPane } from "@focusgrid/core";
+import type { ComputedPane } from "@focusgrid/focusgrid/core";
 import { createPaneMap, diffPaneLifecycle } from "../src/lifecycle";
 
 function pane(

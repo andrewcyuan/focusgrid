@@ -1,4 +1,4 @@
-import type { ComputedPane, PaneId, FocusGridController } from "@focusgrid/core";
+import type { ComputedPane, PaneId, FocusGridController } from "@focusgrid/focusgrid/core";
 
 export type PaneLayoutChangeEvent = {
   pane: ComputedPane;

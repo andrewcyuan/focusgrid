@@ -1,0 +1,58 @@
+{
+  "name": "@focusgrid/focusgrid",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": [
+    "./dist/react/styles.css",
+    "./react/styles.css"
+  ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewcyuan/focusgrid.git",
+    "directory": "packages/focusgrid"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js",
+      "require": "./dist/core/index.cjs"
+    },
+    "./dom": {
+      "types": "./dist/dom/index.d.ts",
+      "import": "./dist/dom/index.js",
+      "require": "./dist/dom/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./react/styles.css": "./dist/react/styles.css"
+  },
+  "scripts": {
+    "build": "tsdown core/src/index.ts --config ../../tsdown.config.mjs --format esm,cjs --out-dir dist/core --deps.never-bundle @focusgrid/shortcut-engine && tsdown dom/src/index.ts --config ../../tsdown.config.mjs --format esm,cjs --out-dir dist/dom --no-clean --deps.never-bundle @focusgrid/focusgrid/core --deps.never-bundle @focusgrid/shortcut-engine && tsdown react/src/index.tsx --config ../../tsdown.config.mjs --format esm,cjs --out-dir dist/react --no-clean --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle @focusgrid/focusgrid/core --deps.never-bundle @focusgrid/focusgrid/dom && cp react/src/styles.css dist/react/styles.css",
+    "test": "vitest run --config ../../vitest.config.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@focusgrid/shortcut-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "vitest": "^2.1.8"
+  }
+}

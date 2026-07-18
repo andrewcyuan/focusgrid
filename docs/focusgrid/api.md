@@ -5,7 +5,7 @@ to human input. These functions live on `controller.api` after creating a
 controller with `createFocusGridController()`.
 
 ```ts
-import { createFocusGridController } from "@focusgrid/core";
+import { createFocusGridController } from "@focusgrid/focusgrid/core";
 
 const controller = createFocusGridController(initialState);
 controller.api.split("editor", { side: "right", newPaneId: "terminal" });

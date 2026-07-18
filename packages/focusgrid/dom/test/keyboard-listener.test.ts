@@ -3,7 +3,7 @@ import {
   createFocusGridController,
   type ComputedHandle,
   type FocusGridControllerState,
-} from "@focusgrid/core";
+} from "@focusgrid/focusgrid/core";
 import {
   normalizeKeyboardEvent,
   parseKeySequence,

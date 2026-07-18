@@ -9,7 +9,7 @@ import {
   type PaneShortcutValues,
   type FocusGridController,
   type FocusGridControllerState,
-} from "@focusgrid/core";
+} from "@focusgrid/focusgrid/core";
 import {
   type PaneComponent,
   type PaneComponentProps,
@@ -17,7 +17,7 @@ import {
   useControllerState,
   useFocusGridController,
   type PaneRenderContext,
-} from "@focusgrid/react";
+} from "@focusgrid/focusgrid/react";
 import {
   useEffect,
   useCallback,

@@ -1,19 +1,20 @@
 # Focusgrid Architecture
 
-Focusgrid is split into three packages:
+Focusgrid is published as one Focusgrid package with explicit platform
+subpaths, plus the separate shortcut-engine package:
 
 ```txt
-@focusgrid/core
+@focusgrid/focusgrid/core
   Pure TypeScript. Owns state, layout operations, commands, and geometry.
 
 @focusgrid/shortcut-engine
   Pure TypeScript. Owns key parsing, event normalization, and shortcut routing.
 
-@focusgrid/dom
+@focusgrid/focusgrid/dom
   Browser adapter. Owns KeyboardEvent, PointerEvent, ResizeObserver, and DOM
   focus behavior.
 
-@focusgrid/react
+@focusgrid/focusgrid/react
   Thin React wrapper. Owns component instance wiring, hooks, refs, and
   rendering helpers.
 ```
@@ -36,12 +37,12 @@ browser event / command
 ```
 
 The center of the system is `FocusGridController.api` in
-`packages/focusgrid-core/src/controller.ts`. API methods run layout operations, store the
+`packages/focusgrid/core/src/controller.ts`. API methods run layout operations, store the
 new state, and notify subscribers when the state object changes.
 
-## Core Package
+## Core Subpath
 
-The persistent state shape lives in `packages/focusgrid-core/src/layout/types.ts`:
+The persistent state shape lives in `packages/focusgrid/core/src/layout/types.ts`:
 
 ```ts
 type FocusGridControllerState = {
@@ -68,7 +69,7 @@ split
 A `SplitNode` stores proportional `sizes`, not pixel rectangles. Pixel
 rectangles are derived later from the current container size.
 
-The layout operations are in `packages/focusgrid-core/src/layout/operations.ts`. The main
+The layout operations are in `packages/focusgrid/core/src/layout/operations.ts`. The main
 controller API operations are:
 
 ```txt
@@ -81,7 +82,7 @@ resizeHandle
 ```
 
 Actual pixel layout is computed on demand in
-`packages/focusgrid-core/src/layout/solver.ts`. `computeLayout(state)` walks the tree and
+`packages/focusgrid/core/src/layout/solver.ts`. `computeLayout(state)` walks the tree and
 produces:
 
 ```ts
@@ -94,12 +95,12 @@ type ComputedLayout = {
 Each `ComputedPane` has a `rect`, so this is the object React uses to position
 panes.
 
-## DOM Package
+## DOM Subpath
 
-The DOM package does not render panes. It only listens to browser events and
+The DOM subpath does not render panes. It only listens to browser events and
 dispatches controller actions.
 
-Root size changes come from `packages/focusgrid-dom/src/resize-observer.ts`:
+Root size changes come from `packages/focusgrid/dom/src/resize-observer.ts`:
 
 ```txt
 ResizeObserver fires
@@ -108,7 +109,7 @@ ResizeObserver fires
   -> React rerenders layout
 ```
 
-Handle drags come from `packages/focusgrid-dom/src/pointer-resize.ts`:
+Handle drags come from `packages/focusgrid/dom/src/pointer-resize.ts`:
 
 ```txt
 pointermove on resize handle
@@ -117,12 +118,12 @@ pointermove on resize handle
   -> layout recomputes
 ```
 
-The root DOM controller in `packages/focusgrid-dom/src/controller.ts` wires keyboard
+The root DOM controller in `packages/focusgrid/dom/src/controller.ts` wires keyboard
 handling and resize observation together.
 
-## React Package
+## React Subpath
 
-The React package owns the public rendering API.
+The React subpath owns the public rendering API.
 
 `FocusGrid` is the React instance boundary. Each rendered grid receives its
 own `FocusGridController` and optional keymap directly:
@@ -138,7 +139,7 @@ export type FocusGridProps = {
 };
 ```
 
-There is no provider or React context in this package. Hooks that need state or
+There is no provider or React context in this subpath. Hooks that need state or
 layout take the controller explicitly:
 
 ```ts
@@ -158,11 +159,11 @@ Then it renders every computed pane:
 ))}
 ```
 
-The subscription is in `packages/focusgrid-react/src/hooks.ts`. `useSyncExternalStore`
+The subscription is in `packages/focusgrid/react/src/hooks.ts`. `useSyncExternalStore`
 subscribes to `controller.subscribe()`, so any successful dispatch causes React
 to update.
 
-The content render call is in `packages/focusgrid-react/src/PaneView.tsx`:
+The content render call is in `packages/focusgrid/react/src/PaneView.tsx`:
 
 ```tsx
 {renderPane({
@@ -209,24 +210,24 @@ Monaco editor, terminal, canvas, or other embedded widget.
 For client rendering behavior, start in:
 
 ```txt
-packages/focusgrid-react/src/FocusGrid.tsx
-packages/focusgrid-react/src/PaneView.tsx
+packages/focusgrid/react/src/FocusGrid.tsx
+packages/focusgrid/react/src/PaneView.tsx
 ```
 
 For why layout changed, trace backward through:
 
 ```txt
-packages/focusgrid-react/src/hooks.ts
-packages/focusgrid-core/src/controller.ts
-packages/focusgrid-core/src/layout/operations.ts
-packages/focusgrid-core/src/layout/solver.ts
+packages/focusgrid/react/src/hooks.ts
+packages/focusgrid/core/src/controller.ts
+packages/focusgrid/core/src/layout/operations.ts
+packages/focusgrid/core/src/layout/solver.ts
 ```
 
 For browser-driven layout changes, start in:
 
 ```txt
-packages/focusgrid-dom/src/resize-observer.ts
-packages/focusgrid-dom/src/pointer-resize.ts
+packages/focusgrid/dom/src/resize-observer.ts
+packages/focusgrid/dom/src/pointer-resize.ts
 ```
 
 The shortest mental model is:

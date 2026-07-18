@@ -5,7 +5,7 @@ input. A controller gets a default command registry unless a custom registry is
 passed to `createFocusGridController()`.
 
 ```ts
-import { createFocusGridController } from "@focusgrid/core";
+import { createFocusGridController } from "@focusgrid/focusgrid/core";
 
 const controller = createFocusGridController(initialState);
 controller.commands.run("pane.splitRight", controller);

@@ -4,7 +4,7 @@ import {
   createFocusGridController,
   type KeyBinding,
   type FocusGridControllerState,
-} from "@focusgrid/core";
+} from "@focusgrid/focusgrid/core";
 import {
   FocusGrid,
   useControllerState,

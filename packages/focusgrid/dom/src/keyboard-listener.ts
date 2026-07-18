@@ -6,7 +6,7 @@ import {
   type PaneResizeDirection,
   type FocusGridController,
   type ShortcutContext,
-} from "@focusgrid/core";
+} from "@focusgrid/focusgrid/core";
 import {
   KeyRouter,
   routeKeyboardEvent,

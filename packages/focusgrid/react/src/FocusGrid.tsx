@@ -4,8 +4,8 @@ import type {
   FocusGridController,
   KeyBinding,
   PaneId,
-} from "@focusgrid/core";
-import { FocusGridDomController } from "@focusgrid/dom";
+} from "@focusgrid/focusgrid/core";
+import { FocusGridDomController } from "@focusgrid/focusgrid/dom";
 import { useControllerLayout } from "./hooks";
 import {
   createPaneMap,

@@ -4,7 +4,7 @@ import {
   type LayoutNode,
   type NodeId,
   type SplitNode,
-} from "@focusgrid/core";
+} from "@focusgrid/focusgrid/core";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
 type ResizeDrag = {

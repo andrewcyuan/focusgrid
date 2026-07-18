@@ -23,9 +23,9 @@ export default defineConfig({
         ),
       },
       {
-        find: "@focusgrid/react/styles.css",
+        find: "@focusgrid/focusgrid/react/styles.css",
         replacement: fileURLToPath(
-          new URL("../focusgrid-react/src/styles.css", import.meta.url),
+          new URL("../focusgrid/react/src/styles.css", import.meta.url),
         ),
       },
       {
@@ -35,21 +35,21 @@ export default defineConfig({
         ),
       },
       {
-        find: "@focusgrid/core",
+        find: "@focusgrid/focusgrid/core",
         replacement: fileURLToPath(
-          new URL("../focusgrid-core/src/index.ts", import.meta.url),
+          new URL("../focusgrid/core/src/index.ts", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/dom",
+        find: "@focusgrid/focusgrid/dom",
         replacement: fileURLToPath(
-          new URL("../focusgrid-dom/src/index.ts", import.meta.url),
+          new URL("../focusgrid/dom/src/index.ts", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/react",
+        find: "@focusgrid/focusgrid/react",
         replacement: fileURLToPath(
-          new URL("../focusgrid-react/src/index.tsx", import.meta.url),
+          new URL("../focusgrid/react/src/index.tsx", import.meta.url),
         ),
       },
     ],

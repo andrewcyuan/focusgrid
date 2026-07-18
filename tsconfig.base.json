@@ -6,9 +6,9 @@
     "baseUrl": ".",
     "paths": {
       "@focusgrid/shortcut-engine": ["packages/shortcut-engine/src/index.ts"],
-      "@focusgrid/core": ["packages/focusgrid-core/src/index.ts"],
-      "@focusgrid/dom": ["packages/focusgrid-dom/src/index.ts"],
-      "@focusgrid/react": ["packages/focusgrid-react/src/index.tsx"]
+      "@focusgrid/focusgrid/core": ["packages/focusgrid/core/src/index.ts"],
+      "@focusgrid/focusgrid/dom": ["packages/focusgrid/dom/src/index.ts"],
+      "@focusgrid/focusgrid/react": ["packages/focusgrid/react/src/index.tsx"]
     },
     "strict": true,
     "declaration": true,

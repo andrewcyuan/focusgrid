@@ -9,7 +9,7 @@ import type {
   FocusGridController,
   PaneId,
   Rect,
-} from "@focusgrid/core";
+} from "@focusgrid/focusgrid/core";
 
 export type PaneRenderContext = {
   paneId: PaneId;
