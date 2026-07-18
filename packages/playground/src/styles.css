@@ -294,3 +294,175 @@ textarea {
   color: #172033;
   padding: 12px;
 }
+
+.AriakitPage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.AriakitPageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #d6dce8;
+  background: white;
+  padding: 14px 18px;
+}
+
+.AriakitPageHeader h1,
+.AriakitPageHeader p {
+  margin: 0;
+}
+
+.AriakitPageHeader h1 {
+  font-size: 20px;
+}
+
+.AriakitPageHeader p {
+  margin-top: 3px;
+  color: #5c667a;
+  font-size: 13px;
+}
+
+.AriakitFocusGrid {
+  background: #e5eaf3;
+}
+
+.AriakitPane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  border: 2px solid #c7cfdd;
+  background: white;
+  padding: clamp(18px, 4vw, 48px);
+}
+
+.AriakitPane[data-active="true"] {
+  border-color: #2b6de8;
+}
+
+.AriakitPaneIntro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.AriakitPaneIntro > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.AriakitPaneIntro span,
+.AriakitEditable span {
+  color: #5c667a;
+  font-size: 13px;
+}
+
+.AriakitShortcutList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.AriakitShortcutList kbd {
+  border: 1px solid #c7cfdd;
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: #f8fafc;
+  padding: 4px 7px;
+  color: #2c3548;
+  font: 650 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.AriakitComposite {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+  width: min(680px, 100%);
+  margin: auto;
+  outline: none;
+}
+
+.AriakitRows {
+  display: grid;
+  gap: 8px;
+}
+
+.AriakitRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 1px solid #c7cfdd;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #172033;
+  cursor: pointer;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.AriakitRow small {
+  color: #69758b;
+}
+
+.AriakitRow[data-active-item] {
+  border-color: #8b95a7;
+  outline: 3px solid rgb(105 117 139 / 18%);
+  background: #e4e8ee;
+}
+
+.AriakitPane[data-active="true"] .AriakitRow:focus,
+.AriakitPane[data-active="true"] .AriakitRow[data-active-item] {
+  border-color: #2b6de8;
+  outline: 3px solid rgb(43 109 232 / 22%);
+  background: #edf4ff;
+}
+
+.AriakitEditable {
+  display: grid;
+  gap: 7px;
+}
+
+.AriakitEditable input {
+  width: 100%;
+  border: 1px solid #c7cfdd;
+  border-radius: 7px;
+  outline: none;
+  padding: 10px 12px;
+}
+
+.AriakitEditable input:focus {
+  border-color: #2b6de8;
+  box-shadow: 0 0 0 3px rgb(43 109 232 / 18%);
+}
+
+.AriakitActionStatus {
+  justify-self: center;
+  border-radius: 999px;
+  background: #172033;
+  color: white;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .AriakitPaneIntro {
+    display: grid;
+  }
+
+  .AriakitShortcutList {
+    justify-content: flex-start;
+  }
+}

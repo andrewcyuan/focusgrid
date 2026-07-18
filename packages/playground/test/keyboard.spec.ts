@@ -225,3 +225,118 @@ test("horizontal pointer resize continues after dragging outside the handle", as
     .poll(async () => (await alphaPane.boundingBox())?.width ?? 0)
     .toBeGreaterThan(initialBox!.width + 80);
 });
+
+test("Ariakit composite loads focused inside a Focusgrid pane", async ({
+  page,
+}) => {
+  await page.goto("/aria-kit");
+
+  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
+
+  await expect(page.locator(".AriakitPane")).toHaveCount(2);
+  await expect(leftPane).toHaveAttribute(
+    "data-active",
+    "true",
+  );
+  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
+  await expect(
+    page.getByRole("link", { name: "Focusgrid playground" }),
+  ).toBeVisible();
+});
+
+test("Ariakit arrow keys and adapter shortcuts move DOM focus", async ({
+  page,
+}) => {
+  await page.goto("/aria-kit");
+
+  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
+  const alpha = leftPane.locator('[data-row-id="alpha"]');
+  const beta = leftPane.locator('[data-row-id="beta"]');
+  const gamma = leftPane.locator('[data-row-id="gamma"]');
+  const delta = leftPane.locator('[data-row-id="delta"]');
+
+  await expect(alpha).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(beta).toBeFocused();
+  await page.keyboard.press("J");
+  await expect(gamma).toBeFocused();
+  await page.keyboard.press("K");
+  await expect(beta).toBeFocused();
+  await page.keyboard.press("L");
+  await expect(gamma).toBeFocused();
+  await page.keyboard.press("H");
+  await expect(beta).toBeFocused();
+  await page.keyboard.press("Shift+G");
+  await expect(delta).toBeFocused();
+  await page.keyboard.press("G");
+  await page.keyboard.press("G");
+  await expect(alpha).toBeFocused();
+});
+
+test("Ariakit adapter actions use the active row and prevent default", async ({
+  page,
+}) => {
+  await page.goto("/aria-kit");
+
+  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
+
+  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(leftPane.locator('[data-row-id="beta"]')).toBeFocused();
+  await page.keyboard.press("Space");
+
+  const status = leftPane.locator(".AriakitActionStatus");
+  await expect(status).toHaveText("Space on Beta");
+  await expect(status).toHaveAttribute("data-default-prevented", "true");
+  await expect(leftPane.locator('[data-row-id="beta"]')).toBeFocused();
+});
+
+test("Ariakit adapter ignores typing in the embedded input", async ({ page }) => {
+  await page.goto("/aria-kit");
+
+  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
+  const input = leftPane.getByRole("textbox", { name: "Editable input" });
+  await input.focus();
+  await page.keyboard.type("j k g g ");
+
+  await expect(input).toHaveValue("j k g g ");
+  await expect(input).toBeFocused();
+  await expect(leftPane.locator(".AriakitActionStatus")).toHaveText(
+    "No row action yet",
+  );
+});
+
+test("Focusgrid pane shortcuts transfer focus between Ariakit composites", async ({
+  page,
+}) => {
+  await page.goto("/aria-kit");
+
+  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
+  const rightPane = page.locator('[data-pane-id="ariakit-beta"]');
+  const leftBeta = leftPane.locator('[data-row-id="beta"]');
+  const rightAlpha = rightPane.locator('[data-row-id="alpha"]');
+
+  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(leftBeta).toBeFocused();
+  await expect(leftBeta).toHaveCSS("background-color", "rgb(237, 244, 255)");
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("ArrowRight");
+
+  await expect(rightPane).toHaveAttribute("data-active", "true");
+  await expect(rightAlpha).toBeFocused();
+  await expect(leftBeta).toHaveAttribute("data-active-item", "true");
+  await expect(leftBeta).toHaveCSS("background-color", "rgb(228, 232, 238)");
+  await expect(rightAlpha).toHaveCSS(
+    "background-color",
+    "rgb(237, 244, 255)",
+  );
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("ArrowLeft");
+
+  await expect(leftPane).toHaveAttribute("data-active", "true");
+  await expect(leftBeta).toBeFocused();
+  await expect(leftBeta).toHaveCSS("background-color", "rgb(237, 244, 255)");
+});

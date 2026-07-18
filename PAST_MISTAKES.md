@@ -1,5 +1,10 @@
 # Past Mistakes
 
+## Composite Active State Does Not Guarantee DOM Focus
+
+- **Mistake:** A playground initialized an Ariakit Composite with `store.move(store.first())` during a parent effect and assumed the active item would also receive DOM focus, even though item focus wiring was not ready at that point.
+- **Fix pattern:** Verify `document.activeElement` in a real browser, explicitly focus the initial registered item when a composite must own focus on page load, and use the keyboard event target for rapid actions whose store snapshot may lag DOM focus.
+
 ## Missing Cursor Values Are Not Clampable Cursor Values
 
 - **Mistake:** During an id-based collection controller refactor, an absent active index was normalized through a clamp helper, which silently became `0` and masked the default selection callback.

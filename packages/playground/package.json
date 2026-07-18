@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ariakit/react": "^0.4.34",
+    "@focusgrid/ariakit-adapter": "workspace:*",
     "@focusgrid/focusgrid": "workspace:*",
     "@focusgrid/shortcut-engine": "workspace:*",
     "react": "^18.3.1",

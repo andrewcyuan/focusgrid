@@ -27,6 +27,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
+import { AriakitPlayground } from "./AriakitPlayground";
 
 function createInitialState(): FocusGridControllerState {
   return {
@@ -66,6 +67,10 @@ const paneComponents: Record<string, PaneComponent> = {
 };
 
 export function App() {
+  if (window.location.pathname === "/aria-kit") {
+    return <AriakitPlayground />;
+  }
+
   return <FocusGridPlayground />;
 }
 
@@ -269,6 +274,9 @@ function Toolbar({
         </div>
       </div>
       <div className="ToolbarMeta">
+        <a className="ToolbarLink" href="/aria-kit">
+          Ariakit demo
+        </a>
         <span>Active: {state.activePaneId ?? "none"}</span>
         <span>
           Root: {state.container.width} x {state.container.height}
