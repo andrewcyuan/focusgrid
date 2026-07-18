@@ -24,32 +24,10 @@ pnpm add \
   @ariakit/react@^0.4.34
 ```
 
-For temporary sibling-workspace development, Perilla must include all consumed
-Focusgrid packages:
-
-```yaml
-packages:
-  - "."
-  - "../focusgrid/packages/focusgrid"
-  - "../focusgrid/packages/shortcut-engine"
-  - "../focusgrid/packages/ariakit-adapter"
-```
-
-Perilla also needs these dependencies:
-
-```json
-{
-  "dependencies": {
-    "@focusgrid/focusgrid": "workspace:*",
-    "@focusgrid/shortcut-engine": "workspace:*",
-    "@focusgrid/ariakit-adapter": "workspace:*",
-    "@ariakit/react": "^0.4.34"
-  }
-}
-```
-
-After dependency changes, run `pnpm install` in Perilla and restart the Vite dev
-server.
+Remove Focusgrid sibling workspace entries from Perilla. Perilla should not
+commit `../focusgrid/packages/*` workspace links, package aliases, Vite aliases,
+or source imports. After Focusgrid is published, replace the local tarball
+dependencies with normal semver dependencies from npm.
 
 ## Replace KCC imports
 

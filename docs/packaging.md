@@ -1,7 +1,7 @@
 # Packaging
 
-Focusgrid uses one package manager workflow for development and one artifact
-workflow for consumers.
+Focusgrid uses pnpm workspaces inside this repo and npm package artifacts
+outside this repo.
 
 ## Local development
 
@@ -14,15 +14,17 @@ Use the pinned wrapper:
 ./scripts/pnpm -r build
 ```
 
-The repo is a pnpm workspace. Workspace links are for packages inside this repo:
+The repo is a pnpm workspace. Workspace links are only for packages inside this
+repo:
 
 - `@focusgrid/focusgrid`
 - `@focusgrid/shortcut-engine`
 - `@focusgrid/ariakit-adapter`
 - `@focusgrid/playground`
 
-External apps should not commit sibling workspace links to this repo as their
-default dependency model.
+External apps must not commit sibling workspace links to this repo. Perilla and
+future local projects should consume Focusgrid through the same package artifact
+shape that npm consumers receive.
 
 ## Package manager pinning
 
@@ -46,6 +48,10 @@ The command builds the public packages and writes npm tarballs to `.packs/`.
 Install those tarballs in a consuming app to test the same package shape npm
 users will receive.
 
+This is the only supported local-consumer workflow. Do not use cross-repo pnpm
+workspace entries, package aliases, Vite aliases, or source imports from another
+application.
+
 Use the dry-run variant to inspect package contents without keeping tarballs:
 
 ```sh
@@ -63,6 +69,9 @@ Changesets owns versioning and publish orchestration:
 ```
 
 `release` runs typecheck, tests, and build before `changeset publish`.
+
+After publish, external apps should depend on semver versions from npm instead
+of local tarball paths.
 
 ## Turborepo
 
