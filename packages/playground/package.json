@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
+    "test": "vitest run --config ../../vitest.config.ts --passWithNoTests test/**/*.test.ts test/**/*.test.tsx",
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
