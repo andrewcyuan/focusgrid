@@ -52,24 +52,6 @@ export default defineConfig({
           new URL("../focusgrid-react/src/index.tsx", import.meta.url),
         ),
       },
-      {
-        find: "@focusgrid/kcc-core",
-        replacement: fileURLToPath(
-          new URL("../kcc-core/src/index.ts", import.meta.url),
-        ),
-      },
-      {
-        find: "@focusgrid/kcc-dom",
-        replacement: fileURLToPath(
-          new URL("../kcc-dom/src/index.ts", import.meta.url),
-        ),
-      },
-      {
-        find: "@focusgrid/kcc-react",
-        replacement: fileURLToPath(
-          new URL("../kcc-react/src/index.tsx", import.meta.url),
-        ),
-      },
     ],
   },
 });

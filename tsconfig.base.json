@@ -8,10 +8,7 @@
       "@focusgrid/shortcut-engine": ["packages/shortcut-engine/src/index.ts"],
       "@focusgrid/core": ["packages/focusgrid-core/src/index.ts"],
       "@focusgrid/dom": ["packages/focusgrid-dom/src/index.ts"],
-      "@focusgrid/react": ["packages/focusgrid-react/src/index.tsx"],
-      "@focusgrid/kcc-core": ["packages/kcc-core/src/index.ts"],
-      "@focusgrid/kcc-dom": ["packages/kcc-dom/src/index.ts"],
-      "@focusgrid/kcc-react": ["packages/kcc-react/src/index.tsx"]
+      "@focusgrid/react": ["packages/focusgrid-react/src/index.tsx"]
     },
     "strict": true,
     "declaration": true,

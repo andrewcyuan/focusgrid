@@ -6,15 +6,12 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run --config ../../vitest.config.ts test/kcc-todos.test.ts",
+    "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@focusgrid/core": "workspace:*",
-    "@focusgrid/kcc-core": "workspace:*",
-    "@focusgrid/kcc-dom": "workspace:*",
-    "@focusgrid/kcc-react": "workspace:*",
     "@focusgrid/shortcut-engine": "workspace:*",
     "@focusgrid/react": "workspace:*",
     "react": "^18.3.1",

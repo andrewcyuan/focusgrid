@@ -77,65 +77,11 @@ importers:
         specifier: ^18.3.5
         version: 18.3.7(@types/react@18.3.31)
 
-  packages/kcc-core:
-    dependencies:
-      '@focusgrid/shortcut-engine':
-        specifier: workspace:*
-        version: link:../shortcut-engine
-    devDependencies:
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.0)
-
-  packages/kcc-dom:
-    dependencies:
-      '@focusgrid/kcc-core':
-        specifier: workspace:*
-        version: link:../kcc-core
-      '@focusgrid/shortcut-engine':
-        specifier: workspace:*
-        version: link:../shortcut-engine
-    devDependencies:
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.0)
-
-  packages/kcc-react:
-    dependencies:
-      '@focusgrid/kcc-core':
-        specifier: workspace:*
-        version: link:../kcc-core
-      '@focusgrid/kcc-dom':
-        specifier: workspace:*
-        version: link:../kcc-dom
-      react:
-        specifier: '>=18'
-        version: 18.3.1
-      react-dom:
-        specifier: '>=18'
-        version: 18.3.1(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.18
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.5
-        version: 18.3.7(@types/react@18.3.31)
-
   packages/playground:
     dependencies:
       '@focusgrid/core':
         specifier: workspace:*
         version: link:../focusgrid-core
-      '@focusgrid/kcc-core':
-        specifier: workspace:*
-        version: link:../kcc-core
-      '@focusgrid/kcc-dom':
-        specifier: workspace:*
-        version: link:../kcc-dom
-      '@focusgrid/kcc-react':
-        specifier: workspace:*
-        version: link:../kcc-react
       '@focusgrid/react':
         specifier: workspace:*
         version: link:../focusgrid-react

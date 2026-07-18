@@ -2,10 +2,10 @@
 
 ## Missing Cursor Values Are Not Clampable Cursor Values
 
-- **Mistake:** During the KCC id-based controller refactor, an absent `activeIndex` was normalized through `clampActiveIndex(-1, itemCount)`, which silently became `0` and masked `selectDefaultIndex`.
-- **Impact:** Controllers with a default selection callback initialized the first item instead of the requested default.
+- **Mistake:** During an id-based collection controller refactor, an absent active index was normalized through a clamp helper, which silently became `0` and masked the default selection callback.
+- **Impact:** Controllers with a default selection callback initialized the first item instead of the requested default item.
 - **Fix pattern:** Treat omitted cursor options as `null`/unprovided before clamping. Only clamp an index after confirming the caller actually supplied one.
-- **Regression coverage:** Keep a controller initialization test that provides `selectDefaultIndex` without `activeIndex` and asserts the derived `activeItemId`.
+- **Regression coverage:** Keep a controller initialization test that provides a default selection callback without an active index and asserts the derived active item id.
 
 ## Nested Resize Handles Must Refit Descendant Splits
 

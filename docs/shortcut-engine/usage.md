@@ -1,9 +1,9 @@
 # Usage
 
-`@focusgrid/shortcut-engine` is the shared shortcut layer used by FocusGrid and
-KCC. It parses key sequence strings, normalizes key strokes, and routes strokes
-through a typed keymap. It does not own focus, ARIA, command registries, or app
-state.
+`@focusgrid/shortcut-engine` is the shared shortcut layer used by Focusgrid
+packages. It parses key sequence strings, normalizes key strokes, and routes
+strokes through a typed keymap. It does not own focus, ARIA, command registries,
+or app state.
 
 ## Key Sequences
 
@@ -157,4 +157,3 @@ const router = new KeyRouter(
 In this example, `Ctrl-B L H` can run `resize.right` and then `resize.left` if
 `H` is pressed before the repeat window expires. Repeat only applies to
 two-stroke bindings marked with `repeat: true`.
-

@@ -19,38 +19,14 @@ import {
   type PaneRenderContext,
 } from "@focusgrid/react";
 import {
-  KCCollection,
-  KCItem,
-  KCList,
-  createDefaultKCCollectionKeymap,
-  defaultKCShortcutActions,
-  useKCController,
-  type KCActionBinding,
-  type KCActionContext,
-  type KCShortcutId,
-  type KCShortcutValues,
-} from "@focusgrid/kcc-react";
-import {
   useEffect,
   useCallback,
   useMemo,
   useRef,
   useState,
   type ChangeEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import {
-  loadSavedKCShortcuts,
-  loadSavedShortcuts,
-  saveKCShortcuts,
-  saveShortcuts,
-} from "./shortcuts";
-import {
-  createInitialTodos,
-  toggleTodoById,
-  updateTodoLabelById,
-  type TodoItem,
-} from "./kcc-todos";
+import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
 
 function createInitialState(): FocusGridControllerState {
   return {
@@ -90,11 +66,7 @@ const paneComponents: Record<string, PaneComponent> = {
 };
 
 export function App() {
-  return window.location.pathname === "/kcc" ? (
-    <KCPlayground />
-  ) : (
-    <FocusGridPlayground />
-  );
+  return <FocusGridPlayground />;
 }
 
 function FocusGridPlayground() {
@@ -143,66 +115,6 @@ function FocusGridPlayground() {
   );
 }
 
-function KCPlayground() {
-  const controller = useFocusGridController(createInitialState);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [kcShortcuts, setKCShortcuts] = useState(loadSavedKCShortcuts());
-  const [focusGridShortcuts, setFocusGridShortcuts] = useState(
-    loadSavedShortcuts()
-  );
-  const focusGridKeymap = useMemo(
-    () => createDefaultPaneKeymap({ overrides: focusGridShortcuts }).keymap,
-    [focusGridShortcuts]
-  );
-
-  useEffect(() => {
-    saveShortcuts(focusGridShortcuts);
-  }, [focusGridShortcuts]);
-
-  useEffect(() => {
-    saveKCShortcuts(kcShortcuts);
-  }, [kcShortcuts]);
-
-  return (
-    <div className="AppShell" data-sidebar-open={sidebarOpen}>
-      {sidebarOpen ? (
-        <KCSidebar
-          kcShortcuts={kcShortcuts}
-          focusGridShortcuts={focusGridShortcuts}
-          onKCShortcutChange={(id, sequence) => {
-            setKCShortcuts((current) => ({
-              ...current,
-              [id]: sequence,
-            }));
-          }}
-          onFocusGridShortcutChange={(id, sequence) => {
-            setFocusGridShortcuts((current) => ({
-              ...current,
-              [id]: sequence,
-            }));
-          }}
-        />
-      ) : null}
-
-      <main className="ControllerShell">
-        <KCToolbar
-          sidebarOpen={sidebarOpen}
-          controller={controller}
-          onToggleSidebar={() => setSidebarOpen((open) => !open)}
-        />
-        <FocusGrid
-          controller={controller}
-          keymap={focusGridKeymap}
-          className="PlaygroundFocusGrid"
-          renderPane={(ctx) => {
-            return <KCTodoPane {...ctx} shortcuts={kcShortcuts} />;
-          }}
-        />
-      </main>
-    </div>
-  );
-}
-
 function Sidebar({
   shortcuts,
   onShortcutChange,
@@ -230,63 +142,6 @@ function Sidebar({
             />
           </label>
         ))}
-      </div>
-    </aside>
-  );
-}
-
-function KCSidebar({
-  kcShortcuts,
-  focusGridShortcuts,
-  onKCShortcutChange,
-  onFocusGridShortcutChange,
-}: {
-  kcShortcuts: KCShortcutValues;
-  focusGridShortcuts: PaneShortcutValues;
-  onKCShortcutChange: (id: KCShortcutId, sequence: string) => void;
-  onFocusGridShortcutChange: (id: PaneShortcutId, sequence: string) => void;
-}) {
-  return (
-    <aside className="Sidebar">
-      <div className="SidebarHeader">
-        <h1>Focusgrid KCC</h1>
-        <span>Pane and list shortcuts</span>
-      </div>
-
-      <div className="SidebarSection">
-        <h2>KCC rows</h2>
-        <div className="ShortcutList">
-          {defaultKCShortcutActions.map((action) => (
-            <label className="ShortcutBinder" key={action.id}>
-              <span>{action.label}</span>
-              <input
-                value={kcShortcuts[action.id] ?? ""}
-                spellCheck={false}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  onKCShortcutChange(action.id, event.target.value);
-                }}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="SidebarSection">
-        <h2>FocusGrid panes</h2>
-        <div className="ShortcutList">
-          {defaultPaneShortcutActions.map((action) => (
-            <label className="ShortcutBinder" key={action.id}>
-              <span>{action.label}</span>
-              <input
-                value={focusGridShortcuts[action.id] ?? ""}
-                spellCheck={false}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  onFocusGridShortcutChange(action.id, event.target.value);
-                }}
-              />
-            </label>
-          ))}
-        </div>
       </div>
     </aside>
   );
@@ -444,38 +299,6 @@ function collectPaneIds(root: LayoutNode): string[] {
   return root.children.flatMap((child) => collectPaneIds(child));
 }
 
-function KCToolbar({
-  sidebarOpen,
-  controller,
-  onToggleSidebar,
-}: {
-  sidebarOpen: boolean;
-  controller: FocusGridController;
-  onToggleSidebar: () => void;
-}) {
-  const state = useControllerState(controller);
-
-  return (
-    <header className="Toolbar">
-      <button type="button" onClick={onToggleSidebar}>
-        {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-      </button>
-      <div className="ToolbarActions">
-        <a className="ToolbarLink" href="/">
-          FocusGrid
-        </a>
-        <span className="ToolbarMode">KCC todo lists</span>
-      </div>
-      <div className="ToolbarMeta">
-        <span>Active: {state.activePaneId ?? "none"}</span>
-        <span>
-          Root: {state.container.width} x {state.container.height}
-        </span>
-      </div>
-    </header>
-  );
-}
-
 function PaneSlot({ ctx }: { ctx: PaneRenderContext }) {
   const Component = paneComponents[ctx.paneId] ?? TextPane;
 
@@ -506,259 +329,6 @@ function TextPane({ paneId, active, controller }: PaneComponentProps) {
           controller.api.focus(paneId);
         }}
       />
-    </section>
-  );
-}
-
-function KCTodoPane({
-  paneId,
-  active,
-  controller,
-  shortcuts,
-}: PaneComponentProps & { shortcuts: KCShortcutValues }) {
-  const [todos, setTodos] = useState(() => createInitialTodos(paneId));
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [counter, setCounter] = useState(0);
-  const nextAddedTodoRef = useRef(1);
-  const kcController = useKCController({
-    orientation: "vertical",
-  });
-  const paneRef = useRef<HTMLElement | null>(null);
-  const splitTodoIndex = Math.ceil(todos.length / 2);
-  const topTodos = todos.slice(0, splitTodoIndex);
-  const bottomTodos = todos.slice(splitTodoIndex);
-  const addTodo = useCallback(() => {
-    setTodos((current) => {
-      const nextNumber = current.length + 1;
-      const nextAddedTodo = nextAddedTodoRef.current;
-      nextAddedTodoRef.current += 1;
-
-      return [
-        ...current,
-        {
-          id: `${paneId}-added-${nextAddedTodo}`,
-          label: `New ${paneId} item ${nextNumber}`,
-          checked: false,
-        },
-      ];
-    });
-  }, [paneId]);
-  const nativeKeymap = useMemo(
-    () =>
-      createDefaultKCCollectionKeymap({
-        overrides: shortcuts,
-      }),
-    [shortcuts]
-  );
-  const todoActions = useMemo<readonly KCActionBinding<TodoItem>[]>(
-    () => [
-      {
-        sequence: "A",
-        action: () => {
-          addTodo();
-        },
-      },
-      {
-        sequence: shortcuts.activate,
-        command: "activate",
-        action: (ctx: KCActionContext<TodoItem>) => {
-          setTodos((current) => toggleTodoById(current, ctx.id));
-        },
-      },
-      {
-        sequence: shortcuts.edit,
-        command: "edit",
-        action: (ctx: KCActionContext<TodoItem>) => {
-          setEditingId(ctx.id);
-        },
-      },
-    ],
-    [addTodo, shortcuts]
-  );
-  const counterActions = useMemo<readonly KCActionBinding<number>[]>(
-    () => [
-      {
-        sequence: "A",
-        action: () => {
-          addTodo();
-        },
-      },
-      {
-        sequence: shortcuts.activate,
-        command: "activate",
-        action: () => {
-          setCounter((value) => value + 1);
-        },
-      },
-    ],
-    [addTodo, shortcuts.activate]
-  );
-
-  useEffect(() => {
-    if (!active) {
-      return;
-    }
-
-    controller.api.focus(paneId);
-    const list =
-      paneRef.current?.querySelector<HTMLElement>(".KCCollectionRoot");
-    list?.focus();
-  }, [active, controller, paneId]);
-
-  useEffect(() => {
-    const input = paneRef.current?.querySelector<HTMLInputElement>(
-      '[data-kc-edit-input="true"]'
-    );
-
-    if (!input) {
-      return;
-    }
-
-    input.focus();
-    input.select();
-  }, [editingId]);
-
-  const focusListRoot = () => {
-    paneRef.current?.querySelector<HTMLElement>(".KCCollectionRoot")?.focus();
-  };
-
-  const stopEditing = () => {
-    setEditingId(null);
-    requestAnimationFrame(focusListRoot);
-  };
-
-  const onEditInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter" && event.key !== "Escape") {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    stopEditing();
-  };
-
-  return (
-    <section
-      ref={paneRef}
-      className="TextPane KCPane"
-      data-active={active}
-      data-kc-pane-id={paneId}
-    >
-      <div className="TextPaneHeader">
-        <strong>{paneId}</strong>
-        <span>{active ? "focused" : "idle"}</span>
-      </div>
-      <KCCollection
-        controller={kcController}
-        keymap={nativeKeymap}
-        direction="vertical"
-        className="KCCollectionRoot"
-      >
-        <KCList
-          dataList={topTodos}
-          getItemId={(todo) => todo.id}
-          customActionKeybinds={todoActions}
-          renderCell={(ctx) => (
-            <div className="KCTodoRow" data-checked={ctx.data.checked}>
-              <input
-                type="checkbox"
-                tabIndex={-1}
-                readOnly
-                checked={ctx.data.checked}
-              />
-              <input
-                type="radio"
-                tabIndex={-1}
-                readOnly
-                checked={false}
-                name={`${paneId}-todo-row-radio`}
-                aria-label={`Select ${ctx.data.label}`}
-              />
-              <input
-                type="button"
-                tabIndex={-1}
-                value="Row"
-                aria-label={`Row action ${ctx.data.label}`}
-              />
-              {editingId === ctx.id ? (
-                <input
-                  data-kc-edit-input="true"
-                  value={ctx.data.label}
-                  spellCheck={false}
-                  onChange={(event) => {
-                    setTodos((current) =>
-                      updateTodoLabelById(current, ctx.id, event.target.value)
-                    );
-                  }}
-                  onKeyDown={onEditInputKeyDown}
-                />
-              ) : (
-                <span>{ctx.data.label}</span>
-              )}
-            </div>
-          )}
-        />
-        <div className="KCStaticItem">
-          <strong>Static collection item</strong>
-          <span>Not part of the todo data list</span>
-        </div>
-        <KCList
-          dataList={bottomTodos}
-          getItemId={(todo) => todo.id}
-          customActionKeybinds={todoActions}
-          renderCell={(ctx) => (
-            <div className="KCTodoRow" data-checked={ctx.data.checked}>
-              <input
-                type="checkbox"
-                tabIndex={-1}
-                readOnly
-                checked={ctx.data.checked}
-              />
-              <input
-                type="radio"
-                tabIndex={-1}
-                readOnly
-                checked={false}
-                name={`${paneId}-todo-row-radio`}
-                aria-label={`Select ${ctx.data.label}`}
-              />
-              <input
-                type="button"
-                tabIndex={-1}
-                value="Row"
-                aria-label={`Row action ${ctx.data.label}`}
-              />
-              {editingId === ctx.id ? (
-                <input
-                  data-kc-edit-input="true"
-                  value={ctx.data.label}
-                  spellCheck={false}
-                  onChange={(event) => {
-                    setTodos((current) =>
-                      updateTodoLabelById(current, ctx.id, event.target.value)
-                    );
-                  }}
-                  onKeyDown={onEditInputKeyDown}
-                />
-              ) : (
-                <span>{ctx.data.label}</span>
-              )}
-            </div>
-          )}
-        />
-        <KCItem
-          id={`${paneId}-counter`}
-          data={counter}
-          className="KCCounterItem"
-          customActionKeybinds={counterActions}
-        >
-          {(ctx) => (
-            <button className="KCCounterButton" type="button" tabIndex={-1}>
-              Counter {ctx.data}
-            </button>
-          )}
-        </KCItem>
-      </KCCollection>
     </section>
   );
 }
