@@ -14,6 +14,8 @@
     "test": "./scripts/pnpm -r test",
     "typecheck": "./scripts/pnpm -r typecheck",
     "lint": "./scripts/pnpm -r lint",
+    "pack:dry-run": "node scripts/pack.mjs --dry-run",
+    "pack:local": "node scripts/pack.mjs --local",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "./scripts/pnpm typecheck && ./scripts/pnpm test && ./scripts/pnpm build && changeset publish"

@@ -10,3 +10,7 @@ corepack pack pnpm@10.25.0 -o .corepack/pnpm-10.25.0.tgz
 ```
 
 Commit `.corepack/pnpm-10.25.0.tgz`. Do not commit `.corepack/cache/`.
+
+`./scripts/pnpm` uses Corepack when it is available. If Corepack is missing but
+the repo-local cache already exists, the wrapper runs the pinned pnpm CLI from
+`.corepack/cache/v1/pnpm/10.25.0/bin/pnpm.cjs`.

@@ -4,11 +4,24 @@ set -euo pipefail
 PNPM_VERSION="10.25.0"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COREPACK_TARBALL="$ROOT_DIR/.corepack/pnpm-$PNPM_VERSION.tgz"
+PNPM_CLI="$ROOT_DIR/.corepack/cache/v1/pnpm/$PNPM_VERSION/bin/pnpm.cjs"
 export COREPACK_HOME="${COREPACK_HOME:-$ROOT_DIR/.corepack/cache}"
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 if ! command -v corepack >/dev/null 2>&1; then
-  echo "corepack is required to run pnpm $PNPM_VERSION for this repo." >&2
+  if [[ -f "$PNPM_CLI" ]]; then
+    exec node "$PNPM_CLI" "$@"
+  fi
+
+  cat >&2 <<EOF
+corepack is required to install pnpm $PNPM_VERSION for this repo.
+
+This workspace can also run from the repo-local pnpm cache when it exists at:
+  .corepack/cache/v1/pnpm/$PNPM_VERSION/bin/pnpm.cjs
+
+From a normal terminal with network access, run:
+  corepack install -g --cache-only .corepack/pnpm-$PNPM_VERSION.tgz
+EOF
   exit 1
 fi
 
