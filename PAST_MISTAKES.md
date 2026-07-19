@@ -1,5 +1,10 @@
 # Past Mistakes
 
+## Logical Pane Focus Is Not Browser Focus
+
+- **Mistake:** Logical active pane state was treated as if it guaranteed that the browser's DOM focus was inside that pane.
+- **Fix pattern:** Focus-sensitive keyboard systems must explicitly coordinate controller state, DOM focus ownership, and nested widget focus while preserving intentional external control focus.
+
 ## Composite Active State Does Not Guarantee DOM Focus
 
 - **Mistake:** A playground initialized an Ariakit Composite with `store.move(store.first())` during a parent effect and assumed the active item would also receive DOM focus, even though item focus wiring was not ready at that point.

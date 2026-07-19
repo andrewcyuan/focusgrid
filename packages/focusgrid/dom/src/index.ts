@@ -1,5 +1,8 @@
 export { FocusGridDomController } from "./controller";
-export type { FocusGridDomControllerOptions } from "./controller";
+export type {
+  FocusGridDomControllerOptions,
+  FocusGridDomFocusManagement,
+} from "./controller";
 
 export { normalizeKeyboardEvent } from "@focusgrid/shortcut-engine";
 export { KeyboardListener } from "./keyboard-listener";

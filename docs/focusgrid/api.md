@@ -225,3 +225,87 @@ changes and `false` when the pane does not exist or the value is unchanged.
 `FocusGridStateValidationException` when public state is invalid. Use
 `validateFocusGridControllerState(input)` to inspect structured validation
 errors without throwing.
+
+## React focus management
+
+The React subpath exports the following opt-in focus-management type:
+
+```ts
+import type { RefObject } from "react";
+
+type FocusGridFocusManagement = {
+  mode: "application";
+  scopeRef: RefObject<HTMLElement | null>;
+};
+```
+
+`FocusGridProps` accepts it through `focusManagement`:
+
+```ts
+type FocusGridProps = {
+  controller: FocusGridController;
+  keymap?: KeyBinding[];
+  renderPane: (ctx: PaneRenderContext) => ReactNode;
+  className?: string;
+  onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
+  onPaneClose?: (event: PaneCloseEvent) => void;
+  focusManagement?: FocusGridFocusManagement;
+};
+```
+
+The option is resolved after React commits the application wrapper and grid.
+Application mode throws a descriptive error when `scopeRef.current` does not
+contain the rendered Focusgrid root. The DOM controller is recreated when the
+controller, keymap, focus-management mode, or scope-ref identity changes.
+Omitting the option preserves manual focus behavior.
+
+## DOM focus management
+
+The DOM subpath exports the resolved equivalent:
+
+```ts
+type FocusGridDomFocusManagement = {
+  mode: "application";
+  scope: HTMLElement;
+};
+
+type FocusGridDomControllerOptions = {
+  keymap?: KeyBinding[];
+  focusManagement?: FocusGridDomFocusManagement;
+};
+```
+
+Direct DOM consumers pass an existing scope element when constructing the DOM
+controller:
+
+```ts
+import { FocusGridDomController } from "@focusgrid/focusgrid/dom";
+
+const domController = new FocusGridDomController(controller, gridRoot, {
+  keymap,
+  focusManagement: {
+    mode: "application",
+    scope: applicationShell,
+  },
+});
+
+domController.mount();
+// Later:
+domController.destroy();
+```
+
+The scope must contain `gridRoot`. Mounting and destroying are idempotent.
+Destroying removes focus, pointer, window, keyboard, resize, and controller
+listeners, cancels pending focus redirects, and releases remembered descendant
+references.
+
+Application focus restoration follows this order:
+
+1. A still-connected, focusable remembered descendant in the destination pane.
+2. The first enabled tabbable descendant in DOM order.
+3. The pane shell.
+
+External interactive ownership always wins over controller-driven or
+window-reactivation restoration. A primary pointer press on static content in
+the application scope schedules restoration after default pointer focus
+behavior; presses inside the grid or inside interactive controls are ignored.

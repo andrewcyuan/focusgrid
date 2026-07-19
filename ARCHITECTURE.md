@@ -119,7 +119,11 @@ pointermove on resize handle
 ```
 
 The root DOM controller in `packages/focusgrid/dom/src/controller.ts` wires keyboard
-handling and resize observation together.
+handling and resize observation together. When application focus management is
+enabled, it also owns an `ApplicationFocusManager`. That manager subscribes to
+the controller, remembers focused descendants per pane, and coordinates
+restoration from scope pointer events and window reactivation. It does not move
+keyboard listeners off the Focusgrid root.
 
 ## React Subpath
 
@@ -136,8 +140,16 @@ export type FocusGridProps = {
   className?: string;
   onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
   onPaneClose?: (event: PaneCloseEvent) => void;
+  focusManagement?: {
+    mode: "application";
+    scopeRef: RefObject<HTMLElement | null>;
+  };
 };
 ```
+
+The React layer resolves `scopeRef.current` after commit and passes the element
+to the DOM controller. Focus coordination remains a DOM-layer concern; pane
+render contexts do not expose registration refs or focus callbacks.
 
 There is no provider or React context in this subpath. Hooks that need state or
 layout take the controller explicitly:

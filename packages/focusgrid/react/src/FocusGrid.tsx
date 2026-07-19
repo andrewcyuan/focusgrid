@@ -1,4 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import type {
   ComputedPane,
   FocusGridController,
@@ -17,6 +23,11 @@ import { PaneView } from "./PaneView";
 import { ResizeHandle } from "./ResizeHandle";
 import type { PaneRenderContext } from "./PaneView";
 
+export type FocusGridFocusManagement = {
+  mode: "application";
+  scopeRef: RefObject<HTMLElement | null>;
+};
+
 export type FocusGridProps = {
   controller: FocusGridController;
   keymap?: KeyBinding[];
@@ -24,6 +35,7 @@ export type FocusGridProps = {
   className?: string;
   onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
   onPaneClose?: (event: PaneCloseEvent) => void;
+  focusManagement?: FocusGridFocusManagement;
 };
 
 export function FocusGrid({
@@ -33,25 +45,39 @@ export function FocusGrid({
   className,
   onPaneLayoutChange,
   onPaneClose,
+  focusManagement,
 }: FocusGridProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const previousPaneMapRef = useRef<Map<PaneId, ComputedPane> | null>(
     null,
   );
   const layout = useControllerLayout(controller);
+  const focusManagementMode = focusManagement?.mode;
+  const focusManagementScopeRef = focusManagement?.scopeRef;
 
   useEffect(() => {
     if (!rootRef.current) {
       return;
     }
 
-    const domController = new FocusGridDomController(controller, rootRef.current, {
+    const root = rootRef.current;
+    const scope = focusManagementScopeRef?.current;
+    if (focusManagementMode === "application" && !scope?.contains(root)) {
+      throw new Error(
+        "FocusGrid application focus management requires scopeRef.current to contain the rendered Focusgrid root.",
+      );
+    }
+
+    const domController = new FocusGridDomController(controller, root, {
       keymap,
+      focusManagement: focusManagementMode === "application"
+        ? { mode: "application", scope: scope! }
+        : undefined,
     });
 
     domController.mount();
     return () => domController.destroy();
-  }, [controller, keymap]);
+  }, [controller, keymap, focusManagementMode, focusManagementScopeRef]);
 
   useLayoutEffect(() => {
     const currentPaneMap = createPaneMap(layout.panes);

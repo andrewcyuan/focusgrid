@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
@@ -10,7 +11,9 @@ import {
   useControllerState,
   useFocusGridController,
   type PaneRenderContext,
+  type FocusGridFocusManagement,
 } from "../src/index";
+import type { FocusGridDomFocusManagement } from "../../dom/src";
 
 function state(): FocusGridControllerState {
   return {
@@ -139,6 +142,29 @@ describe("pane render context", () => {
       />,
     );
 
+    expect(markup).toContain("<span>left</span>");
+    expect(markup).toContain("<span>right</span>");
+  });
+
+  it("accepts exported application focus options without server side effects", () => {
+    const controller = createFocusGridController(state());
+    const scopeRef = createRef<HTMLElement>();
+    const focusManagement: FocusGridFocusManagement = {
+      mode: "application",
+      scopeRef,
+    };
+    const domFocusManagement: FocusGridDomFocusManagement | undefined =
+      undefined;
+
+    const markup = renderToStaticMarkup(
+      <FocusGrid
+        controller={controller}
+        focusManagement={focusManagement}
+        renderPane={(ctx) => <span>{ctx.paneId}</span>}
+      />,
+    );
+
+    expect(domFocusManagement).toBeUndefined();
     expect(markup).toContain("<span>left</span>");
     expect(markup).toContain("<span>right</span>");
   });

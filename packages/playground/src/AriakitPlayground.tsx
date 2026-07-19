@@ -22,7 +22,7 @@ import {
   parseKeySequence,
   type ShortcutBinding,
 } from "@focusgrid/shortcut-engine";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 type AriakitDemoAction = CompositeNavigationShortcutId | "Enter" | "Space";
 type AriakitDemoArgs = CompositeNavigationShortcutArgs | undefined;
@@ -104,13 +104,19 @@ function createAriakitState(): FocusGridControllerState {
 
 export function AriakitPlayground() {
   const controller = useFocusGridController(createAriakitState);
+  const applicationRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="AriakitPage">
+    <div ref={applicationRef} className="AriakitPage">
       <header className="AriakitPageHeader">
         <div>
           <h1>Ariakit Composite</h1>
           <p>Active pane selections are blue; inactive selections stay gray</p>
+          <p>
+            Focusgrid restores application focus while Ariakit moves focus
+            inside each Composite. Clicking static header space returns to the
+            active pane; interactive header controls keep their own focus.
+          </p>
         </div>
         <a className="ToolbarLink" href="/">
           Focusgrid playground
@@ -119,6 +125,10 @@ export function AriakitPlayground() {
       <FocusGrid
         controller={controller}
         keymap={paneKeymap}
+        focusManagement={{
+          mode: "application",
+          scopeRef: applicationRef,
+        }}
         className="AriakitFocusGrid"
         renderPane={(context) => <AriakitPane {...context} />}
       />
@@ -126,33 +136,13 @@ export function AriakitPlayground() {
   );
 }
 
-function AriakitPane({ active, controller, paneId }: PaneComponentProps) {
+function AriakitPane({ active, paneId }: PaneComponentProps) {
   const composite = useCompositeStore({ orientation: "both" });
-  const paneRef = useRef<HTMLElement | null>(null);
-  const firstRowRef = useRef<HTMLButtonElement | null>(null);
   const [action, setAction] = useState<{
     key: "Enter" | "Space";
     row: string;
     defaultPrevented: boolean;
   } | null>(null);
-
-  useEffect(() => {
-    if (!active) {
-      return;
-    }
-
-    if (paneRef.current?.contains(document.activeElement)) {
-      return;
-    }
-
-    const activeId = composite.getState().activeId;
-    const target = activeId
-      ? document.getElementById(activeId)
-      : firstRowRef.current;
-
-    composite.move(activeId ?? composite.first());
-    target?.focus({ preventScroll: true });
-  }, [active, composite]);
 
   const onMatch = useCallback(
     ({
@@ -216,7 +206,7 @@ function AriakitPane({ active, controller, paneId }: PaneComponentProps) {
   });
 
   return (
-    <section ref={paneRef} className="AriakitPane" data-active={active}>
+    <section className="AriakitPane" data-active={active}>
       <div className="AriakitPaneIntro">
         <div>
           <strong>Ariakit-managed rows</strong>
@@ -236,15 +226,13 @@ function AriakitPane({ active, controller, paneId }: PaneComponentProps) {
         aria-label={`Ariakit rows in ${paneId}`}
       >
         <div className="AriakitRows">
-          {rows.map((row, index) => (
+          {rows.map((row) => (
             <CompositeItem
               store={composite}
-              ref={index === 0 ? firstRowRef : undefined}
               className="AriakitRow"
               data-row-id={row.id}
               id={createRowId(paneId, row.id)}
               key={row.id}
-              onFocus={() => controller.api.focus(paneId)}
             >
               <span>{row.label}</span>
               <small>Composite item</small>
@@ -257,7 +245,6 @@ function AriakitPane({ active, controller, paneId }: PaneComponentProps) {
           <input
             aria-label="Editable input"
             placeholder="Type J, K, G, or spaces here"
-            onFocus={() => controller.api.focus(paneId)}
           />
         </label>
       </Composite>

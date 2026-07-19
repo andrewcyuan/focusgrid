@@ -315,6 +315,7 @@ test("Focusgrid pane shortcuts transfer focus between Ariakit composites", async
   const rightPane = page.locator('[data-pane-id="ariakit-beta"]');
   const leftBeta = leftPane.locator('[data-row-id="beta"]');
   const rightAlpha = rightPane.locator('[data-row-id="alpha"]');
+  const rightBeta = rightPane.locator('[data-row-id="beta"]');
 
   await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
   await page.keyboard.press("ArrowDown");
@@ -332,6 +333,8 @@ test("Focusgrid pane shortcuts transfer focus between Ariakit composites", async
     "background-color",
     "rgb(237, 244, 255)",
   );
+  await page.keyboard.press("ArrowDown");
+  await expect(rightBeta).toBeFocused();
 
   await page.keyboard.press("Control+B");
   await page.keyboard.press("ArrowLeft");
@@ -339,4 +342,65 @@ test("Focusgrid pane shortcuts transfer focus between Ariakit composites", async
   await expect(leftPane).toHaveAttribute("data-active", "true");
   await expect(leftBeta).toBeFocused();
   await expect(leftBeta).toHaveCSS("background-color", "rgb(237, 244, 255)");
+
+  await page.keyboard.press("Control+B");
+  await page.keyboard.press("ArrowRight");
+  await expect(rightBeta).toBeFocused();
+});
+
+test("static Ariakit header clicks restore the active pane", async ({ page }) => {
+  await page.goto("/aria-kit");
+
+  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
+  const beta = leftPane.locator('[data-row-id="beta"]');
+  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(beta).toBeFocused();
+
+  await page.locator(".AriakitPageHeader h1").click();
+  await expect(beta).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(leftPane.locator('[data-row-id="gamma"]')).toBeFocused();
+});
+
+test("window reactivation restores unowned Ariakit focus", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/aria-kit");
+  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
+  const beta = leftPane.locator('[data-row-id="beta"]');
+  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(beta).toBeFocused();
+  await beta.evaluate((element) => element.blur());
+
+  const otherPage = await context.newPage();
+  await otherPage.goto("about:blank");
+  await otherPage.bringToFront();
+  await page.bringToFront();
+  await page.evaluate(() => window.dispatchEvent(new FocusEvent("focus")));
+
+  await expect(beta).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(leftPane.locator('[data-row-id="gamma"]')).toBeFocused();
+  await otherPage.close();
+});
+
+test("window reactivation preserves interactive Ariakit header controls", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/aria-kit");
+  const toolbarLink = page.getByRole("link", { name: "Focusgrid playground" });
+  await toolbarLink.focus();
+
+  const otherPage = await context.newPage();
+  await otherPage.goto("about:blank");
+  await otherPage.bringToFront();
+  await page.bringToFront();
+  await page.evaluate(() => window.dispatchEvent(new FocusEvent("focus")));
+
+  await expect(toolbarLink).toBeFocused();
+  await otherPage.close();
 });

@@ -141,8 +141,85 @@ function TextPane({ paneId, active, controller }: PaneComponentProps) {
 }
 ```
 
-This is the core focus contract: DOM focus can live inside pane content, while
-FocusGrid tracks the active pane in controller state.
+This is the default, manual focus contract: DOM focus can live inside pane
+content, while FocusGrid tracks the active pane in controller state. Updating
+`activePaneId` does not, by itself, move browser focus.
+
+## Application focus management
+
+Use application focus management when a Focusgrid is the primary keyboard
+surface inside an application shell. The policy is opt-in; omitting
+`focusManagement` preserves the manual behavior above.
+
+Create a ref for the application shell and pass the same ref to `FocusGrid`:
+
+```tsx
+function MailApp() {
+  const applicationRef = useRef<HTMLDivElement>(null);
+  const controller = useFocusGridController(createInitialState);
+
+  return (
+    <div ref={applicationRef} className="MailApp">
+      <header>
+        <h1>Mail</h1>
+        <a href="/settings">Settings</a>
+      </header>
+
+      <FocusGrid
+        controller={controller}
+        keymap={createDefaultPaneKeymap().keymap}
+        focusManagement={{
+          mode: "application",
+          scopeRef: applicationRef,
+        }}
+        renderPane={(ctx) => <MailPane {...ctx} />}
+      />
+    </div>
+  );
+}
+```
+
+`scopeRef.current` must contain the rendered Focusgrid root. A scope should
+contain only one application-managed Focusgrid, but it may also contain static
+application chrome such as headers, status bars, and toolbars.
+
+Application mode coordinates logical pane focus with browser DOM focus:
+
+- Focusing a descendant of a pane makes that pane logically active.
+- Each pane remembers its last focused descendant independently.
+- Changing the active pane restores that pane when DOM focus is already inside
+  the grid or is otherwise unowned.
+- Reactivating the browser window restores the active pane when focus has
+  fallen back to the document body, document root, or static content.
+- Clicking static chrome inside the application scope restores the active
+  pane after the pointer event finishes.
+
+When entering a pane, Focusgrid tries the remembered descendant, then the first
+enabled tabbable descendant in DOM order, then the pane shell. Disabled,
+hidden, inert, `aria-disabled`, and negative-tab-index fallback elements are
+skipped. Focus is moved with `preventScroll: true`.
+
+External interactive controls retain intentional focus. This includes links,
+buttons, form controls, editable elements, dialogs, focusable elements, and
+semantic widget regions. Clicking the Settings link in the example therefore
+does not redirect focus into the grid, and a later pane-state update does not
+steal focus from it.
+
+Focusgrid does not install document-global keyboard routing in application
+mode. Keyboard listeners remain on the Focusgrid root, so shortcuts work after
+focus is restored into a pane but do not run from unrelated external inputs.
+The policy is focus coordination, not a focus trap.
+
+### Nested composite widgets
+
+Nested widgets continue to own navigation within their own DOM subtree. For
+example, Ariakit owns the active item and arrow-key movement inside a
+`Composite`; Focusgrid only remembers the focused Composite item and restores
+it when its pane becomes active again. Pane renderers do not need focus refs,
+pane-specific effects, or Ariakit-specific integration for restoration.
+
+Use manual mode when the grid is only one of several peer keyboard surfaces,
+or when the application needs a different focus-ownership policy.
 
 ## Programmatic controls
 
