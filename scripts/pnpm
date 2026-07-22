@@ -3,49 +3,35 @@ set -euo pipefail
 
 PNPM_VERSION="10.25.0"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COREPACK_TARBALL="$ROOT_DIR/.corepack/pnpm-$PNPM_VERSION.tgz"
 PNPM_CLI="$ROOT_DIR/.corepack/cache/v1/pnpm/$PNPM_VERSION/bin/pnpm.cjs"
 export COREPACK_HOME="${COREPACK_HOME:-$ROOT_DIR/.corepack/cache}"
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-if ! command -v corepack >/dev/null 2>&1; then
-  if [[ -f "$PNPM_CLI" ]]; then
-    exec node "$PNPM_CLI" "$@"
-  fi
-
-  cat >&2 <<EOF
-corepack is required to install pnpm $PNPM_VERSION for this repo.
-
-This workspace can also run from the repo-local pnpm cache when it exists at:
-  .corepack/cache/v1/pnpm/$PNPM_VERSION/bin/pnpm.cjs
-
-From a normal terminal with network access, run:
-  corepack install -g --cache-only .corepack/pnpm-$PNPM_VERSION.tgz
-EOF
-  exit 1
+if [[ -f "$PNPM_CLI" ]]; then
+  exec node "$PNPM_CLI" "$@"
 fi
 
-if ! corepack pnpm --version >/dev/null 2>&1; then
-  if [[ ! -f "$COREPACK_TARBALL" ]]; then
-    cat >&2 <<EOF
-pnpm $PNPM_VERSION is not available in the local Corepack cache.
+if command -v pnpm >/dev/null 2>&1; then
+  actual_version="$(pnpm --version)"
+  if [[ "$actual_version" == "$PNPM_VERSION" ]]; then
+    exec pnpm "$@"
+  fi
+fi
 
-From a normal terminal with network access, run:
-  corepack pack pnpm@$PNPM_VERSION -o .corepack/pnpm-$PNPM_VERSION.tgz
-
-Commit .corepack/pnpm-$PNPM_VERSION.tgz so Codex can install pnpm offline.
-EOF
+if command -v corepack >/dev/null 2>&1; then
+  actual_version="$(corepack pnpm --version)"
+  if [[ "$actual_version" != "$PNPM_VERSION" ]]; then
+    echo "Expected pnpm $PNPM_VERSION, but Corepack resolved pnpm $actual_version." >&2
     exit 1
   fi
 
-  corepack install -g --cache-only "$COREPACK_TARBALL" >/dev/null
+  exec corepack pnpm "$@"
 fi
 
-actual_version="$(corepack pnpm --version)"
-if [[ "$actual_version" != "$PNPM_VERSION" ]]; then
-  echo "Expected pnpm $PNPM_VERSION, but Corepack resolved pnpm $actual_version." >&2
-  echo "Try removing .corepack/cache and running ./scripts/pnpm again." >&2
-  exit 1
-fi
+cat >&2 <<EOF
+pnpm $PNPM_VERSION is required for this repo.
 
-exec corepack pnpm "$@"
+Install that exact version globally, or install Corepack and run this command
+again with network access so Corepack can populate the ignored repo-local cache.
+EOF
+exit 1

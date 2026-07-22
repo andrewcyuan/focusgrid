@@ -2,6 +2,14 @@
   "name": "focusgrid",
   "version": "0.0.1",
   "private": true,
+  "description": "Keyboard-native pane layouts, deterministic focus management, and shortcut routing for the web.",
+  "keywords": [
+    "keyboard-navigation",
+    "focus-management",
+    "pane-layout",
+    "react",
+    "typescript"
+  ],
   "type": "module",
   "license": "MIT",
   "repository": {

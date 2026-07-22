@@ -1,6 +1,14 @@
 {
   "name": "@focusgrid/shortcut-engine",
   "version": "0.1.0",
+  "description": "Key sequence parsing, normalization, and stateful keyboard shortcut routing.",
+  "keywords": [
+    "keyboard-shortcuts",
+    "hotkeys",
+    "keybindings",
+    "keyboard",
+    "typescript"
+  ],
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -9,8 +17,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "LICENSE",
-    "README.md"
+    "LICENSE"
   ],
   "repository": {
     "type": "git",

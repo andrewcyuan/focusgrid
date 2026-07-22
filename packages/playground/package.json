@@ -2,6 +2,14 @@
   "name": "@focusgrid/playground",
   "version": "0.0.1",
   "private": true,
+  "description": "Development playground for Focusgrid, Shortcut Engine, and the Ariakit adapter.",
+  "keywords": [
+    "focusgrid",
+    "playground",
+    "react",
+    "ariakit",
+    "keyboard-navigation"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",

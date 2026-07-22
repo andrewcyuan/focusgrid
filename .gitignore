@@ -5,4 +5,5 @@ coverage
 *.tsbuildinfo
 .pnpm-store
 .corepack/cache
+.corepack/*.tgz
 .packs

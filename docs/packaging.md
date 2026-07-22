@@ -28,9 +28,9 @@ shape that npm consumers receive.
 
 ## Package manager pinning
 
-`packageManager` pins `pnpm@10.25.0`. `./scripts/pnpm` runs that version through
-Corepack, or from the repo-local `.corepack/cache` when Corepack is unavailable
-but the cache has already been installed.
+`packageManager` pins `pnpm@10.25.0`. `./scripts/pnpm` runs that version from
+the ignored repo-local cache when available, then falls back to an exact global
+installation or Corepack.
 
 Corepack is not how Focusgrid packages are consumed. It only controls which
 package manager version runs the workspace.
@@ -76,6 +76,6 @@ of local tarball paths.
 ## Turborepo
 
 Focusgrid does not use Turborepo. Turborepo is a task runner and cache layer; it
-does not replace pnpm workspaces, Corepack, npm pack, or npm publish. Add it only
+does not replace pnpm workspaces, npm pack, or npm publish. Add it only
 if recursive pnpm scripts become too slow and build caching is worth the extra
 tooling.
