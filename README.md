@@ -2,6 +2,13 @@
 
 Libraries for building tmux-like pane layouts in the web. Fully keyboard-controlled and scriptable using a centralized controller. Plus a shortcut engine + ariakit helpers.
 
+Try some examples in the playground!
+```bash
+cd packages/playground
+pnpm install
+pnpm dev
+```
+
 __The basic idea__
 
 Similar to `tmux`, Focusgrid represents panes as a binary tree of nodes, enabling intuitive splitting, resize, swapping, and deletion. Each pane has its own render function, allowing you to build whatever you want in the panes. Finally, `tmux` for everything, not just terminals!

@@ -1,0 +1,16 @@
+[
+  {
+    "date": "2026-07-22",
+    "macrostructure": "Catalogue",
+    "theme": "Cobalt",
+    "enrichment": "none",
+    "brief": "Utilitarian Focusgrid demo catalogue with GitHub action"
+  },
+  {
+    "date": "2026-07-21",
+    "macrostructure": "Index-First",
+    "theme": "Cobalt",
+    "enrichment": "none",
+    "brief": "Focusgrid public demo hub and keyboard playgrounds"
+  }
+]

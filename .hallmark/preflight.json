@@ -1,0 +1,8 @@
+{
+  "date": "2026-07-21",
+  "font_stack": "system UI sans with ui-monospace accents",
+  "palette": "existing cool white, gray, and cobalt playground palette",
+  "motion": "motion-cut; no motion dependency",
+  "spacing": "4px-derived CSS token scale",
+  "framework": "React 18 with Vite"
+}

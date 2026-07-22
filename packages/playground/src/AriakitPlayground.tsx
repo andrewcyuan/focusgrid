@@ -10,7 +10,6 @@ import {
   type CompositeNavigationShortcutId,
 } from "@focusgrid/ariakit-adapter/react";
 import {
-  createDefaultPaneKeymap,
   type FocusGridControllerState,
 } from "@focusgrid/focusgrid/core";
 import {
@@ -23,6 +22,11 @@ import {
   type ShortcutBinding,
 } from "@focusgrid/shortcut-engine";
 import { useCallback, useRef, useState } from "react";
+import { DemoHeader } from "./DemoHeader";
+import {
+  createDemoPaneKeymap,
+  paneNavigationShortcuts,
+} from "./pane-navigation";
 
 type AriakitDemoAction = CompositeNavigationShortcutId | "Enter" | "Space";
 type AriakitDemoArgs = CompositeNavigationShortcutArgs | undefined;
@@ -41,9 +45,9 @@ const shortcutSummary = [
   "Shift-G",
   "Enter",
   "Space",
-  "Ctrl-B ←/→ panes",
+  ...paneNavigationShortcuts,
 ];
-const paneKeymap = createDefaultPaneKeymap().keymap;
+const paneKeymap = createDemoPaneKeymap();
 
 const ariakitKeymap: ShortcutBinding<
   undefined,
@@ -108,20 +112,15 @@ export function AriakitPlayground() {
 
   return (
     <div ref={applicationRef} className="AriakitPage">
-      <header className="AriakitPageHeader">
-        <div>
-          <h1>Ariakit Composite</h1>
-          <p>Active pane selections are blue; inactive selections stay gray</p>
-          <p>
-            Focusgrid restores application focus while Ariakit moves focus
-            inside each Composite. Clicking static header space returns to the
-            active pane; interactive header controls keep their own focus.
-          </p>
-        </div>
-        <a className="ToolbarLink" href="/">
-          Focusgrid playground
-        </a>
-      </header>
+      <DemoHeader
+        title="Ariakit composite"
+        description="Application-managed pane focus meets Ariakit collection navigation."
+        shortcutSummary={shortcutSummary}
+      >
+        <p className="DemoHeaderDetail">
+          Static header clicks restore the active row; header links keep focus.
+        </p>
+      </DemoHeader>
       <FocusGrid
         controller={controller}
         keymap={paneKeymap}

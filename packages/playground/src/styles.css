@@ -1,12 +1,17 @@
-:root {
-  color: #172033;
-  background: #eef1f6;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+/* Hallmark · genre: modern-minimal · macrostructure: Catalogue · theme: Cobalt · tone: utilitarian · anchor hue: cobalt
+ * audience: developers evaluating Focusgrid · use: choose and exercise a focus demo
+ * nav: N9 edge-aligned · footer: Ft1 mast-headed · enrichment: none
+ * contrast: pass (40–41) · slop: pass (42–49) · mobile: pass (34, 49–57)
+ * pre-emit critique: P5 H5 E5 S5 R5 V5
+ */
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: clip;
 }
 
 html,
@@ -17,6 +22,12 @@ body,
   margin: 0;
 }
 
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
 button,
 input,
 select,
@@ -24,9 +35,300 @@ textarea {
   font: inherit;
 }
 
+button,
+a,
+input,
+select,
+textarea,
+summary,
+[tabindex] {
+  outline: var(--rule-active) solid transparent;
+  outline-offset: var(--space-2xs);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline-color: var(--color-focus);
+}
+
+button:active,
+a:active,
+summary:active,
+[tabindex]:active {
+  color: var(--color-accent-deep);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+kbd {
+  border: var(--rule-thin) solid var(--color-rule-strong);
+  border-block-end-width: var(--rule-active);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-soft);
+  color: var(--color-ink-soft);
+  font: 650 var(--text-xs)/1.2 var(--font-mono);
+  padding: var(--space-2xs) var(--space-xs);
+  white-space: nowrap;
+}
+
+/* Hub */
+
+.DemoHub {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100%;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  padding-inline: clamp(var(--space-md), 4vw, var(--space-2xl));
+}
+
+.HubMasthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  width: min(76rem, 100%);
+  margin-inline: auto;
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  padding-block: var(--space-md);
+}
+
+.HubIdentity {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.HubIdentity strong {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  letter-spacing: -0.025em;
+}
+
+.HubIdentity span {
+  color: var(--color-muted);
+  font: 650 var(--text-xs)/1.2 var(--font-mono);
+}
+
+.GithubButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 2.75rem;
+  border: var(--rule-thin) solid var(--color-repository-button);
+  border-radius: var(--radius-sm);
+  background: var(--color-repository-button);
+  color: var(--color-repository-button-ink);
+  font-size: var(--text-sm);
+  font-weight: 750;
+  padding-inline: var(--space-md);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.GithubButton:active {
+  background: var(--color-repository-button-ink);
+  color: var(--color-repository-button);
+}
+
+.DemoHub a:focus-visible {
+  outline: none;
+}
+
+.GithubButton:focus-visible {
+  filter: contrast(0.8);
+}
+
+.HubCatalogue {
+  display: grid;
+  align-content: center;
+  gap: var(--space-2xl);
+  width: min(76rem, 100%);
+  min-width: 0;
+  margin-inline: auto;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  padding-block: clamp(var(--space-2xl), 8vw, var(--space-4xl));
+}
+
+.HubIntro {
+  display: grid;
+  grid-template-columns: minmax(0, 0.65fr) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--space-xl);
+  min-width: 0;
+}
+
+.HubIntro h1 {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-style: normal;
+  font-weight: 680;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.HubIntro p {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+
+.DemoList {
+  margin: 0;
+  border-block-start: var(--rule-thin) solid var(--color-ink);
+  padding: 0;
+  list-style: none;
+}
+
+.DemoListRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(6rem, 18vw, 10rem);
+  align-items: center;
+  gap: var(--space-lg);
+  min-width: 0;
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  padding-block: var(--space-md);
+  text-decoration: none;
+}
+
+.DemoListRow strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-md);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.DemoListRow span {
+  color: var(--color-muted);
+  font: 650 var(--text-sm)/1 var(--font-mono);
+  white-space: nowrap;
+}
+
+.DemoListRow:focus-visible {
+  background: var(--color-accent-soft);
+}
+
+.HubFooter {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-lg);
+  width: min(76rem, 100%);
+  margin-inline: auto;
+  border-block-start: var(--rule-thin) solid var(--color-rule);
+  color: var(--color-muted);
+  padding-block: var(--space-md);
+  font-size: var(--text-xs);
+}
+
+.HubFooter strong {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+}
+
+.HubFooter span:last-child {
+  margin-inline-start: auto;
+}
+
+/* Shared demo header */
+
+.DemoHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md) var(--space-xl);
+  min-width: 0;
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  background: var(--color-paper);
+  padding: var(--space-sm) clamp(var(--space-sm), 2vw, var(--space-lg));
+}
+
+.DemoHeaderCopy {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.DemoHeaderBrand,
+.DemoHeaderLink,
+.ToolbarLink {
+  color: var(--color-accent-deep);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.DemoHeaderBrand {
+  padding-block-start: var(--space-2xs);
+}
+
+.DemoHeader h1,
+.DemoHeader p {
+  margin: 0;
+}
+
+.DemoHeader h1 {
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-style: normal;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.DemoHeader p {
+  margin-block-start: var(--space-2xs);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.DemoHeaderAside,
+.ShortcutSummary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.DemoHeaderAside {
+  flex: 0 1 46rem;
+}
+
+/* Tmux playground */
+
 .AppShell {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 17.5rem minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -40,72 +342,60 @@ textarea {
 .Sidebar {
   min-width: 0;
   overflow: auto;
-  border-right: 1px solid #d6dce8;
-  background: #f8fafc;
-  padding: 20px;
+  border-inline-end: var(--rule-thin) solid var(--color-rule);
+  background: var(--color-paper-soft);
+  padding: var(--space-lg);
 }
 
 .SidebarHeader {
   display: grid;
-  gap: 2px;
-  margin-bottom: 24px;
+  gap: var(--space-2xs);
+  margin-block-end: var(--space-lg);
 }
 
 .SidebarHeader h1 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
   line-height: 1.2;
 }
 
 .SidebarHeader span,
 .TextPaneHeader span,
 .ToolbarMeta {
-  color: #5c667a;
-  font-size: 13px;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
 }
 
 .ShortcutList {
   display: grid;
-  gap: 14px;
-}
-
-.SidebarSection {
-  display: grid;
-  gap: 12px;
-  margin-top: 22px;
-}
-
-.SidebarSection:first-of-type {
-  margin-top: 0;
-}
-
-.SidebarSection h2 {
-  margin: 0;
-  color: #172033;
-  font-size: 13px;
-  line-height: 1.2;
-  text-transform: uppercase;
+  gap: var(--space-md);
 }
 
 .ShortcutBinder {
   display: grid;
-  gap: 6px;
+  gap: var(--space-xs);
 }
 
 .ShortcutBinder span {
-  color: #2c3548;
-  font-size: 13px;
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 
-.ShortcutBinder input {
+.ShortcutBinder input,
+.ToolbarActions select,
+.AriakitEditable input {
   width: 100%;
   min-width: 0;
-  border: 1px solid #c7cfdd;
-  border-radius: 6px;
-  background: white;
-  color: #172033;
-  padding: 8px 10px;
+  border: var(--rule-thin) solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.ShortcutBinder input {
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .ControllerShell {
@@ -119,39 +409,47 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid #d6dce8;
-  background: white;
-  padding: 10px 12px;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  background: var(--color-paper);
+  padding: var(--space-sm);
 }
 
-.Toolbar button {
-  border: 1px solid #b8c2d4;
-  border-radius: 6px;
-  background: #172033;
-  color: white;
+.Toolbar button,
+.ToolbarMenu summary,
+.ReaderToolbar button {
+  min-height: 2.25rem;
+  border: var(--rule-thin) solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-ink);
+  color: var(--color-paper);
   cursor: pointer;
-  padding: 7px 12px;
+  padding: var(--space-xs) var(--space-sm);
+  white-space: nowrap;
 }
 
 .Toolbar button:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.5;
 }
 
 .ToolbarActions {
   display: flex;
   flex: 1;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
   min-width: 0;
 }
 
-.ToolbarButtonGroup {
+.ToolbarButtonGroup,
+.GuardToggles,
+.ToolbarMeta {
   display: flex;
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
 }
 
 .ToolbarMenu {
@@ -161,12 +459,6 @@ textarea {
 
 .ToolbarMenu summary {
   list-style: none;
-  border: 1px solid #b8c2d4;
-  border-radius: 6px;
-  background: #172033;
-  color: white;
-  cursor: pointer;
-  padding: 7px 12px;
   user-select: none;
 }
 
@@ -177,86 +469,63 @@ textarea {
 .ToolbarMenuPanel {
   position: absolute;
   z-index: 20;
-  top: calc(100% + 6px);
-  left: 0;
+  inset-block-start: calc(100% + var(--space-xs));
+  inset-inline-start: 0;
   display: grid;
-  gap: 8px;
-  width: min(360px, calc(100vw - 24px));
-  border: 1px solid #c7cfdd;
-  border-radius: 8px;
-  background: white;
-  box-shadow: 0 16px 32px rgb(23 32 51 / 18%);
-  padding: 10px;
-}
-
-.ToolbarMenuPanel .ToolbarButtonGroup {
-  flex-wrap: wrap;
+  gap: var(--space-xs);
+  width: min(22.5rem, calc(100dvw - var(--space-lg)));
+  border: var(--rule-thin) solid var(--color-rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-paper);
+  box-shadow: 0 1rem 2rem var(--color-shadow);
+  color: var(--color-ink);
+  padding: var(--space-sm);
 }
 
 .ToolbarActions label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
-  color: #2c3548;
-  font-size: 13px;
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 
 .ToolbarActions select {
-  min-width: 100px;
-  max-width: 180px;
-  border: 1px solid #c7cfdd;
-  border-radius: 6px;
-  background: white;
-  color: #172033;
-  padding: 7px 28px 7px 10px;
+  min-width: 6.25rem;
+  max-width: 11.25rem;
+  padding: var(--space-xs) var(--space-xl) var(--space-xs) var(--space-sm);
 }
 
 .GuardToggles {
-  display: flex;
   flex: 1;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
   min-width: 0;
 }
 
 .Toolbar .GuardToggle {
-  border-color: #c7cfdd;
-  background: #f8fafc;
-  color: #2c3548;
-  padding: 6px 9px;
+  min-height: 2rem;
+  border-color: var(--color-rule-strong);
+  background: var(--color-paper-soft);
+  color: var(--color-ink-soft);
+  padding: var(--space-xs);
 }
 
 .Toolbar .GuardToggle[data-active="true"] {
-  border-color: #244f9e;
-  background: #2b6de8;
-  color: white;
+  border-color: var(--color-accent-deep);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 .ToolbarMeta {
-  display: flex;
-  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
-.ToolbarLink {
-  color: #244f9e;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.ToolbarMode {
-  color: #2c3548;
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.PlaygroundFocusGrid {
-  background: #e5eaf3;
+.PlaygroundFocusGrid,
+.AriakitFocusGrid,
+.EmailFocusGrid {
+  background: var(--color-canvas-deep);
 }
 
 .TextPane {
@@ -266,21 +535,22 @@ textarea {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  border: 1px solid #d6dce8;
-  background: white;
+  border: var(--rule-thin) solid var(--color-rule);
+  background: var(--color-paper);
+  color: var(--color-ink);
 }
 
 .TextPane[data-active="true"] {
-  border-color: #2b6de8;
+  border-color: var(--color-accent);
 }
 
 .TextPaneHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid #e1e6ef;
-  padding: 8px 10px;
+  gap: var(--space-sm);
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .TextPane textarea {
@@ -290,179 +560,503 @@ textarea {
   min-height: 0;
   resize: none;
   border: 0;
-  outline: none;
-  color: #172033;
-  padding: 12px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  padding: var(--space-sm);
 }
 
-.AriakitPage {
+/* Ariakit demo */
+
+.AriakitPage,
+.EmailPage {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-width: 0;
   min-height: 0;
 }
 
-.AriakitPageHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  border-bottom: 1px solid #d6dce8;
-  background: white;
-  padding: 14px 18px;
-}
-
-.AriakitPageHeader h1,
-.AriakitPageHeader p {
-  margin: 0;
-}
-
-.AriakitPageHeader h1 {
-  font-size: 20px;
-}
-
-.AriakitPageHeader p {
-  margin-top: 3px;
-  color: #5c667a;
-  font-size: 13px;
-}
-
-.AriakitFocusGrid {
-  background: #e5eaf3;
+.AriakitPage {
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .AriakitPane {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 18px;
+  gap: var(--space-lg);
   width: 100%;
   height: 100%;
   overflow: auto;
-  border: 2px solid #c7cfdd;
-  background: white;
-  padding: clamp(18px, 4vw, 48px);
+  border: var(--rule-active) solid var(--color-rule-strong);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  padding: clamp(var(--space-sm), 4vw, var(--space-2xl));
 }
 
 .AriakitPane[data-active="true"] {
-  border-color: #2b6de8;
+  border-color: var(--color-accent);
 }
 
 .AriakitPaneIntro {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--space-lg);
 }
 
 .AriakitPaneIntro > div:first-child {
   display: grid;
-  gap: 4px;
+  gap: var(--space-2xs);
 }
 
 .AriakitPaneIntro span,
 .AriakitEditable span {
-  color: #5c667a;
-  font-size: 13px;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
 }
 
 .AriakitShortcutList {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
-}
-
-.AriakitShortcutList kbd {
-  border: 1px solid #c7cfdd;
-  border-bottom-width: 2px;
-  border-radius: 5px;
-  background: #f8fafc;
-  padding: 4px 7px;
-  color: #2c3548;
-  font: 650 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  gap: var(--space-xs);
 }
 
 .AriakitComposite {
   display: grid;
   align-content: start;
-  gap: 22px;
-  width: min(680px, 100%);
+  gap: var(--space-lg);
+  width: min(42.5rem, 100%);
   margin: auto;
-  outline: none;
 }
 
 .AriakitRows {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .AriakitRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   width: 100%;
-  border: 1px solid #c7cfdd;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #172033;
+  min-width: 0;
+  border: var(--rule-thin) solid var(--color-rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-soft);
+  color: var(--color-ink);
   cursor: pointer;
-  padding: 14px 16px;
-  text-align: left;
+  padding: var(--space-md);
+  text-align: start;
 }
 
 .AriakitRow small {
-  color: #69758b;
+  color: var(--color-muted);
 }
 
 .AriakitRow[data-active-item] {
-  border-color: #8b95a7;
-  outline: 3px solid rgb(105 117 139 / 18%);
-  background: #e4e8ee;
+  border-color: var(--color-muted);
+  background: var(--color-inactive);
 }
 
 .AriakitPane[data-active="true"] .AriakitRow:focus,
 .AriakitPane[data-active="true"] .AriakitRow[data-active-item] {
-  border-color: #2b6de8;
-  outline: 3px solid rgb(43 109 232 / 22%);
-  background: #edf4ff;
+  outline: none;
+  background: var(--color-accent-soft);
 }
 
 .AriakitEditable {
   display: grid;
-  gap: 7px;
+  gap: var(--space-xs);
 }
 
 .AriakitEditable input {
-  width: 100%;
-  border: 1px solid #c7cfdd;
-  border-radius: 7px;
-  outline: none;
-  padding: 10px 12px;
-}
-
-.AriakitEditable input:focus {
-  border-color: #2b6de8;
-  box-shadow: 0 0 0 3px rgb(43 109 232 / 18%);
+  padding: var(--space-sm);
 }
 
 .AriakitActionStatus {
   justify-self: center;
-  border-radius: 999px;
-  background: #172033;
-  color: white;
-  padding: 8px 14px;
-  font-size: 13px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
-@media (max-width: 700px) {
+/* Email demo */
+
+.EmailPage {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.EmailTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-width: 0;
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  background: var(--color-paper-soft);
+  color: var(--color-muted);
+  padding: var(--space-xs) clamp(var(--space-sm), 2vw, var(--space-lg));
+  font-size: var(--text-sm);
+}
+
+.EmailTopBar strong {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+}
+
+.EmailPane {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border: var(--rule-active) solid var(--color-rule);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.EmailPane[data-active="true"] {
+  border-color: var(--color-accent);
+}
+
+.EmailPaneHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  padding: var(--space-md);
+}
+
+.EmailPaneHeading span {
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.EmailPaneHeading small,
+.MailboxNote {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.MailboxSidebar {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.MailboxComposite,
+.ThreadComposite {
+  display: grid;
+  align-content: start;
+}
+
+.MailboxComposite {
+  gap: var(--space-2xs);
+  padding: var(--space-sm);
+}
+
+.MailboxRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 2.75rem;
+  border: var(--rule-thin) solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  text-align: start;
+}
+
+.MailboxRow[data-selected="true"] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-deep);
+  font-weight: 700;
+}
+
+.MailboxRow:focus,
+.ThreadRow:focus {
+  outline: none;
+  background: var(--color-accent-soft);
+}
+
+.MailboxNote {
+  margin: 0;
+  border-block-start: var(--rule-thin) solid var(--color-rule);
+  padding: var(--space-sm);
+  line-height: 1.45;
+}
+
+.ThreadList {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.ThreadComposite {
+  overflow: auto;
+}
+
+.ThreadRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2xs) var(--space-sm);
+  min-width: 0;
+  border: var(--rule-thin) solid transparent;
+  border-block-end-color: var(--color-rule);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  cursor: pointer;
+  padding: var(--space-sm) var(--space-md);
+  text-align: start;
+}
+
+.ThreadRow[data-unread="true"] .ThreadSender,
+.ThreadRow[data-unread="true"] strong {
+  font-weight: 750;
+}
+
+.ThreadSender,
+.ThreadRow strong,
+.ThreadPreview {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ThreadSender,
+.ThreadRow time {
+  font-size: var(--text-sm);
+}
+
+.ThreadRow time {
+  color: var(--color-muted);
+}
+
+.ThreadRow strong,
+.ThreadPreview {
+  grid-column: 1 / -1;
+}
+
+.ThreadPreview {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.EmailReader {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.ReaderToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.ReaderToolbar button {
+  background: var(--color-paper);
+  color: var(--color-accent-deep);
+}
+
+.ReaderHeader,
+.ReaderBody {
+  padding: clamp(var(--space-md), 3vw, var(--space-xl));
+}
+
+.ReaderHeader {
+  border-block-end: var(--rule-thin) solid var(--color-rule);
+}
+
+.ReaderHeader h2 {
+  min-width: 0;
+  margin: 0 0 var(--space-lg);
+  font-family: var(--font-display);
+  font-size: clamp(var(--text-lg), 3vw, var(--text-xl));
+  font-style: normal;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.ReaderHeader dl {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0;
+}
+
+.ReaderHeader dl div {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.ReaderHeader dt,
+.ReaderHeader dd {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.ReaderHeader dt {
+  color: var(--color-muted);
+}
+
+.ReaderHeader dd {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ReaderBody {
+  max-width: 46rem;
+  color: var(--color-ink-soft);
+  font-size: var(--text-md);
+  line-height: 1.65;
+}
+
+.ReaderBody p:first-child {
+  margin-block-start: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .DemoListRow:hover strong,
+  .DemoHeaderBrand:hover,
+  .DemoHeaderLink:hover,
+  .ToolbarLink:hover {
+    color: var(--color-accent);
+  }
+
+  .DemoListRow:hover span {
+    color: var(--color-ink);
+  }
+
+  .GithubButton:hover {
+    background: var(--color-repository-button-ink);
+    color: var(--color-repository-button);
+  }
+
+  .Toolbar button:hover,
+  .ToolbarMenu summary:hover {
+    background: var(--color-accent-deep);
+  }
+
+  .MailboxRow:hover,
+  .ThreadRow:hover,
+  .AriakitRow:hover {
+    background: var(--color-accent-soft);
+  }
+}
+
+@media (min-width: 40rem) {
+  .DemoHeaderDetail {
+    max-width: 36rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .DemoHeader {
+    display: grid;
+  }
+
+  .DemoHeaderCopy {
+    display: grid;
+    gap: var(--space-xs);
+  }
+
+  .DemoHeaderAside,
+  .ShortcutSummary {
+    justify-content: flex-start;
+  }
+
+  .HubIntro {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-md);
+  }
+
   .AriakitPaneIntro {
     display: grid;
   }
 
   .AriakitShortcutList {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 36rem) {
+  .DemoHub {
+    padding-inline: var(--space-md);
+  }
+
+  .HubIdentity span {
+    display: none;
+  }
+
+  .GithubButton {
+    min-height: 2.5rem;
+    padding-inline: var(--space-sm);
+  }
+
+  .HubCatalogue {
+    gap: var(--space-xl);
+    padding-block: var(--space-2xl);
+  }
+
+  .HubFooter span:last-child {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+
+  .AppShell {
+    grid-template-columns: minmax(9rem, 44%) minmax(0, 1fr);
+  }
+
+  .Sidebar {
+    padding: var(--space-sm);
+  }
+
+  .GuardToggles {
+    display: none;
+  }
+
+  .EmailTopBar span,
+  .EmailPaneHeading small,
+  .MailboxNote {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .MailboxRow,
+  .ReaderToolbar button {
+    min-height: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

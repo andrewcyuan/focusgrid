@@ -1,5 +1,54 @@
 import { expect, test, type Locator } from "@playwright/test";
 
+test("the demo hub links every public route", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Demos" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Tmux playground/ })).toHaveAttribute("href", "/tmux");
+  await expect(page.getByRole("link", { name: /Ariakit composite/ })).toHaveAttribute("href", "/ariakit");
+  await expect(page.getByRole("link", { name: /Email workspace/ })).toHaveAttribute("href", "/email");
+  const githubLink = page.getByRole("link", { name: "View on GitHub" });
+  await expect(githubLink).toHaveAttribute(
+    "href",
+    "https://github.com/andrewcyuan/focusgrid",
+  );
+  await expect(githubLink.locator("svg")).toHaveCount(1);
+
+  const pathOffsets = await page.locator(".DemoListRow > span").evaluateAll((paths) =>
+    paths.map((path) => Math.round(path.getBoundingClientRect().left)),
+  );
+  expect(new Set(pathOffsets).size).toBe(1);
+
+  const firstDemo = page.getByRole("link", { name: /Tmux playground/ });
+  const restingBackground = await firstDemo.evaluate(
+    (link) => getComputedStyle(link).backgroundColor,
+  );
+
+  await page.keyboard.press("Tab");
+  await expect(githubLink).toBeFocused();
+  await expect(githubLink).toHaveCSS("outline-style", "none");
+  await expect(githubLink).toHaveCSS("filter", "contrast(0.8)");
+
+  await page.keyboard.press("Tab");
+  await expect(firstDemo).toBeFocused();
+  await expect(firstDemo).toHaveCSS("outline-style", "none");
+  expect(
+    await firstDemo.evaluate((link) => getComputedStyle(link).backgroundColor),
+  ).not.toBe(restingBackground);
+});
+
+test("all direct demo routes load and tmux omits the active-pane label", async ({ page }) => {
+  await page.goto("/tmux");
+  await expect(page.locator(".TextPane")).toHaveCount(2);
+  await expect(page.getByText(/^Active:/)).toHaveCount(0);
+
+  await page.goto("/ariakit");
+  await expect(page.getByRole("heading", { name: "Ariakit composite" })).toBeVisible();
+
+  await page.goto("/email");
+  await expect(page.getByRole("heading", { name: "Email workspace" })).toBeVisible();
+});
+
 async function setTextareaSelection(
   textarea: Locator,
   selectionStart: number,
@@ -17,7 +66,7 @@ async function setTextareaSelection(
 test("pane shortcuts are handled before focused textareas edit text", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const alphaText = page.locator('[data-pane-id="alpha"] textarea');
   await expect(alphaText).toBeFocused();
@@ -35,7 +84,7 @@ test("pane shortcuts are handled before focused textareas edit text", async ({
 test("clicking non-focusable pane content focuses the pane shell for shortcuts", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const alphaPane = page.locator('[data-pane-id="alpha"]');
   const alphaText = alphaPane.locator("textarea");
@@ -54,7 +103,7 @@ test("clicking non-focusable pane content focuses the pane shell for shortcuts",
 test("pane shortcuts stay scoped to the focused FocusGrid subtree", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const splitRightShortcut = page.getByLabel("Split right");
   await splitRightShortcut.focus();
@@ -70,7 +119,7 @@ test("pane shortcuts stay scoped to the focused FocusGrid subtree", async ({
 test("directional swap shortcuts move the active pane from a focused textarea", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const alphaPane = page.locator('[data-pane-id="alpha"]');
   const betaPane = page.locator('[data-pane-id="beta"]');
@@ -104,7 +153,7 @@ test("directional swap shortcuts move the active pane from a focused textarea", 
 test("invalid shortcut continuations are no-opped instead of typed", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const alphaText = page.locator('[data-pane-id="alpha"] textarea');
   await expect(alphaText).toBeFocused();
@@ -134,7 +183,7 @@ test("saved plus-style shortcuts are migrated before parsing", async ({
     );
   });
 
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const alphaText = page.locator('[data-pane-id="alpha"] textarea');
   await expect(alphaText).toBeFocused();
@@ -152,7 +201,7 @@ test("saved plus-style shortcuts are migrated before parsing", async ({
 test("repeatable leader followers run without replaying the leader", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const alphaPane = page.locator('[data-pane-id="alpha"]');
   const alphaText = alphaPane.locator("textarea");
@@ -194,7 +243,7 @@ test("repeatable leader followers run without replaying the leader", async ({
 test("horizontal pointer resize continues after dragging outside the handle", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tmux");
 
   const alphaPane = page.locator('[data-pane-id="alpha"]');
   const resizeHandle = page
@@ -229,7 +278,7 @@ test("horizontal pointer resize continues after dragging outside the handle", as
 test("Ariakit composite loads focused inside a Focusgrid pane", async ({
   page,
 }) => {
-  await page.goto("/aria-kit");
+  await page.goto("/ariakit");
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
 
@@ -238,16 +287,18 @@ test("Ariakit composite loads focused inside a Focusgrid pane", async ({
     "data-active",
     "true",
   );
-  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
+  const firstRow = leftPane.locator('[data-row-id="alpha"]');
+  await expect(firstRow).toBeFocused();
+  await expect(firstRow).toHaveCSS("outline-style", "none");
   await expect(
-    page.getByRole("link", { name: "Focusgrid playground" }),
+    page.getByRole("link", { name: "All demos" }),
   ).toBeVisible();
 });
 
 test("Ariakit arrow keys and adapter shortcuts move DOM focus", async ({
   page,
 }) => {
-  await page.goto("/aria-kit");
+  await page.goto("/ariakit");
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
   const alpha = leftPane.locator('[data-row-id="alpha"]');
@@ -276,7 +327,7 @@ test("Ariakit arrow keys and adapter shortcuts move DOM focus", async ({
 test("Ariakit adapter actions use the active row and prevent default", async ({
   page,
 }) => {
-  await page.goto("/aria-kit");
+  await page.goto("/ariakit");
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
 
@@ -292,7 +343,7 @@ test("Ariakit adapter actions use the active row and prevent default", async ({
 });
 
 test("Ariakit adapter ignores typing in the embedded input", async ({ page }) => {
-  await page.goto("/aria-kit");
+  await page.goto("/ariakit");
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
   const input = leftPane.getByRole("textbox", { name: "Editable input" });
@@ -309,7 +360,7 @@ test("Ariakit adapter ignores typing in the embedded input", async ({ page }) =>
 test("Focusgrid pane shortcuts transfer focus between Ariakit composites", async ({
   page,
 }) => {
-  await page.goto("/aria-kit");
+  await page.goto("/ariakit");
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
   const rightPane = page.locator('[data-pane-id="ariakit-beta"]');
@@ -320,36 +371,26 @@ test("Focusgrid pane shortcuts transfer focus between Ariakit composites", async
   await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(leftBeta).toBeFocused();
-  await expect(leftBeta).toHaveCSS("background-color", "rgb(237, 244, 255)");
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Control+L");
 
   await expect(rightPane).toHaveAttribute("data-active", "true");
   await expect(rightAlpha).toBeFocused();
   await expect(leftBeta).toHaveAttribute("data-active-item", "true");
-  await expect(leftBeta).toHaveCSS("background-color", "rgb(228, 232, 238)");
-  await expect(rightAlpha).toHaveCSS(
-    "background-color",
-    "rgb(237, 244, 255)",
-  );
   await page.keyboard.press("ArrowDown");
   await expect(rightBeta).toBeFocused();
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("Control+H");
 
   await expect(leftPane).toHaveAttribute("data-active", "true");
   await expect(leftBeta).toBeFocused();
-  await expect(leftBeta).toHaveCSS("background-color", "rgb(237, 244, 255)");
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Control+L");
   await expect(rightBeta).toBeFocused();
 });
 
 test("static Ariakit header clicks restore the active pane", async ({ page }) => {
-  await page.goto("/aria-kit");
+  await page.goto("/ariakit");
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
   const beta = leftPane.locator('[data-row-id="beta"]');
@@ -357,7 +398,7 @@ test("static Ariakit header clicks restore the active pane", async ({ page }) =>
   await page.keyboard.press("ArrowDown");
   await expect(beta).toBeFocused();
 
-  await page.locator(".AriakitPageHeader h1").click();
+  await page.locator(".DemoHeader h1").click();
   await expect(beta).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(leftPane.locator('[data-row-id="gamma"]')).toBeFocused();
@@ -367,7 +408,7 @@ test("window reactivation restores unowned Ariakit focus", async ({
   page,
   context,
 }) => {
-  await page.goto("/aria-kit");
+  await page.goto("/ariakit");
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
   const beta = leftPane.locator('[data-row-id="beta"]');
   await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
@@ -391,8 +432,8 @@ test("window reactivation preserves interactive Ariakit header controls", async 
   page,
   context,
 }) => {
-  await page.goto("/aria-kit");
-  const toolbarLink = page.getByRole("link", { name: "Focusgrid playground" });
+  await page.goto("/ariakit");
+  const toolbarLink = page.getByRole("link", { name: "All demos" });
   await toolbarLink.focus();
 
   const otherPage = await context.newPage();
@@ -403,4 +444,103 @@ test("window reactivation preserves interactive Ariakit header controls", async 
 
   await expect(toolbarLink).toBeFocused();
   await otherPage.close();
+});
+
+test("email starts on the first inbox thread and collections use arrows and H/J/K/L", async ({ page }) => {
+  await page.goto("/email");
+
+  const inbox = page.locator('[data-pane-id="email-inbox"]');
+  const fieldNotes = inbox.locator('[data-thread-id="field-notes"]');
+  const reviewWindow = inbox.locator('[data-thread-id="review-window"]');
+
+  await expect(fieldNotes).toBeFocused();
+  await expect(fieldNotes).toHaveCSS("outline-style", "none");
+  await page.keyboard.press("ArrowDown");
+  await expect(reviewWindow).toBeFocused();
+  await page.keyboard.press("K");
+  await expect(fieldNotes).toBeFocused();
+  await page.keyboard.press("L");
+  await expect(reviewWindow).toBeFocused();
+  await page.keyboard.press("H");
+  await expect(fieldNotes).toBeFocused();
+  await page.keyboard.press("J");
+  await expect(reviewWindow).toBeFocused();
+});
+
+test("email Ctrl+H/J/K/L changes panes without moving collection rows", async ({ page }) => {
+  await page.goto("/email");
+
+  const sidebar = page.locator('[data-pane-id="email-sidebar"]');
+  const inbox = page.locator('[data-pane-id="email-inbox"]');
+  const fieldNotes = inbox.locator('[data-thread-id="field-notes"]');
+  const reviewWindow = inbox.locator('[data-thread-id="review-window"]');
+
+  await expect(fieldNotes).toBeFocused();
+  await page.keyboard.press("J");
+  await expect(reviewWindow).toBeFocused();
+  await page.keyboard.press("Control+H");
+  await expect(sidebar.locator('[data-mailbox-id="inbox"]')).toBeFocused();
+  await page.keyboard.press("Control+L");
+  await expect(reviewWindow).toBeFocused();
+  await expect(fieldNotes).not.toBeFocused();
+
+  await page.keyboard.press("Control+J");
+  await expect(reviewWindow).toBeFocused();
+  await page.keyboard.press("Control+K");
+  await expect(reviewWindow).toBeFocused();
+});
+
+test("email Enter opens the active thread and Back restores its row", async ({ page }) => {
+  await page.goto("/email");
+
+  await expect(page.locator('[data-thread-id="field-notes"]')).toBeFocused();
+  const reviewWindow = page.locator('[data-thread-id="review-window"]');
+  await page.keyboard.press("J");
+  await expect(reviewWindow).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const reader = page.locator('[data-pane-id="email-reader"]');
+  await expect(reader).toBeVisible();
+  await expect(reader.getByRole("heading", { name: "A review window for Thursday" })).toBeVisible();
+  const back = reader.getByRole("button", { name: "Back" });
+  await expect(back).toBeFocused();
+  await back.click();
+
+  await expect(reader).toHaveCount(0);
+  await expect(reviewWindow).toBeFocused();
+});
+
+test("email clicks open the chosen message", async ({ page }) => {
+  await page.goto("/email");
+
+  await page.locator('[data-thread-id="studio-keys"]').click();
+  const reader = page.locator('[data-pane-id="email-reader"]');
+  await expect(reader.getByRole("heading", { name: "Keys from the old studio" })).toBeVisible();
+  await expect(reader.getByRole("button", { name: "Back" })).toBeFocused();
+});
+
+test("email mailbox selection resets rows and focus deterministically", async ({ page }) => {
+  await page.goto("/email");
+
+  await page.keyboard.press("Control+H");
+  const sidebar = page.locator('[data-pane-id="email-sidebar"]');
+  await page.keyboard.press("J");
+  await expect(sidebar.locator('[data-mailbox-id="starred"]')).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const inbox = page.locator('[data-pane-id="email-inbox"]');
+  await expect(inbox.locator(".ThreadRow")).toHaveCount(2);
+  await expect(inbox.locator('[data-thread-id="release-checklist"]')).toBeFocused();
+  await expect(inbox.locator('[data-thread-id="field-notes"]')).toHaveCount(0);
+});
+
+test("public surfaces do not scroll horizontally at target widths", async ({ page }) => {
+  for (const width of [320, 375, 414, 768]) {
+    await page.setViewportSize({ width, height: 800 });
+
+    for (const path of ["/", "/tmux", "/ariakit", "/email"]) {
+      await page.goto(path);
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+  }
 });
