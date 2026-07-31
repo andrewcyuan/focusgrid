@@ -1,6 +1,6 @@
 # Focusgrid
 
-Libraries for building tmux-like pane layouts in the web. Fully keyboard-controlled and scriptable using a centralized controller. Plus a shortcut engine + ariakit helpers.
+Libraries for building **tmux-like pane layouts in the web**. Fully keyboard-controlled and scriptable using a centralized controller. Plus a shortcut engine + ariakit helpers.
 
 Try some examples in the playground!
 ```bash
@@ -103,5 +103,5 @@ import "@focusgrid/focusgrid/react/styles.css";
 
 - Focusgrid: [`docs/focusgrid/usage.md`](docs/focusgrid/usage.md), [`docs/focusgrid/api.md`](docs/focusgrid/api.md), and [`docs/focusgrid/commands.md`](docs/focusgrid/commands.md).
 - Shortcut Engine: [`docs/shortcut-engine/usage.md`](docs/shortcut-engine/usage.md) and [`docs/shortcut-engine/api.md`](docs/shortcut-engine/api.md).
-- Ariakit Adapter: [`docs/ariakit-adapter/usage.md`](docs/ariakit-adapter/usage.md) [`docs/ariakit-adapter/api.md`](docs/ariakit-adapter/api.md), and [`docs/ariakit-adapter/perilla-migration.md`](docs/ariakit-adapter/perilla-migration.md).
+- Ariakit Adapter: [`docs/ariakit-adapter/usage.md`](docs/ariakit-adapter/usage.md) [`docs/ariakit-adapter/api.md`](docs/ariakit-adapter/api.md).
 - Packaging and local consumer testing: [`docs/packaging.md`](docs/packaging.md).
