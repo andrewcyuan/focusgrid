@@ -1,5 +1,6 @@
 export {
   normalizeKeyboardEvent,
+  isEditableTarget,
   isModifierOnlyKey,
   routeKeyboardEvent,
 } from "./dom";

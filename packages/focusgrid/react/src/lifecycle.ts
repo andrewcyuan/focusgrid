@@ -1,4 +1,5 @@
 import type { ComputedPane, PaneId, FocusGridController } from "@focusgrid/focusgrid/core";
+import { useEffect, useRef } from "react";
 
 export type PaneLayoutChangeEvent = {
   pane: ComputedPane;
@@ -22,6 +23,49 @@ export type PaneLifecycleDiff = {
     previousPane: ComputedPane;
   }>;
 };
+
+export type PaneLifecycleSnapshot = {
+  controller: FocusGridController;
+  panes: Map<PaneId, ComputedPane>;
+};
+
+export function advancePaneLifecycle(
+  previous: PaneLifecycleSnapshot | null,
+  controller: FocusGridController,
+  panes: ComputedPane[],
+): { snapshot: PaneLifecycleSnapshot; diff: PaneLifecycleDiff } {
+  const currentPanes = createPaneMap(panes);
+  return {
+    snapshot: { controller, panes: currentPanes },
+    diff: previous && previous.controller === controller
+      ? diffPaneLifecycle(previous.panes, currentPanes)
+      : { layoutChanges: [], closedPanes: [] },
+  };
+}
+
+export function usePaneLifecycleEvents(
+  controller: FocusGridController,
+  panes: ComputedPane[],
+  onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void,
+  onPaneClose?: (event: PaneCloseEvent) => void,
+): void {
+  const snapshotRef = useRef<PaneLifecycleSnapshot | null>(null);
+
+  useEffect(() => {
+    const { snapshot, diff } = advancePaneLifecycle(
+      snapshotRef.current,
+      controller,
+      panes,
+    );
+    snapshotRef.current = snapshot;
+    for (const change of diff.layoutChanges) {
+      onPaneLayoutChange?.({ ...change, controller });
+    }
+    for (const closed of diff.closedPanes) {
+      onPaneClose?.({ ...closed, controller });
+    }
+  }, [controller, panes, onPaneClose, onPaneLayoutChange]);
+}
 
 export function createPaneMap(panes: ComputedPane[]): Map<PaneId, ComputedPane> {
   return new Map(panes.map((pane) => [pane.paneId, pane]));

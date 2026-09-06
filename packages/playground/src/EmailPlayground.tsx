@@ -7,7 +7,6 @@ import {
 } from "@focusgrid/ariakit-adapter/react";
 import {
   findPaneNode,
-  type FocusGridController,
   type FocusGridControllerState,
 } from "@focusgrid/focusgrid/core";
 import {

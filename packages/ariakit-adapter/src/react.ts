@@ -1,6 +1,7 @@
 import { useCallback, useMemo, type KeyboardEventHandler } from "react";
 import {
   KeyRouter,
+  isEditableTarget,
   routeKeyboardEvent,
   validateKeySequenceInput,
   type ShortcutBinding,
@@ -74,7 +75,7 @@ export function useCompositeShortcutRouter<
 
       const shouldIgnore =
         nativeEvent.defaultPrevented ||
-        isEditableEventTarget(nativeEvent.target) ||
+        isEditableTarget(nativeEvent.target) ||
         (ignoreEvent?.(nativeEvent) ?? false);
 
       if (shouldIgnore) {
@@ -248,55 +249,3 @@ function navigationShortcut(
     repeat,
   };
 }
-
-function isEditableEventTarget(target: EventTarget | null): boolean {
-  if (!target || typeof target !== "object") {
-    return false;
-  }
-
-  const element = target as {
-    tagName?: string;
-    isContentEditable?: boolean;
-    type?: string;
-    readOnly?: boolean;
-    disabled?: boolean;
-    getAttribute?: (name: string) => string | null;
-  };
-
-  if (element.isContentEditable) {
-    return true;
-  }
-
-  const tagName = element.tagName?.toLowerCase();
-
-  if (tagName === "textarea" || tagName === "select") {
-    return !element.disabled;
-  }
-
-  if (tagName === "input") {
-    const type = element.type?.toLowerCase() ?? "text";
-    return (
-      !element.disabled &&
-      !element.readOnly &&
-      editableInputTypes.has(type)
-    );
-  }
-
-  return element.getAttribute?.("role") === "textbox";
-}
-
-const editableInputTypes = new Set([
-  "date",
-  "datetime-local",
-  "email",
-  "file",
-  "month",
-  "number",
-  "password",
-  "search",
-  "tel",
-  "text",
-  "time",
-  "url",
-  "week",
-]);

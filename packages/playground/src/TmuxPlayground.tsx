@@ -3,7 +3,7 @@ import {
   defaultPaneShortcutActions,
   paneSplitSides,
   findPaneNode,
-  type LayoutNode,
+  collectPaneIds,
   type PaneCommandCapabilityInput,
   type PaneShortcutId,
   type PaneShortcutValues,
@@ -289,14 +289,6 @@ const paneCapabilityToggles: { key: PaneCommandCapabilityKey; label: string }[] 
   { key: "canSwapY", label: "Can swap Y" },
   { key: "canFocus", label: "Can focus" },
 ];
-
-function collectPaneIds(root: LayoutNode): string[] {
-  if (root.kind === "pane") {
-    return [root.paneId];
-  }
-
-  return root.children.flatMap((child) => collectPaneIds(child));
-}
 
 function PaneSlot({ ctx }: { ctx: PaneRenderContext }) {
   const Component = paneComponents[ctx.paneId] ?? TextPane;

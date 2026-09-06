@@ -1,5 +1,15 @@
 # Past Mistakes
 
+## Optimized Input Paths Must Preserve Command Boundaries
+
+- **Mistake:** Keyboard resize batching interpreted built-in command names in the DOM layer and called the controller API directly, bypassing registered replacement handlers.
+- **Fix pattern:** Route every matched shortcut through the command registry; remove or design optimizations around the extension boundary rather than bypassing it.
+
+## Historical React State Must Be Scoped To Its Source
+
+- **Mistake:** Pane lifecycle history survived a `controller` prop change, allowing the new controller to be diffed against panes owned by the old controller.
+- **Fix pattern:** Store source identity with historical snapshots and reset history atomically when the source changes.
+
 ## Logical Pane Focus Is Not Browser Focus
 
 - **Mistake:** Logical active pane state was treated as if it guaranteed that the browser's DOM focus was inside that pane.

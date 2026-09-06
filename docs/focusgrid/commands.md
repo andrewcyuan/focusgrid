@@ -1,8 +1,8 @@
 # Commands
 
 Commands are named actions intended for keyboard shortcuts and other human
-input. A controller gets a default command registry unless a custom registry is
-passed to `createFocusGridController()`.
+input. Every controller owns a default command registry. Applications can add
+commands or replace individual defaults with `registry.register()`.
 
 ```ts
 import { createFocusGridController } from "@focusgrid/focusgrid/core";
@@ -35,8 +35,8 @@ type PaneResizeCommandArgs = {
 new CommandRegistry(): CommandRegistry;
 ```
 
-Creates an empty command registry. Use this when an app wants full control over
-which commands exist instead of using Focusgrid's defaults.
+Creates an empty command registry for standalone command composition. Focusgrid
+controllers always create their own registry containing the default commands.
 
 ## `registry.register(name, handler)`
 
@@ -70,7 +70,7 @@ createDefaultCommandRegistry(): CommandRegistry;
 ```
 
 Creates a registry containing Focusgrid's built-in pane commands. This is the
-registry used by `createFocusGridController()` when `options.commands` is not provided.
+registry used by every `createFocusGridController()` call.
 
 ## Default commands
 

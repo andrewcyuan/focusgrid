@@ -10,4 +10,10 @@ export type { KeyboardListenerOptions } from "./keyboard-listener";
 
 export { PointerResizeController } from "./pointer-resize";
 export { RootResizeObserver } from "./resize-observer";
-export { focusElement, isEditableTarget } from "./focus";
+export {
+  hasInteractiveOwner,
+  isInteractiveElement,
+  isTabbableElement,
+  isUnavailableElement,
+  shouldFocusPaneShellForPointer,
+} from "./interactivity";

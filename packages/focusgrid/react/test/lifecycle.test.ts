@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { ComputedPane } from "@focusgrid/focusgrid/core";
-import { createPaneMap, diffPaneLifecycle } from "../src/lifecycle";
+import {
+  createFocusGridController,
+  type ComputedPane,
+  type FocusGridControllerState,
+} from "@focusgrid/focusgrid/core";
+import {
+  advancePaneLifecycle,
+  createPaneMap,
+  diffPaneLifecycle,
+} from "../src/lifecycle";
 
 function pane(
   paneId: string,
@@ -16,6 +24,29 @@ function pane(
 }
 
 describe("pane lifecycle diff", () => {
+  it("starts fresh lifecycle history when the controller changes", () => {
+    const controllerState: FocusGridControllerState = {
+      root: { kind: "pane", id: "node", paneId: "editor" },
+      activePaneId: "editor",
+      container: { width: 100, height: 100 },
+    };
+    const firstController = createFocusGridController(controllerState);
+    const secondController = createFocusGridController(controllerState);
+    const first = advancePaneLifecycle(
+      null,
+      firstController,
+      [pane("old", { x: 0, y: 0, width: 100, height: 100 }, true)],
+    );
+    const second = advancePaneLifecycle(
+      first.snapshot,
+      secondController,
+      [pane("new", { x: 0, y: 0, width: 100, height: 100 }, true)],
+    );
+
+    expect(second.diff).toEqual({ layoutChanges: [], closedPanes: [] });
+    expect(second.snapshot.controller).toBe(secondController);
+  });
+
   it("reports rect changes for existing panes", () => {
     const previous = createPaneMap([
       pane("editor", { x: 0, y: 0, width: 500, height: 600 }),

@@ -3,6 +3,7 @@ import type {
   NodeId,
   PaneId,
 } from "./layout/types";
+import { paneCommandCapabilityKeys } from "./layout/types";
 
 export type FocusGridStateValidationError = {
   code: string;
@@ -484,16 +485,7 @@ function isNonNegativeFiniteNumber(input: unknown): input is number {
 
 const STATE_FIELDS = ["root", "activePaneId", "container"] as const;
 const CONTAINER_FIELDS = ["width", "height"] as const;
-const CAPABILITY_FIELDS = [
-  "canResizeX",
-  "canResizeY",
-  "canRemove",
-  "canSplitHorizontal",
-  "canSplitVertical",
-  "canSwapX",
-  "canSwapY",
-  "canFocus",
-] as const;
+const CAPABILITY_FIELDS = paneCommandCapabilityKeys;
 const LEGACY_CAPABILITY_FIELDS = [
   "noResizeX",
   "noResizeY",

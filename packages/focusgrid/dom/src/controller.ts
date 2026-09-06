@@ -5,7 +5,7 @@ import { ApplicationFocusManager } from "./application-focus-manager";
 
 export type FocusGridDomFocusManagement = {
   mode: "application";
-  scope: HTMLElement;
+  scope: HTMLElement | null;
 };
 
 export type FocusGridDomControllerOptions = {
@@ -14,10 +14,11 @@ export type FocusGridDomControllerOptions = {
 };
 
 export class FocusGridDomController {
-  private keyboard?: KeyboardListener;
-  private resizeObserver?: RootResizeObserver;
-  private focusManager?: ApplicationFocusManager;
-  private mounted = false;
+  private mountedResources: {
+    keyboard: KeyboardListener;
+    resizeObserver: RootResizeObserver;
+    focusManager?: ApplicationFocusManager;
+  } | null = null;
 
   constructor(
     private readonly controller: FocusGridController,
@@ -26,13 +27,13 @@ export class FocusGridDomController {
   ) {}
 
   mount(): void {
-    if (this.mounted) {
+    if (this.mountedResources) {
       return;
     }
 
     if (
       this.options.focusManagement?.mode === "application" &&
-      !this.options.focusManagement.scope.contains(this.rootEl)
+      !this.options.focusManagement.scope?.contains(this.rootEl)
     ) {
       throw new Error(
         "FocusGrid application focus management requires its scope to contain the Focusgrid root.",
@@ -40,35 +41,39 @@ export class FocusGridDomController {
     }
 
     this.rootEl.tabIndex = this.rootEl.tabIndex < 0 ? 0 : this.rootEl.tabIndex;
-    this.keyboard = new KeyboardListener(this.controller, this.rootEl, {
+    const keyboard = new KeyboardListener(this.controller, this.rootEl, {
       keymap: this.options.keymap,
     });
-    this.resizeObserver = new RootResizeObserver(this.controller, this.rootEl);
+    const resizeObserver = new RootResizeObserver(this.controller, this.rootEl);
+    let focusManager: ApplicationFocusManager | undefined;
     if (this.options.focusManagement?.mode === "application") {
-      this.focusManager = new ApplicationFocusManager(
+      focusManager = new ApplicationFocusManager(
         this.controller,
         this.rootEl,
-        this.options.focusManagement.scope,
+        this.options.focusManagement.scope!,
       );
     }
 
-    this.keyboard.mount();
-    this.resizeObserver.mount();
-    this.focusManager?.mount();
-    this.mounted = true;
+    this.mountedResources = { keyboard, resizeObserver, focusManager };
+    try {
+      keyboard.mount();
+      resizeObserver.mount();
+      focusManager?.mount();
+    } catch (error) {
+      this.destroy();
+      throw error;
+    }
   }
 
   destroy(): void {
-    if (!this.mounted) {
+    if (!this.mountedResources) {
       return;
     }
 
-    this.keyboard?.destroy();
-    this.resizeObserver?.destroy();
-    this.focusManager?.destroy();
-    this.keyboard = undefined;
-    this.resizeObserver = undefined;
-    this.focusManager = undefined;
-    this.mounted = false;
+    const resources = this.mountedResources;
+    this.mountedResources = null;
+    resources.keyboard.destroy();
+    resources.resizeObserver.destroy();
+    resources.focusManager?.destroy();
   }
 }

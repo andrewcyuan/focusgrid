@@ -2,7 +2,7 @@ import {
   validateKeySequenceInput,
   type ShortcutBinding,
 } from "@focusgrid/shortcut-engine";
-import type { PaneId } from "../state";
+import type { PaneId } from "../layout/types";
 
 export type ShortcutContext = {
   activePaneId: PaneId | null;

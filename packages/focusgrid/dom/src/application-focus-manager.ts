@@ -1,47 +1,20 @@
-import type { FocusGridController, PaneId } from "@focusgrid/focusgrid/core";
+import type {
+  FocusGridController,
+  FocusGridControllerState,
+  PaneId,
+} from "@focusgrid/focusgrid/core";
+import { hasInteractiveOwner, isTabbableElement } from "./interactivity";
 
 const PANE_SELECTOR = ".FocusgridPaneView";
-
-const INTERACTIVE_ROLES = new Set([
-  "alertdialog",
-  "button",
-  "checkbox",
-  "combobox",
-  "dialog",
-  "grid",
-  "gridcell",
-  "link",
-  "listbox",
-  "menu",
-  "menubar",
-  "menuitem",
-  "menuitemcheckbox",
-  "menuitemradio",
-  "option",
-  "radio",
-  "radiogroup",
-  "scrollbar",
-  "searchbox",
-  "slider",
-  "spinbutton",
-  "switch",
-  "tab",
-  "tablist",
-  "textbox",
-  "toolbar",
-  "tree",
-  "treegrid",
-  "treeitem",
-]);
 
 export class ApplicationFocusManager {
   private readonly rememberedFocus = new Map<PaneId, HTMLElement>();
   private readonly ownerDocument: Document;
   private readonly ownerWindow: Window | null;
-  private activePaneId: PaneId | null;
-  private unsubscribe?: () => void;
-  private pendingRedirect?: number;
-  private mounted = false;
+  private mountState: {
+    unsubscribe: () => void;
+    pendingRedirect?: number;
+  } | null = null;
 
   constructor(
     private readonly controller: FocusGridController,
@@ -50,11 +23,10 @@ export class ApplicationFocusManager {
   ) {
     this.ownerDocument = rootEl.ownerDocument;
     this.ownerWindow = this.ownerDocument.defaultView;
-    this.activePaneId = controller.getState().activePaneId;
   }
 
   mount(): void {
-    if (this.mounted) {
+    if (this.mountState) {
       return;
     }
 
@@ -67,24 +39,25 @@ export class ApplicationFocusManager {
     this.rootEl.addEventListener("focusin", this.onFocusIn);
     this.scopeEl.addEventListener("pointerdown", this.onPointerDown);
     this.ownerWindow?.addEventListener("focus", this.onWindowFocus);
-    this.unsubscribe = this.controller.subscribe(this.onControllerChange);
-    this.mounted = true;
+    this.mountState = {
+      unsubscribe: this.controller.subscribe(this.onControllerChange),
+    };
     this.scheduleRestore();
   }
 
   destroy(): void {
-    if (!this.mounted) {
+    if (!this.mountState) {
       return;
     }
 
     this.rootEl.removeEventListener("focusin", this.onFocusIn);
     this.scopeEl.removeEventListener("pointerdown", this.onPointerDown);
     this.ownerWindow?.removeEventListener("focus", this.onWindowFocus);
-    this.unsubscribe?.();
-    this.unsubscribe = undefined;
+    const { unsubscribe } = this.mountState;
     this.cancelPendingRedirect();
+    this.mountState = null;
+    unsubscribe();
     this.rememberedFocus.clear();
-    this.mounted = false;
   }
 
   private readonly onFocusIn = (event: FocusEvent): void => {
@@ -108,13 +81,14 @@ export class ApplicationFocusManager {
     }
   };
 
-  private readonly onControllerChange = (): void => {
-    const nextActivePaneId = this.controller.getState().activePaneId;
-    if (nextActivePaneId === this.activePaneId) {
+  private readonly onControllerChange = (
+    nextState: FocusGridControllerState,
+    previousState: FocusGridControllerState,
+  ): void => {
+    if (nextState.activePaneId === previousState.activePaneId) {
       return;
     }
 
-    this.activePaneId = nextActivePaneId;
     const activeElement = this.ownerDocument.activeElement;
     if (
       this.rootEl.contains(activeElement) ||
@@ -148,11 +122,11 @@ export class ApplicationFocusManager {
   private scheduleRestore(previousActiveElement?: Element | null): void {
     this.cancelPendingRedirect();
     const schedule = this.ownerWindow?.setTimeout.bind(this.ownerWindow) ?? setTimeout;
-    this.pendingRedirect = schedule(() => {
-      this.pendingRedirect = undefined;
-      if (!this.mounted) {
+    const pendingRedirect = schedule(() => {
+      if (!this.mountState) {
         return;
       }
+      this.mountState = { ...this.mountState, pendingRedirect: undefined };
 
       const activeElement = this.ownerDocument.activeElement;
       if (
@@ -165,16 +139,19 @@ export class ApplicationFocusManager {
         this.restoreActivePane();
       }
     }, 0) as unknown as number;
+    if (this.mountState) {
+      this.mountState = { ...this.mountState, pendingRedirect };
+    }
   }
 
   private cancelPendingRedirect(): void {
-    if (this.pendingRedirect === undefined) {
+    if (!this.mountState || this.mountState.pendingRedirect === undefined) {
       return;
     }
 
     const cancel = this.ownerWindow?.clearTimeout.bind(this.ownerWindow) ?? clearTimeout;
-    cancel(this.pendingRedirect);
-    this.pendingRedirect = undefined;
+    cancel(this.mountState.pendingRedirect);
+    this.mountState = { ...this.mountState, pendingRedirect: undefined };
   }
 
   private restoreActivePane(): void {
@@ -209,19 +186,6 @@ export class ApplicationFocusManager {
   }
 }
 
-export function hasInteractiveOwner(target: Element, boundary: HTMLElement): boolean {
-  let element: Element | null = target;
-
-  while (element && element !== boundary) {
-    if (element instanceof HTMLElement && isInteractiveElement(element)) {
-      return true;
-    }
-    element = element.parentElement;
-  }
-
-  return boundary instanceof HTMLElement && isInteractiveElement(boundary);
-}
-
 export function isUnownedFocus(
   activeElement: Element | null,
   ownerDocument: Document,
@@ -238,81 +202,6 @@ export function isUnownedFocus(
     activeElement,
     ownerDocument.documentElement,
   );
-}
-
-export function isTabbableElement(element: HTMLElement): boolean {
-  if (isUnavailable(element)) {
-    return false;
-  }
-
-  const tagName = element.tagName.toLowerCase();
-  if (tagName === "a" && !element.hasAttribute("href")) {
-    return false;
-  }
-
-  if (
-    tagName === "button" ||
-    tagName === "input" ||
-    tagName === "select" ||
-    tagName === "textarea" ||
-    (tagName === "a" && element.hasAttribute("href")) ||
-    element.isContentEditable
-  ) {
-    return element.tabIndex >= 0;
-  }
-
-  return element.hasAttribute("tabindex") && element.tabIndex >= 0;
-}
-
-function isInteractiveElement(element: HTMLElement): boolean {
-  if (isUnavailable(element)) {
-    return false;
-  }
-
-  const tagName = element.tagName.toLowerCase();
-  const role = element.getAttribute("role")?.toLowerCase();
-
-  return (
-    element.isContentEditable ||
-    element.tabIndex >= 0 ||
-    (tagName === "a" && element.hasAttribute("href")) ||
-    tagName === "button" ||
-    tagName === "input" ||
-    tagName === "select" ||
-    tagName === "textarea" ||
-    tagName === "dialog" ||
-    tagName === "summary" ||
-    (role !== undefined && INTERACTIVE_ROLES.has(role))
-  );
-}
-
-function isUnavailable(element: HTMLElement): boolean {
-  let current: HTMLElement | null = element;
-
-  while (current) {
-    if (
-      current.hidden ||
-      current.hasAttribute("hidden") ||
-      current.hasAttribute("inert") ||
-      current.getAttribute("aria-hidden") === "true" ||
-      current.getAttribute("aria-disabled") === "true" ||
-      ("disabled" in current && Boolean(current.disabled))
-    ) {
-      return true;
-    }
-
-    const view = current.ownerDocument.defaultView;
-    if (view) {
-      const style = view.getComputedStyle(current);
-      if (style.display === "none" || style.visibility === "hidden") {
-        return true;
-      }
-    }
-
-    current = current.parentElement;
-  }
-
-  return false;
 }
 
 function isValidRememberedTarget(

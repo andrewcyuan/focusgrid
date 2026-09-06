@@ -1,3 +1,23 @@
+export type {
+  ComputedHandle,
+  ComputedLayout,
+  ComputedPane,
+  CardinalDirection,
+  Direction,
+  LayoutIndex,
+  LayoutNode,
+  NodeId,
+  PaneCommandCapabilityKey,
+  PaneFocusDirection,
+  PaneId,
+  PaneNode,
+  PaneResizeDirection,
+  PaneSplitSide,
+  PaneSwapDirection,
+  Rect,
+  SplitNode,
+  FocusGridControllerState,
+} from "./layout/types";
 export { createFocusGridController, FocusGridController } from "./controller";
 export type {
   CreateFocusGridControllerOptions,
@@ -24,8 +44,6 @@ export {
 export type {
   PaneCommandCapabilities,
   PaneCommandCapabilityInput,
-  PaneCommandGuards,
-  PaneCommandGuardInput,
 } from "./pane-guards";
 
 export {
@@ -34,7 +52,9 @@ export {
   paneResizeDirections,
   paneSplitSides,
   paneSwapDirections,
+  paneCommandCapabilityKeys,
 } from "./layout/types";
+export { collectPaneIds, findSplitNode } from "./layout/tree";
 export type {
   ResizePaneOptions,
   SplitPaneOptions,
@@ -86,23 +106,3 @@ export type {
   KeyBinding,
   ShortcutContext,
 } from "./keyboard/default-pane-keymap";
-
-export type {
-  ComputedHandle,
-  ComputedLayout,
-  ComputedPane,
-  CardinalDirection,
-  Direction,
-  LayoutIndex,
-  LayoutNode,
-  NodeId,
-  PaneFocusDirection,
-  PaneId,
-  PaneNode,
-  PaneResizeDirection,
-  PaneSplitSide,
-  PaneSwapDirection,
-  Rect,
-  SplitNode,
-  FocusGridControllerState,
-} from "./state";

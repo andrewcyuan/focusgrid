@@ -10,6 +10,7 @@ import type {
   PaneId,
   Rect,
 } from "@focusgrid/focusgrid/core";
+import { shouldFocusPaneShellForPointer } from "@focusgrid/focusgrid/dom";
 
 export type PaneRenderContext = {
   paneId: PaneId;
@@ -60,54 +61,12 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
 function focusPaneShellForNonInteractivePointer(
   event: PointerEvent<HTMLDivElement>,
 ): void {
-  if (isInteractiveOrFocusableDescendant(event.target, event.currentTarget)) {
+  if (
+    event.target instanceof Element &&
+    !shouldFocusPaneShellForPointer(event.target, event.currentTarget)
+  ) {
     return;
   }
 
   event.currentTarget.focus({ preventScroll: true });
-}
-
-function isInteractiveOrFocusableDescendant(
-  target: EventTarget,
-  paneShell: HTMLElement,
-): boolean {
-  if (!(target instanceof HTMLElement) || target === paneShell) {
-    return false;
-  }
-
-  let element: HTMLElement | null = target;
-
-  while (element && element !== paneShell) {
-    if (isInteractiveOrFocusableElement(element)) {
-      return true;
-    }
-
-    element = element.parentElement;
-  }
-
-  return false;
-}
-
-function isInteractiveOrFocusableElement(element: HTMLElement): boolean {
-  const tagName = element.tagName.toLowerCase();
-  const role = element.getAttribute("role");
-
-  return (
-    element.isContentEditable ||
-    element.tabIndex >= 0 ||
-    tagName === "a" ||
-    tagName === "button" ||
-    tagName === "input" ||
-    tagName === "select" ||
-    tagName === "textarea" ||
-    role === "button" ||
-    role === "checkbox" ||
-    role === "link" ||
-    role === "menuitem" ||
-    role === "option" ||
-    role === "radio" ||
-    role === "switch" ||
-    role === "tab" ||
-    role === "textbox"
-  );
 }

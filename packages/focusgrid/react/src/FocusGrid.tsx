@@ -1,21 +1,14 @@
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
   type ReactNode,
   type RefObject,
 } from "react";
-import type {
-  ComputedPane,
-  FocusGridController,
-  KeyBinding,
-  PaneId,
-} from "@focusgrid/focusgrid/core";
+import type { FocusGridController, KeyBinding } from "@focusgrid/focusgrid/core";
 import { FocusGridDomController } from "@focusgrid/focusgrid/dom";
 import { useControllerLayout } from "./hooks";
 import {
-  createPaneMap,
-  diffPaneLifecycle,
+  usePaneLifecycleEvents,
   type PaneCloseEvent,
   type PaneLayoutChangeEvent,
 } from "./lifecycle";
@@ -48,9 +41,6 @@ export function FocusGrid({
   focusManagement,
 }: FocusGridProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const previousPaneMapRef = useRef<Map<PaneId, ComputedPane> | null>(
-    null,
-  );
   const layout = useControllerLayout(controller);
   const focusManagementMode = focusManagement?.mode;
   const focusManagementScopeRef = focusManagement?.scopeRef;
@@ -61,17 +51,12 @@ export function FocusGrid({
     }
 
     const root = rootRef.current;
-    const scope = focusManagementScopeRef?.current;
-    if (focusManagementMode === "application" && !scope?.contains(root)) {
-      throw new Error(
-        "FocusGrid application focus management requires scopeRef.current to contain the rendered Focusgrid root.",
-      );
-    }
+    const scope = focusManagementScopeRef?.current ?? null;
 
     const domController = new FocusGridDomController(controller, root, {
       keymap,
       focusManagement: focusManagementMode === "application"
-        ? { mode: "application", scope: scope! }
+        ? { mode: "application", scope }
         : undefined,
     });
 
@@ -79,33 +64,12 @@ export function FocusGrid({
     return () => domController.destroy();
   }, [controller, keymap, focusManagementMode, focusManagementScopeRef]);
 
-  useLayoutEffect(() => {
-    const currentPaneMap = createPaneMap(layout.panes);
-    const previousPaneMap = previousPaneMapRef.current;
-
-    if (!previousPaneMap) {
-      previousPaneMapRef.current = currentPaneMap;
-      return;
-    }
-
-    const diff = diffPaneLifecycle(previousPaneMap, currentPaneMap);
-
-    for (const change of diff.layoutChanges) {
-      onPaneLayoutChange?.({
-        ...change,
-        controller,
-      });
-    }
-
-    for (const closed of diff.closedPanes) {
-      onPaneClose?.({
-        ...closed,
-        controller,
-      });
-    }
-
-    previousPaneMapRef.current = currentPaneMap;
-  }, [controller, layout.panes, onPaneClose, onPaneLayoutChange]);
+  usePaneLifecycleEvents(
+    controller,
+    layout.panes,
+    onPaneLayoutChange,
+    onPaneClose,
+  );
 
   const rootClassName = className
     ? `FocusgridFocusGrid ${className}`

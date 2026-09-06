@@ -27,8 +27,10 @@ export class KeyRouter<
   TArgs = unknown,
 > {
   private readonly root: KeyTrieNode<TContext, TAction, TArgs>;
-  private current: KeyTrieNode<TContext, TAction, TArgs>;
-  private repeat: RepeatPrefix<TContext, TAction, TArgs> | null = null;
+  private state: KeyRouterState<TContext, TAction, TArgs> = {
+    phase: "idle",
+    repeat: null,
+  };
   private readonly repeatTimeoutMs: number;
   private readonly now: () => number;
 
@@ -37,135 +39,147 @@ export class KeyRouter<
     options: KeyRouterOptions = {},
   ) {
     this.root = createTrie(bindings);
-    this.current = this.root;
     this.repeatTimeoutMs = options.repeatTimeoutMs ?? DEFAULT_REPEAT_TIMEOUT_MS;
     this.now = options.now ?? Date.now;
   }
 
   reset(): void {
-    this.current = this.root;
-    this.repeat = null;
+    this.state = { phase: "idle", repeat: null };
   }
 
   handle(
     stroke: KeyStroke,
     ctx: TContext,
   ): ShortcutMatchResult<TAction, TArgs> {
-    const id = strokeToId(stroke);
-    const wasPending = this.current !== this.root;
+    const transition = transitionKeyRouter(
+      this.root,
+      this.state,
+      strokeToId(stroke),
+      ctx,
+      this.now(),
+      this.repeatTimeoutMs,
+    );
+    this.state = transition.state;
+    return transition.result;
+  }
+}
 
-    if (!wasPending) {
-      const repeated = this.matchRepeat(id, ctx);
+type KeyRouterState<
+  TContext,
+  TAction extends string,
+  TArgs,
+> =
+  | {
+      phase: "idle";
+      repeat: RepeatPrefix<TContext, TAction, TArgs> | null;
+    }
+  | {
+      phase: "pending";
+      current: KeyTrieNode<TContext, TAction, TArgs>;
+    };
 
-      if (repeated) {
-        return repeated;
+export function transitionKeyRouter<
+  TContext,
+  TAction extends string,
+  TArgs,
+>(
+  root: KeyTrieNode<TContext, TAction, TArgs>,
+  state: KeyRouterState<TContext, TAction, TArgs>,
+  strokeId: string,
+  context: TContext,
+  now: number,
+  repeatTimeoutMs: number,
+): {
+  state: KeyRouterState<TContext, TAction, TArgs>;
+  result: ShortcutMatchResult<TAction, TArgs>;
+} {
+  if (state.phase === "idle" && state.repeat) {
+    if (now <= state.repeat.expiresAt) {
+      const binding = state.repeat.node.children.get(strokeId)?.binding;
+      if (
+        !binding ||
+        !binding.repeat ||
+        binding.sequence.length !== 2 ||
+        (binding.when && !binding.when(context))
+      ) {
+        return {
+          state: idleState(),
+          result: { matched: false, pending: false, preventDefault: true },
+        };
       }
+
+      return matchedTransition(root, binding, now, repeatTimeoutMs);
     }
+    state = idleState();
+  }
 
-    const next = this.current.children.get(id) ?? this.root.children.get(id);
+  const wasPending = state.phase === "pending";
+  const current = state.phase === "pending" ? state.current : root;
+  const next = current.children.get(strokeId) ?? root.children.get(strokeId);
 
-    if (!next) {
-      this.current = this.root;
-      this.repeat = null;
-      return {
-        matched: false,
-        pending: false,
-        preventDefault: wasPending,
-      };
-    }
-
-    if (next.binding && (!next.binding.when || next.binding.when(ctx))) {
-      const binding = next.binding;
-      this.current = this.root;
-      this.setRepeat(binding);
-
-      return {
-        matched: true,
-        pending: false,
-        action: binding.action,
-        args: binding.args,
-        preventDefault: binding.preventDefault ?? true,
-      };
-    }
-
-    if (next.binding) {
-      this.current = this.root;
-      this.repeat = null;
-      return {
-        matched: false,
-        pending: false,
-      };
-    }
-
-    this.current = next;
-
+  if (!next) {
     return {
-      matched: false,
-      pending: next.children.size > 0,
+      state: idleState(),
+      result: { matched: false, pending: false, preventDefault: wasPending },
     };
   }
 
-  private matchRepeat(
-    id: string,
-    ctx: TContext,
-  ): ShortcutMatchResult<TAction, TArgs> | null {
-    if (!this.repeat) {
-      return null;
-    }
+  if (next.binding && (!next.binding.when || next.binding.when(context))) {
+    return matchedTransition(root, next.binding, now, repeatTimeoutMs);
+  }
 
-    if (this.now() > this.repeat.expiresAt) {
-      this.repeat = null;
-      return null;
-    }
-
-    const next = this.repeat.node.children.get(id);
-    const binding = next?.binding;
-
-    if (
-      !binding ||
-      !binding.repeat ||
-      binding.sequence.length !== 2 ||
-      (binding.when && !binding.when(ctx))
-    ) {
-      this.repeat = null;
-      return {
-        matched: false,
-        pending: false,
-        preventDefault: true,
-      };
-    }
-
-    this.setRepeat(binding);
-
+  if (next.binding) {
     return {
+      state: idleState(),
+      result: { matched: false, pending: false },
+    };
+  }
+
+  return {
+    state: { phase: "pending", current: next },
+    result: { matched: false, pending: next.children.size > 0 },
+  };
+}
+
+function matchedTransition<
+  TContext,
+  TAction extends string,
+  TArgs,
+>(
+  root: KeyTrieNode<TContext, TAction, TArgs>,
+  binding: ShortcutBinding<TContext, TAction, TArgs>,
+  now: number,
+  repeatTimeoutMs: number,
+): {
+  state: KeyRouterState<TContext, TAction, TArgs>;
+  result: ShortcutMatchResult<TAction, TArgs>;
+} {
+  const prefixNode = binding.repeat && binding.sequence.length === 2
+    ? root.children.get(strokeToId(binding.sequence[0]))
+    : undefined;
+  return {
+    state: {
+      phase: "idle",
+      repeat: prefixNode
+        ? { node: prefixNode, expiresAt: now + repeatTimeoutMs }
+        : null,
+    },
+    result: {
       matched: true,
       pending: false,
       action: binding.action,
       args: binding.args,
       preventDefault: binding.preventDefault ?? true,
-    };
-  }
+    },
+  };
+}
 
-  private setRepeat(binding: ShortcutBinding<TContext, TAction, TArgs>): void {
-    if (!binding.repeat || binding.sequence.length !== 2) {
-      this.repeat = null;
-      return;
-    }
-
-    const prefixStroke = binding.sequence[0];
-    const prefixStrokeId = strokeToId(prefixStroke);
-    const prefixNode = this.root.children.get(prefixStrokeId);
-
-    if (!prefixNode) {
-      this.repeat = null;
-      return;
-    }
-
-    this.repeat = {
-      node: prefixNode,
-      expiresAt: this.now() + this.repeatTimeoutMs,
-    };
-  }
+function idleState<
+  TContext,
+  TAction extends string,
+  TArgs,
+>(): KeyRouterState<TContext, TAction, TArgs> {
+  return { phase: "idle", repeat: null };
 }
 
 type RepeatPrefix<

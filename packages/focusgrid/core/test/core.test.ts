@@ -680,6 +680,8 @@ describe("controller", () => {
     const split = splitPane(initialState(), "editor", {
       side: "left",
       newPaneId: "nav",
+      newPaneNodeId: "nav-node",
+      splitId: "nav-split",
       preserveActivePane: true,
     });
 
@@ -693,6 +695,8 @@ describe("controller", () => {
     const wrapped = wrapRootInSplit(initialState(), {
       side: "down",
       newPaneId: "console",
+      newPaneNodeId: "console-node",
+      splitId: "console-split",
     });
 
     expect(wrapped.activePaneId).toBe("console");
@@ -1251,8 +1255,8 @@ describe("controller", () => {
   });
 
   it("does not let stale command unregister callbacks remove newer handlers", () => {
-    const commands = new CommandRegistry();
-    const controller = createFocusGridController(initialState(), { commands });
+    const controller = createFocusGridController(initialState());
+    const commands = controller.commands;
     const calls: string[] = [];
     const unregisterA = commands.register("custom", () => {
       calls.push("a");

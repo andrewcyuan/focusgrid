@@ -107,7 +107,19 @@ describe("useCompositeShortcutRouter", () => {
     expect(event.stopPropagation).toHaveBeenCalledOnce();
   });
 
-  it("ignores editable targets by default", () => {
+  it.each([
+    ["textarea", { tagName: "TEXTAREA" }, true],
+    ["disabled textarea", { tagName: "TEXTAREA", disabled: true }, false],
+    ["text input", { tagName: "INPUT", type: "text" }, true],
+    ["readonly input", { tagName: "INPUT", type: "text", readOnly: true }, false],
+    ["checkbox", { tagName: "INPUT", type: "checkbox" }, false],
+    ["contenteditable", { tagName: "DIV", isContentEditable: true }, true],
+    [
+      "textbox role",
+      { tagName: "DIV", getAttribute: (name: string) => name === "role" ? "TEXTBOX" : null },
+      true,
+    ],
+  ] as const)("uses shared editable behavior for %s", (_, target, editable) => {
     const onMatch = vi.fn();
     const result = renderHookResult({
       keymap: createCompositeNavigationKeymap({
@@ -120,12 +132,12 @@ describe("useCompositeShortcutRouter", () => {
 
     const event = sendKey(result, {
       key: "j",
-      target: { tagName: "TEXTAREA" } as unknown as EventTarget,
+      target: target as unknown as EventTarget,
     });
 
-    expect(onMatch).not.toHaveBeenCalled();
-    expect(event.preventDefault).not.toHaveBeenCalled();
-    expect(event.stopPropagation).not.toHaveBeenCalled();
+    expect(onMatch).toHaveBeenCalledTimes(editable ? 0 : 1);
+    expect(event.preventDefault).toHaveBeenCalledTimes(editable ? 0 : 1);
+    expect(event.stopPropagation).toHaveBeenCalledTimes(editable ? 0 : 1);
   });
 
   it("resets pending multi-stroke state for ignored events", () => {

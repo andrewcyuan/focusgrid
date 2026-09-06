@@ -15,22 +15,30 @@ export const paneFocusDirections = cardinalDirections;
 export const paneResizeDirections = cardinalDirections;
 export const paneSwapDirections = cardinalDirections;
 
+export const paneCommandCapabilityKeys = [
+  "canResizeX",
+  "canResizeY",
+  "canRemove",
+  "canSplitHorizontal",
+  "canSplitVertical",
+  "canSwapX",
+  "canSwapY",
+  "canFocus",
+] as const;
+
+export type PaneCommandCapabilityKey =
+  (typeof paneCommandCapabilityKeys)[number];
+export type PaneCommandCapabilities = Record<PaneCommandCapabilityKey, boolean>;
+export type PaneCommandCapabilityInput = Partial<PaneCommandCapabilities>;
+
 export type PaneNode = {
   kind: "pane";
   id: NodeId;
   paneId: PaneId;
   minWidth?: number;
   minHeight?: number;
-  canResizeX?: boolean;
-  canResizeY?: boolean;
-  canRemove?: boolean;
-  canSplitHorizontal?: boolean;
-  canSplitVertical?: boolean;
-  canSwapX?: boolean;
-  canSwapY?: boolean;
-  canFocus?: boolean;
   data?: unknown;
-};
+} & PaneCommandCapabilityInput;
 
 export type SplitNode = {
   kind: "split";

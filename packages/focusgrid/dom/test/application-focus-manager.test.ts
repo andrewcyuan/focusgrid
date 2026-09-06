@@ -5,10 +5,13 @@ import {
 } from "@focusgrid/focusgrid/core";
 import {
   ApplicationFocusManager,
-  hasInteractiveOwner,
-  isTabbableElement,
   isUnownedFocus,
 } from "../src/application-focus-manager";
+import {
+  hasInteractiveOwner,
+  isTabbableElement,
+  shouldFocusPaneShellForPointer,
+} from "../src/interactivity";
 
 type Listener = (event: Event) => void;
 
@@ -434,6 +437,10 @@ describe("application focus classification", () => {
       target as unknown as Element,
       scope as unknown as HTMLElement,
     )).toBe(true);
+    expect(shouldFocusPaneShellForPointer(
+      target as unknown as Element,
+      scope as unknown as HTMLElement,
+    )).toBe(false);
     expect(isUnownedFocus(
       target as unknown as Element,
       document as unknown as Document,

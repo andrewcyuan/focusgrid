@@ -114,8 +114,10 @@ describe("pane render context", () => {
   it("notifies subscribers after controller api mutations", () => {
     const controller = createFocusGridController(state());
     const listenerCalls: Array<string | null> = [];
-    const unsubscribe = controller.subscribe(() => {
-      listenerCalls.push(controller.getState().activePaneId);
+    const transitions: Array<[string | null, string | null]> = [];
+    const unsubscribe = controller.subscribe((nextState, previousState) => {
+      listenerCalls.push(nextState.activePaneId);
+      transitions.push([previousState.activePaneId, nextState.activePaneId]);
     });
 
     controller.api.focus("left");
@@ -123,6 +125,7 @@ describe("pane render context", () => {
     controller.api.focus("right");
 
     expect(listenerCalls).toEqual(["left"]);
+    expect(transitions).toEqual([["right", "left"]]);
   });
 
   it("accepts a component-level keymap without context", () => {

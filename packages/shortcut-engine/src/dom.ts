@@ -37,6 +37,33 @@ export function isModifierOnlyKey(key: string): boolean {
   );
 }
 
+export function isEditableTarget(target: EventTarget | null): boolean {
+  if (!target || typeof target !== "object") return false;
+
+  const element = target as EventTarget & {
+    tagName?: string;
+    isContentEditable?: boolean;
+    type?: string;
+    readOnly?: boolean;
+    disabled?: boolean;
+    getAttribute?: (name: string) => string | null;
+  };
+
+  if (element.isContentEditable) return true;
+
+  const tagName = element.tagName?.toLowerCase();
+  if (tagName === "textarea" || tagName === "select") {
+    return !element.disabled;
+  }
+
+  if (tagName === "input") {
+    const type = element.type?.toLowerCase() ?? "text";
+    return !element.disabled && !element.readOnly && EDITABLE_INPUT_TYPES.has(type);
+  }
+
+  return element.getAttribute?.("role")?.toLowerCase() === "textbox";
+}
+
 export function routeKeyboardEvent<
   TContext = unknown,
   TAction extends string = string,
@@ -109,3 +136,19 @@ const SHIFTED_KEY_BY_BASE_KEY: Record<string, string> = {
   ".": ">",
   "/": "?",
 };
+
+const EDITABLE_INPUT_TYPES = new Set([
+  "date",
+  "datetime-local",
+  "email",
+  "file",
+  "month",
+  "number",
+  "password",
+  "search",
+  "tel",
+  "text",
+  "time",
+  "url",
+  "week",
+]);

@@ -3,6 +3,7 @@ import {
   KeyRouter,
   createKeyStroke,
   isModifierOnlyKey,
+  isEditableTarget,
   normalizeKeyName,
   normalizeKeySequenceInput,
   normalizeKeyboardEvent,
@@ -33,6 +34,26 @@ function routableKeyboardEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
     stopPropagation: vi.fn(),
   } as unknown as KeyboardEvent;
 }
+
+describe("editable target classification", () => {
+  const cases: Array<[string, object, boolean]> = [
+    ["textarea", { tagName: "TEXTAREA" }, true],
+    ["disabled textarea", { tagName: "TEXTAREA", disabled: true }, false],
+    ["text input", { tagName: "INPUT", type: "text" }, true],
+    ["readonly input", { tagName: "INPUT", type: "text", readOnly: true }, false],
+    ["checkbox", { tagName: "INPUT", type: "checkbox" }, false],
+    ["contenteditable", { tagName: "DIV", isContentEditable: true }, true],
+    [
+      "textbox role",
+      { tagName: "DIV", getAttribute: (name: string) => name === "role" ? "TEXTBOX" : null },
+      true,
+    ],
+  ];
+
+  it.each(cases)("classifies %s", (_, target, expected) => {
+    expect(isEditableTarget(target as EventTarget)).toBe(expected);
+  });
+});
 
 describe("key normalization", () => {
   it("normalizes key names and aliases", () => {

@@ -1,5 +1,5 @@
 import type { FocusGridController } from "../controller";
-import type { FocusGridControllerState } from "../state";
+import type { FocusGridControllerState } from "../layout/types";
 
 export type CommandContext = {
   controller: FocusGridController;

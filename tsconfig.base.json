@@ -22,6 +22,8 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "isolatedModules": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true
   }

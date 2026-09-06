@@ -50,14 +50,14 @@ function controllerState(): FocusGridControllerState {
   };
 }
 
-function keydownEvent(key: string): KeyboardEvent {
+function keydownEvent(key: string, target: EventTarget | null = null): KeyboardEvent {
   return {
     key,
     ctrlKey: false,
     metaKey: false,
     altKey: false,
     shiftKey: false,
-    target: null,
+    target,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
   } as unknown as KeyboardEvent;
@@ -203,12 +203,48 @@ describe("normalizeKeyboardEvent", () => {
   });
 });
 
-describe("KeyboardListener resize batching", () => {
-  it("coalesces same-frame keyboard resize commands", () => {
-    vi.useFakeTimers();
-
+describe("KeyboardListener command routing", () => {
+  it.each([
+    ["textarea", { tagName: "TEXTAREA" }, true],
+    ["disabled textarea", { tagName: "TEXTAREA", disabled: true }, false],
+    ["text input", { tagName: "INPUT", type: "text" }, true],
+    ["readonly input", { tagName: "INPUT", type: "text", readOnly: true }, false],
+    ["checkbox", { tagName: "INPUT", type: "checkbox" }, false],
+    ["contenteditable", { tagName: "DIV", isContentEditable: true }, true],
+    [
+      "textbox role",
+      { tagName: "DIV", getAttribute: (name: string) => name === "role" ? "TEXTBOX" : null },
+      true,
+    ],
+  ] as const)("uses shared editable behavior for %s", (_, target, editable) => {
     const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resize");
+    const run = vi.fn();
+    controller.commands.register("editable", run);
+    let onKey: ((event: KeyboardEvent) => void) | null = null;
+    const root = {
+      addEventListener: vi.fn((__, listener: EventListener) => {
+        onKey = listener as (event: KeyboardEvent) => void;
+      }),
+      removeEventListener: vi.fn(),
+    } as unknown as HTMLElement;
+    const listener = new KeyboardListener(controller, root, {
+      keymap: [{
+        sequence: parseKeySequence("E"),
+        action: "editable",
+        when: (context) => context.inputFocused,
+      }],
+    });
+
+    listener.mount();
+    onKey?.(keydownEvent("E", target as unknown as EventTarget));
+    expect(run).toHaveBeenCalledTimes(editable ? 1 : 0);
+    listener.destroy();
+  });
+
+  it("runs every keyboard resize through the current registry handler", () => {
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.fn();
+    controller.commands.register("pane.resizeRight", resize);
     let onKey: ((event: KeyboardEvent) => void) | null = null;
     const root = {
       addEventListener: vi.fn((_, listener: EventListener) => {
@@ -231,22 +267,17 @@ describe("KeyboardListener resize batching", () => {
     onKey?.(keydownEvent("H"));
     onKey?.(keydownEvent("H"));
 
-    expect(resize).not.toHaveBeenCalled();
-
-    vi.runOnlyPendingTimers();
-
-    expect(resize).toHaveBeenCalledTimes(1);
-    expect(resize).toHaveBeenCalledWith("left", {
-      direction: "right",
-      deltaPx: 30,
-    });
+    expect(resize).toHaveBeenCalledTimes(3);
+    expect(resize.mock.calls.map((call) => call[1])).toEqual([
+      { deltaPx: 10 },
+      { deltaPx: 10 },
+      { deltaPx: 10 },
+    ]);
 
     listener.destroy();
   });
 
-  it("does not enqueue keyboard resize commands blocked by the active pane axis", () => {
-    vi.useFakeTimers();
-
+  it("does not run default keyboard resize commands blocked by the active pane axis", () => {
     const state = controllerState();
     if (state.root.kind !== "split") {
       throw new Error("expected split fixture");
@@ -286,16 +317,12 @@ describe("KeyboardListener resize batching", () => {
     onKey?.(keydownEvent("H"));
     onKey?.(keydownEvent("H"));
 
-    vi.runOnlyPendingTimers();
-
     expect(resize).not.toHaveBeenCalled();
 
     listener.destroy();
   });
 
-  it("still enqueues keyboard resize commands on the unblocked axis", () => {
-    vi.useFakeTimers();
-
+  it("runs default keyboard resize commands on the unblocked axis", () => {
     const state = controllerState();
     if (state.root.kind !== "split") {
       throw new Error("expected split fixture");
@@ -334,8 +361,6 @@ describe("KeyboardListener resize batching", () => {
     listener.mount();
     onKey?.(keydownEvent("H"));
 
-    vi.runOnlyPendingTimers();
-
     expect(resize).toHaveBeenCalledWith("left", {
       direction: "right",
       deltaPx: 10,
@@ -345,8 +370,6 @@ describe("KeyboardListener resize batching", () => {
   });
 
   it("runs non-resize commands immediately", () => {
-    vi.useFakeTimers();
-
     const controller = createFocusGridController(controllerState());
     const run = vi.spyOn(controller.commands, "run");
     let onKey: ((event: KeyboardEvent) => void) | null = null;
@@ -416,6 +439,22 @@ describe("FocusGridDomController lifecycle", () => {
 });
 
 describe("PointerResizeController batching", () => {
+  it("does not enter drag state for a missing split", () => {
+    const controller = createFocusGridController(controllerState());
+    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const resizeController = new PointerResizeController(controller);
+    const missing = { ...resizeHandle(), splitId: "missing" };
+
+    resizeController.startResize(
+      pointerEvent({ pointerId: 1, clientX: 100 }),
+      missing,
+    );
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 150 }));
+    resizeController.endResize(pointerEvent({ pointerId: 1, clientX: 150 }));
+
+    expect(resize).not.toHaveBeenCalled();
+  });
+
   it("coalesces pointer moves using the latest absolute drag delta", () => {
     vi.useFakeTimers();
 

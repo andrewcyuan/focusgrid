@@ -15,12 +15,21 @@ import {
   type WrapRootInSplitOptions,
 } from "./layout/operations";
 import { computeLayout } from "./layout/solver";
-import type { ComputedLayout, LayoutNode, PaneNode, FocusGridControllerState } from "./state";
-import type { NodeId, PaneId } from "./layout/types";
-import type { PaneCommandCapabilityInput } from "./pane-guards";
+import type {
+  ComputedLayout,
+  PaneNode,
+  FocusGridControllerState,
+} from "./layout/types";
+import { paneCommandCapabilityKeys, type NodeId, type PaneId } from "./layout/types";
+import type { PaneCommandCapabilityInput } from "./layout/types";
+import { findPaneNode, transformLayout, updatePane } from "./layout/tree";
 import { assertValidFocusGridControllerState } from "./validation";
+import { applyPaneCapabilityDefaults } from "./pane-guards";
 
-export type Listener = () => void;
+export type Listener = (
+  nextState: FocusGridControllerState,
+  previousState: FocusGridControllerState,
+) => void;
 
 export type PaneDefaults = PaneCommandCapabilityInput & {
   minWidth?: number;
@@ -28,7 +37,6 @@ export type PaneDefaults = PaneCommandCapabilityInput & {
 };
 
 export type CreateFocusGridControllerOptions = {
-  commands?: CommandRegistry;
   paneDefaults?: PaneDefaults;
   directionalFocusOverflow?: boolean;
 };
@@ -68,7 +76,7 @@ export class FocusGridController {
     this.paneDefaults = options.paneDefaults ?? {};
     this.directionalFocusOverflow = options.directionalFocusOverflow ?? false;
     this.state = applyPaneDefaultsToState(initialState, this.paneDefaults);
-    this.commands = options.commands ?? createDefaultCommandRegistry();
+    this.commands = createDefaultCommandRegistry();
     this.api = {
       split: (paneId, splitOptions) => {
         const newPaneId = splitOptions.newPaneId ?? createId("pane");
@@ -76,6 +84,8 @@ export class FocusGridController {
           ...this.paneDefaults,
           ...splitOptions,
           newPaneId,
+          newPaneNodeId: createId("node"),
+          splitId: createId("split"),
         });
 
         return this.commit(next) ? newPaneId : null;
@@ -86,6 +96,8 @@ export class FocusGridController {
           ...this.paneDefaults,
           ...wrapOptions,
           newPaneId,
+          newPaneNodeId: createId("node"),
+          splitId: createId("split"),
         });
 
         return this.commit(next) ? newPaneId : null;
@@ -140,7 +152,8 @@ export class FocusGridController {
   }
 
   getPaneData<T = unknown>(paneId: PaneId): T | undefined {
-    return buildPaneDataIndex(this.state.root).get(paneId) as T | undefined;
+    const pane = findPaneNode(this.state.root, paneId);
+    return pane?.data as T | undefined;
   }
 
   private commit(next: FocusGridControllerState): boolean {
@@ -148,10 +161,11 @@ export class FocusGridController {
       return false;
     }
 
+    const previous = this.state;
     this.state = next;
 
     for (const listener of this.listeners) {
-      listener();
+      listener(next, previous);
     }
 
     return true;
@@ -180,19 +194,14 @@ function applyPaneDefaultsToState(
   if (
     paneDefaults.minWidth === undefined &&
     paneDefaults.minHeight === undefined &&
-    paneDefaults.canResizeX === undefined &&
-    paneDefaults.canResizeY === undefined &&
-    paneDefaults.canRemove === undefined &&
-    paneDefaults.canSplitHorizontal === undefined &&
-    paneDefaults.canSplitVertical === undefined &&
-    paneDefaults.canSwapX === undefined &&
-    paneDefaults.canSwapY === undefined &&
-    paneDefaults.canFocus === undefined
+    paneCommandCapabilityKeys.every((key) => paneDefaults[key] === undefined)
   ) {
     return state;
   }
 
-  const root = applyPaneDefaultsToNode(state.root, paneDefaults);
+  const root = transformLayout(state.root, (node) =>
+    node.kind === "pane" ? applyPaneDefaultsToPane(node, paneDefaults) : node,
+  );
 
   return root === state.root
     ? state
@@ -202,67 +211,26 @@ function applyPaneDefaultsToState(
       };
 }
 
-function applyPaneDefaultsToNode(
-  node: LayoutNode,
-  paneDefaults: PaneDefaults,
-): LayoutNode {
-  if (node.kind === "pane") {
-    return applyPaneDefaultsToPane(node, paneDefaults);
-  }
-
-  let changed = false;
-  const children = node.children.map((child) => {
-    const nextChild = applyPaneDefaultsToNode(child, paneDefaults);
-    changed ||= nextChild !== child;
-    return nextChild;
-  });
-
-  return changed ? { ...node, children } : node;
-}
-
 function applyPaneDefaultsToPane(
   pane: PaneNode,
   paneDefaults: PaneDefaults,
 ): PaneNode {
   const minWidth = pane.minWidth ?? paneDefaults.minWidth;
   const minHeight = pane.minHeight ?? paneDefaults.minHeight;
-  const canResizeX = pane.canResizeX ?? paneDefaults.canResizeX;
-  const canResizeY = pane.canResizeY ?? paneDefaults.canResizeY;
-  const canRemove = pane.canRemove ?? paneDefaults.canRemove;
-  const canSplitHorizontal =
-    pane.canSplitHorizontal ?? paneDefaults.canSplitHorizontal;
-  const canSplitVertical = pane.canSplitVertical ?? paneDefaults.canSplitVertical;
-  const canSwapX = pane.canSwapX ?? paneDefaults.canSwapX;
-  const canSwapY = pane.canSwapY ?? paneDefaults.canSwapY;
-  const canFocus = pane.canFocus ?? paneDefaults.canFocus;
+  const paneWithCapabilities = applyPaneCapabilityDefaults(pane, paneDefaults);
 
   if (
     minWidth === pane.minWidth &&
     minHeight === pane.minHeight &&
-    canResizeX === pane.canResizeX &&
-    canResizeY === pane.canResizeY &&
-    canRemove === pane.canRemove &&
-    canSplitHorizontal === pane.canSplitHorizontal &&
-    canSplitVertical === pane.canSplitVertical &&
-    canSwapX === pane.canSwapX &&
-    canSwapY === pane.canSwapY &&
-    canFocus === pane.canFocus
+    paneWithCapabilities === pane
   ) {
     return pane;
   }
 
   return {
-    ...pane,
+    ...paneWithCapabilities,
     minWidth,
     minHeight,
-    canResizeX,
-    canResizeY,
-    canRemove,
-    canSplitHorizontal,
-    canSplitVertical,
-    canSwapX,
-    canSwapY,
-    canFocus,
   };
 }
 
@@ -271,56 +239,8 @@ function setPaneData(
   paneId: PaneId,
   data: unknown,
 ): FocusGridControllerState {
-  let didUpdate = false;
-
-  const root = setPaneDataInNode(state.root, paneId, data, () => {
-    didUpdate = true;
-  });
-
-  return didUpdate ? { ...state, root } : state;
-}
-
-function setPaneDataInNode(
-  node: LayoutNode,
-  paneId: PaneId,
-  data: unknown,
-  markUpdated: () => void,
-): LayoutNode {
-  if (node.kind === "pane") {
-    if (node.paneId !== paneId || Object.is(node.data, data)) {
-      return node;
-    }
-
-    markUpdated();
-    return {
-      ...node,
-      data,
-    };
-  }
-
-  let changed = false;
-  const children = node.children.map((child) => {
-    const nextChild = setPaneDataInNode(child, paneId, data, markUpdated);
-    changed ||= nextChild !== child;
-    return nextChild;
-  });
-
-  return changed ? { ...node, children } : node;
-}
-
-function buildPaneDataIndex(root: LayoutNode): Map<PaneId, unknown> {
-  const out = new Map<PaneId, unknown>();
-  visit(root);
-  return out;
-
-  function visit(node: LayoutNode): void {
-    if (node.kind === "pane") {
-      out.set(node.paneId, node.data);
-      return;
-    }
-
-    for (const child of node.children) {
-      visit(child);
-    }
-  }
+  const root = updatePane(state.root, paneId, (pane) =>
+    Object.is(pane.data, data) ? pane : { ...pane, data },
+  );
+  return root === state.root ? state : { ...state, root };
 }

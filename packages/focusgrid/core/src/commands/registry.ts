@@ -3,11 +3,13 @@ import type {
   PaneResizeDirection,
   PaneSwapDirection,
 } from "../layout/types";
-import { findPaneInDirection } from "../layout/operations";
+import {
+  findPaneForFocusCommand,
+  findPaneInDirection,
+} from "../layout/navigation";
 import type { FocusGridController } from "../controller";
 import type { DefaultPaneCommand } from "../keyboard/default-pane-keymap";
 import {
-  findPaneForFocusCommand,
   findPaneNode,
   getPaneCommandCapabilities,
   paneAllowsResize,
@@ -109,7 +111,7 @@ function registerPaneFocusCommand(
     const active = state.activePaneId;
     if (!active) return;
 
-    const target = findPaneForFocusCommand(controller.getState(), active, direction, {
+    const target = findPaneForFocusCommand(state, active, direction, {
       overflow: controller.directionalFocusOverflow,
     });
 
@@ -128,7 +130,7 @@ function registerPaneSwapCommand(
     const active = state.activePaneId;
     if (!active) return;
 
-    const target = findPaneInDirection(controller.getState(), active, direction);
+    const target = findPaneInDirection(state, active, direction);
 
     if (!target) return;
     if (!paneAllowsSwap(findPaneNode(state, active), direction)) return;

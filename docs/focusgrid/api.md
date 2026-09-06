@@ -41,7 +41,6 @@ type PaneDefaults = {
 };
 
 type CreateFocusGridControllerOptions = {
-  commands?: CommandRegistry;
   paneDefaults?: PaneDefaults;
   directionalFocusOverflow?: boolean;
 };
