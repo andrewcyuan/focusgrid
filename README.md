@@ -5,8 +5,8 @@ Libraries for building **tmux-like pane layouts in the web**. Fully keyboard-con
 Try some examples in the playground!
 ```bash
 cd packages/playground
-pnpm install
-pnpm dev
+bun install --frozen-lockfile
+bun run dev
 ```
 
 __The basic idea__

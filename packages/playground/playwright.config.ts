@@ -7,7 +7,7 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:5173",
   },
   webServer: {
-    command: "../../scripts/pnpm --filter @focusgrid/playground dev -- --port 5173",
+    command: "bun run dev --port 5173",
     reuseExistingServer: true,
     timeout: 30_000,
     url: "http://127.0.0.1:5173",

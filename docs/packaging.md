@@ -1,81 +1,71 @@
 # Packaging
 
-Focusgrid uses pnpm workspaces inside this repo and npm package artifacts
-outside this repo.
+Use Bun `1.3.14` directly. The root `packageManager` field records the required
+version; install that version before working in this repo. Node.js is also
+required by the existing build and test tools.
 
-## Local development
+## Development
 
-Use the pinned wrapper:
-
-```sh
-./scripts/pnpm install --frozen-lockfile
-./scripts/pnpm -r typecheck
-./scripts/pnpm -r test
-./scripts/pnpm -r build
-```
-
-The repo is a pnpm workspace. Workspace links are only for packages inside this
-repo:
-
-- `@focusgrid/focusgrid`
-- `@focusgrid/shortcut-engine`
-- `@focusgrid/ariakit-adapter`
-- `@focusgrid/playground`
-
-External apps must not commit sibling workspace links to this repo. Perilla and
-future local projects should consume Focusgrid through the same package artifact
-shape that npm consumers receive.
-
-## Package manager pinning
-
-`packageManager` pins `pnpm@10.25.0`. `./scripts/pnpm` runs that version from
-the ignored repo-local cache when available, then falls back to an exact global
-installation or Corepack.
-
-Corepack is not how Focusgrid packages are consumed. It only controls which
-package manager version runs the workspace.
-
-## Local consumer testing
-
-Use packed artifacts when testing Focusgrid from another local app before an npm
-publish:
+Run from the repository root:
 
 ```sh
-./scripts/pnpm pack:local
+bun install --frozen-lockfile
+bun run typecheck
+bun run test
+bun run build
+bun run lint
+bun run --filter @focusgrid/playground dev
+bun run --filter @focusgrid/playground e2e
 ```
 
-The command builds the public packages and writes npm tarballs to `.packs/`.
-Install those tarballs in a consuming app to test the same package shape npm
-users will receive.
+Use `bun run test`, which runs Vitest. `bun test` selects Bun's own test runner.
+The root `workspaces` field includes `packages/*`. Internal dependencies keep
+`workspace:*`; Bun converts these to concrete versions when publishing.
+Commit `bun.lock` and use frozen installs for repeatable builds.
 
-This is the only supported local-consumer workflow. Do not use cross-repo pnpm
-workspace entries, package aliases, Vite aliases, or source imports from another
-application.
+## Consumers
 
-Use the dry-run variant to inspect package contents without keeping tarballs:
+External apps, including Perilla, must install released semver versions from
+the npm registry. Do not use sibling workspace entries, package aliases,
+Vite aliases, or source imports from this repository.
 
 ```sh
-./scripts/pnpm pack:dry-run
+bun add @focusgrid/focusgrid
+# For direct shortcut engine or Ariakit adapter use:
+bun add @focusgrid/shortcut-engine @focusgrid/ariakit-adapter @ariakit/react
 ```
 
-## Publishing
+## Versions and releases
 
-Changesets owns versioning and publish orchestration:
+Changesets manages independent package versions and changelogs:
 
 ```sh
-./scripts/pnpm changeset
-./scripts/pnpm version-packages
-./scripts/pnpm release
+bun run changeset
+bun run version-packages
 ```
 
-`release` runs typecheck, tests, and build before `changeset publish`.
+The version command also updates `bun.lock`. Review and commit the version,
+changelog, and lockfile changes before publishing. For the first `0.1.0`
+release, keep the existing versions and skip these two commands.
 
-After publish, external apps should depend on semver versions from npm instead
-of local tarball paths.
+Authenticate to npm with an account that can publish to the `@focusgrid` scope
+(for example, with `npm login`), then verify it with `bun pm whoami`.
 
-## Turborepo
+```sh
+bun run release:dry-run
+bun run release
+git push origin --tags
+```
 
-Focusgrid does not use Turborepo. Turborepo is a task runner and cache layer; it
-does not replace pnpm workspaces, npm pack, or npm publish. Add it only
-if recursive pnpm scripts become too slow and build caching is worth the extra
-tooling.
+Both release commands verify a frozen install, typecheck, test, and build.
+Bun publishes the shortcut engine first, then Focusgrid, then the Ariakit
+adapter, all with public access. The root and playground stay private.
+The dry run previews package contents without publishing or creating tags.
+
+If needed, pass a one-time password with `bun run release --otp <code>`.
+After a partial failure, rerun the release command: Bun tolerates already
+published versions. Successful packages receive local Git tags of the form
+`@focusgrid/focusgrid@0.1.0`; existing tags are left intact. Tags are not pushed
+automatically. Publication does not bump versions.
+
+Verify each released version with `bun info <package>@<version> version`.

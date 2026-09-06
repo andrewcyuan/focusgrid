@@ -1,5 +1,9 @@
 # Past Mistakes
 
+## Lockfile Migration Must Preserve Dependency Roles
+
+Bun's lockfile importer merged workspace peer dependencies into dependencies and omitted workspace versions. Compare migrated workspace entries with each manifest, then verify a frozen install before treating a converted lockfile as complete.
+
 ## Optimized Input Paths Must Preserve Command Boundaries
 
 - **Mistake:** Keyboard resize batching interpreted built-in command names in the DOM layer and called the controller API directly, bypassing registered replacement handlers.
