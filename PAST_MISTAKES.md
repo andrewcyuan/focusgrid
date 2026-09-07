@@ -51,3 +51,10 @@ Bun's lockfile importer merged workspace peer dependencies into dependencies and
 - **Impact:** Re-mounted controllers could handle a single keydown or resize more than once, making focus and layout changes look flaky.
 - **Fix pattern:** Track mounted state in DOM adapters and make repeated `mount()`/`destroy()` calls no-ops after the first effective transition.
 - **Regression coverage:** Keep a DOM lifecycle test that calls `mount()` and `destroy()` twice and asserts only one listener/observer registration and cleanup.
+
+## Documentation Examples Must Complete Focus Wiring
+
+Examples changed logical pane or row state without moving browser focus, and
+omitted the container height needed to display the grid. Watch for keyboard
+handlers that only update ids, unhandled keymap actions, and percentage-height
+layouts with no sized parent; check example types and trace focus ownership.

@@ -22,6 +22,22 @@ import {
 import "@focusgrid/focusgrid/react/styles.css";
 ```
 
+## Container size
+
+Import the stylesheet and give the grid's parent a nonzero width and height.
+The grid fills its parent with `width: 100%` and `height: 100%`; its absolutely
+positioned panes do not give the parent a height.
+
+```tsx
+<div style={{ height: "100dvh" }}>
+  <FocusGrid controller={controller} keymap={keymap} renderPane={renderPane} />
+</div>
+```
+
+For a header above the grid, use a sized flex-column shell and a grid wrapper
+with `flex: 1` and `minHeight: 0`. The DOM resize observer updates controller
+dimensions after mount, so an initial container size of zero is valid.
+
 ## Initial layout
 
 FocusGrid starts from serializable state. The playground uses two panes in a
@@ -91,6 +107,9 @@ function FocusGridPlayground() {
 }
 ```
 
+See [default keyboard bindings](commands.md#default-keyboard-bindings) for the
+shortcut table, disabled actions, and override validation errors.
+
 `FocusGrid` owns the DOM listeners, resize observer, computed pane layout, and
 resize handles. The app owns pane content and controller state.
 
@@ -159,21 +178,27 @@ function MailApp() {
   const controller = useFocusGridController(createInitialState);
 
   return (
-    <div ref={applicationRef} className="MailApp">
+    <div
+      ref={applicationRef}
+      className="MailApp"
+      style={{ height: "100dvh", display: "flex", flexDirection: "column" }}
+    >
       <header>
         <h1>Mail</h1>
         <a href="/settings">Settings</a>
       </header>
 
-      <FocusGrid
-        controller={controller}
-        keymap={createDefaultPaneKeymap().keymap}
-        focusManagement={{
-          mode: "application",
-          scopeRef: applicationRef,
-        }}
-        renderPane={(ctx) => <MailPane {...ctx} />}
-      />
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <FocusGrid
+          controller={controller}
+          keymap={createDefaultPaneKeymap().keymap}
+          focusManagement={{
+            mode: "application",
+            scopeRef: applicationRef,
+          }}
+          renderPane={(ctx) => <MailPane {...ctx} />}
+        />
+      </div>
     </div>
   );
 }

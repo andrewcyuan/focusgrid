@@ -14,9 +14,15 @@ __The basic idea__
 Similar to `tmux`, Focusgrid represents panes as a binary tree of nodes, enabling intuitive splitting, resize, swapping, and deletion. Each pane has its own render function, allowing you to build whatever you want in the panes. Finally, `tmux` for everything, not just terminals!
 
 ```tsx
+import { useRef } from "react";
+import { createDefaultPaneKeymap } from "@focusgrid/focusgrid/core";
+import { FocusGrid, useFocusGridController } from "@focusgrid/focusgrid/react";
+import "@focusgrid/focusgrid/react/styles.css";
+
 const keymap = createDefaultPaneKeymap().keymap;
 
 export function App() {
+  const applicationRef = useRef<HTMLDivElement>(null);
   const controller = useFocusGridController(() => ({
     root: { kind: "pane", id: "main-node", paneId: "main" },
     activePaneId: "main",
@@ -24,18 +30,21 @@ export function App() {
   }));
 
   return (
-    <FocusGrid
-      controller={controller}
-      keymap={keymap}
-      renderPane={({ paneId, controller }) => (
-        <button onFocus={() => controller.api.focus(paneId)}>
-          Pane {paneId}
-        </button>
-      )}
-    />
+    <div ref={applicationRef} style={{ height: "100dvh" }}>
+      <FocusGrid
+        controller={controller}
+        keymap={keymap}
+        focusManagement={{ mode: "application", scopeRef: applicationRef }}
+        renderPane={({ paneId }) => <button>Pane {paneId}</button>}
+      />
+    </div>
   );
 }
 ```
+
+The wrapper gives the grid a nonzero height. This example opts into application
+focus management so pane navigation also moves browser focus; see the
+[focus policy guide](docs/focusgrid/usage.md#application-focus-management).
 
 shortcut-engine is an accompanying tool for adding keyboard shortcut listeners to your apps. Shortcuts are represented by easily readable keycodes; for example, "ctrl-shift-s".
 

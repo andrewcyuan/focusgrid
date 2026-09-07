@@ -15,60 +15,65 @@ Attach `compositeProps` to the Ariakit `Composite` root. The props include
 
 ```tsx
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   createCompositeNavigationKeymap,
   useCompositeShortcutRouter,
 } from "@focusgrid/ariakit-adapter/react";
 import { parseKeySequence } from "@focusgrid/shortcut-engine";
 
-type MailAction =
-  | "move-left"
-  | "move-right"
-  | "move-up"
-  | "move-down"
-  | "move-start"
-  | "move-end"
-  | "open"
-  | "toggle-read";
+type MailRow = { id: string; subject: string };
 
-function Mailbox({ rows }: { rows: readonly MailRow[] }) {
+type MailboxProps = {
+  rows: readonly MailRow[];
+  openMessage: (id: string) => void;
+  toggleRead: (id: string) => void;
+};
+
+function Mailbox({ rows, openMessage, toggleRead }: MailboxProps) {
   const composite = useCompositeStore({ orientation: "vertical" });
-  const [activeId, setActiveId] = useState(rows[0]?.id ?? null);
-
   const keymap = useMemo(
     () => [
       ...createCompositeNavigationKeymap({
         overrides: {
+          "move-left": "",
+          "move-right": "",
           "move-up": "K",
           "move-down": "J",
           "move-start": "G G",
           "move-end": "Shift-G",
         },
       }),
-      {
-        sequence: parseKeySequence("Enter"),
-        action: "open",
-      },
-      {
-        sequence: parseKeySequence("Space"),
-        action: "toggle-read",
-      },
+      { sequence: parseKeySequence("Enter"), action: "open" },
+      { sequence: parseKeySequence("Space"), action: "toggle-read" },
     ],
     [],
   );
 
   const { compositeProps } = useCompositeShortcutRouter({
     keymap,
-    getContext: () => ({
-      activeId,
-      rows,
-    }),
-    onMatch: (match) => {
-      if (match.action === "move-down") {
-        setActiveId(nextRowId(rows, activeId));
-      } else if (match.action === "open" && activeId) {
-        openMessage(activeId);
+    onMatch: ({ action }) => {
+      switch (action) {
+        case "move-up":
+          composite.move(composite.up());
+          break;
+        case "move-down":
+          composite.move(composite.down());
+          break;
+        case "move-start":
+          composite.move(composite.first());
+          break;
+        case "move-end":
+          composite.move(composite.last());
+          break;
+        case "open":
+        case "toggle-read": {
+          const activeId = composite.getState().activeId;
+          if (!activeId || !rows.some((row) => row.id === activeId)) return;
+          if (action === "open") openMessage(activeId);
+          else toggleRead(activeId);
+          break;
+        }
       }
     },
   });
@@ -76,11 +81,7 @@ function Mailbox({ rows }: { rows: readonly MailRow[] }) {
   return (
     <Composite store={composite} {...compositeProps}>
       {rows.map((row) => (
-        <CompositeItem
-          key={row.id}
-          id={row.id}
-          data-active={row.id === activeId}
-        >
+        <CompositeItem key={row.id} id={row.id}>
           {row.subject}
         </CompositeItem>
       ))}
@@ -88,6 +89,10 @@ function Mailbox({ rows }: { rows: readonly MailRow[] }) {
   );
 }
 ```
+
+Row ids must be unique in the document. Movement handlers call `composite.move()`
+to move browser focus; actions read Ariakit's current active id. Left/right
+bindings are disabled because this list is vertical.
 
 `useCompositeShortcutRouter()` uses capture-phase keyboard handling. That lets a
 matched workspace or collection shortcut call `preventDefault()` and

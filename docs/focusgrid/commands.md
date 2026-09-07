@@ -176,3 +176,48 @@ nothing.
 If either the active pane or directional target pane has `canSwapX: false`,
 left/right swap commands do nothing. If either pane has `canSwapY: false`,
 up/down swap commands do nothing.
+
+## Default keyboard bindings
+
+`createDefaultPaneKeymap()` from `@focusgrid/focusgrid/core` returns
+`{ keymap, errors }`. Pass `keymap` to `FocusGrid` or the DOM controller.
+Press and release `Ctrl-B`, then press the follower key:
+
+| Action id | Command | Sequence |
+| --- | --- | --- |
+| `split-right` | `pane.splitRight` | `Ctrl-B %` |
+| `split-down` | `pane.splitDown` | `Ctrl-B "` |
+| `close` | `pane.close` | `Ctrl-B X` |
+| `focus-left` | `pane.focusLeft` | `Ctrl-B Left` |
+| `focus-right` | `pane.focusRight` | `Ctrl-B Right` |
+| `focus-up` | `pane.focusUp` | `Ctrl-B Up` |
+| `focus-down` | `pane.focusDown` | `Ctrl-B Down` |
+| `swap-left` | `pane.swapLeft` | `Ctrl-B Shift-Left` |
+| `swap-right` | `pane.swapRight` | `Ctrl-B Shift-Right` |
+| `swap-up` | `pane.swapUp` | `Ctrl-B Shift-Up` |
+| `swap-down` | `pane.swapDown` | `Ctrl-B Shift-Down` |
+| `resize-left` | `pane.resizeLeft` | `Ctrl-B H` |
+| `resize-right` | `pane.resizeRight` | `Ctrl-B L` |
+| `resize-up` | `pane.resizeUp` | `Ctrl-B K` |
+| `resize-down` | `pane.resizeDown` | `Ctrl-B J` |
+
+Letters are case-insensitive in shortcut strings; `H` means the unshifted H
+key. Resize bindings pass `deltaPx: 48` and retain the leader for repeatable
+followers during the router's repeat window.
+
+Override bindings by action id. An empty string disables the action; an invalid
+string omits its binding and adds an entry to `errors` with `id`, `command`,
+`sequence`, and `message`. Omitted overrides keep their defaults.
+
+```ts
+const { keymap, errors } = createDefaultPaneKeymap({
+  overrides: {
+    "split-right": "Ctrl-B V",
+    close: "",
+  },
+});
+```
+
+`createDefaultPaneShortcuts()` returns the default strings keyed by action id;
+`defaultPaneShortcutActions` provides labels, commands, sequences, and optional
+args/repeat flags for building a shortcut settings UI.

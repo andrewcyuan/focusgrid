@@ -1,8 +1,8 @@
 # API
 
-The functions meant to be used in a scriptable / programmatic way, as opposed
-to human input. These functions live on `controller.api` after creating a
-controller with `createFocusGridController()`.
+Create a controller with `createFocusGridController()`. State reads and
+subscriptions live on the controller; programmatic mutations live on
+`controller.api`. Core APIs below are exported from `@focusgrid/focusgrid/core`.
 
 ```ts
 import { createFocusGridController } from "@focusgrid/focusgrid/core";
@@ -218,6 +218,103 @@ setPaneData(paneId: PaneId, data: unknown): boolean;
 Updates an existing pane's `data` value. It returns `true` when the value
 changes and `false` when the pane does not exist or the value is unchanged.
 
+## State reads and subscriptions
+
+```ts
+controller.getState(): FocusGridControllerState;
+controller.getComputedLayout(): ComputedLayout;
+controller.subscribe(listener: Listener): () => void;
+
+type Listener = (
+  nextState: FocusGridControllerState,
+  previousState: FocusGridControllerState,
+) => void;
+```
+
+`getState()` returns the current state reference, not a copy. Treat it and pane
+`data` as immutable; use controller API methods to make changes.
+`getComputedLayout()` computes pane and resize-handle rectangles in container
+pixels, with pane/node ids and active flags in `panes`, and split ids, boundary
+indices, and directions in `handles`.
+
+Subscriptions run synchronously after a state change, with the new and previous
+state. They do not fire immediately on subscription or for unchanged operations.
+Call the returned function to unsubscribe:
+
+```ts
+const unsubscribe = controller.subscribe((next, previous) => {
+  console.log(previous.activePaneId, next.activePaneId);
+});
+// When the subscriber is removed:
+unsubscribe();
+```
+
+React consumers can import `useControllerState(controller)` and
+`useControllerLayout(controller)` from `@focusgrid/focusgrid/react` to subscribe
+and render current state or computed layout. `useFocusGridController(factory,
+options?)` creates one controller per component lifetime; later factory or
+option changes do not replace it.
+
+## `controller.api.setContainerSize(width, height)`
+
+```ts
+setContainerSize(width: number, height: number): boolean;
+```
+
+Sets the container dimensions in pixels. Supply finite, nonnegative values.
+Returns `false` when both dimensions are unchanged, otherwise updates state and
+returns `true`. Headless consumers must supply dimensions for layout and resize
+calculations. The DOM controller, including the React binding, observes the
+rendered grid and sets these dimensions automatically.
+
+## `controller.api.resizeHandle(splitId, options)`
+
+```ts
+resizeHandle(
+  splitId: NodeId,
+  options: { index: number; deltaPx: number; snapshotSizes?: number[] },
+): boolean;
+```
+
+Moves the boundary after child `index` in the given split. A positive pixel
+delta grows that child and shrinks the next child, subject to minimum sizes.
+Use the `splitId` and `index` from a computed handle. For a drag, pass the split's
+sizes at drag start as `snapshotSizes` and the total displacement as `deltaPx`;
+without a snapshot, the delta applies to current sizes. Returns `true` when
+sizes change and `false` for a missing split, invalid boundary, zero-sized
+container axis, or a resize that cannot change sizes.
+
+## State serialization
+
+```ts
+serializeFocusGridControllerState(state: FocusGridControllerState): string;
+deserializeFocusGridControllerState(serialized: string): FocusGridControllerState;
+```
+
+Serialization uses `JSON.stringify()` and includes the layout, pane data, active
+pane, split focus memory, and container dimensions. Keep pane data JSON-safe:
+functions and `undefined` do not round-trip, and circular values cannot be
+serialized. Controller options, commands, subscriptions, and remembered DOM
+focus targets are not stored.
+
+```ts
+import {
+  createFocusGridController,
+  deserializeFocusGridControllerState,
+  serializeFocusGridControllerState,
+} from "@focusgrid/focusgrid/core";
+
+const saved = serializeFocusGridControllerState(controller.getState());
+const restored = createFocusGridController(
+  deserializeFocusGridControllerState(saved),
+  { directionalFocusOverflow: true },
+);
+```
+
+Deserialization parses and validates state; malformed JSON or invalid state
+throws `FocusGridStateValidationException`. It returns state for a new controller,
+not a mutation of an existing controller.
+
 ## State validation
 
 `createFocusGridController()` and `deserializeFocusGridControllerState()` throw
@@ -308,3 +405,6 @@ External interactive ownership always wins over controller-driven or
 window-reactivation restoration. A primary pointer press on static content in
 the application scope schedules restoration after default pointer focus
 behavior; presses inside the grid or inside interactive controls are ignored.
+
+See [default keyboard bindings](commands.md#default-keyboard-bindings) for
+`createDefaultPaneKeymap()`, override validation, and the full shortcut table.
