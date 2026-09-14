@@ -402,10 +402,9 @@ describe("FocusGridDomController lifecycle", () => {
   it("mounts and destroys keyboard and resize observers idempotently", () => {
     const observe = vi.fn();
     const disconnect = vi.fn();
-    const ResizeObserverMock = vi.fn().mockImplementation(() => ({
-      observe,
-      disconnect,
-    })) as unknown as typeof ResizeObserver;
+    const ResizeObserverMock = vi.fn().mockImplementation(function () {
+      return { observe, disconnect };
+    }) as unknown as typeof ResizeObserver;
     vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 
     const controller = createFocusGridController(controllerState());

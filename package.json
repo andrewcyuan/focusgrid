@@ -37,11 +37,10 @@
     "@types/react-dom": "^18.3.5",
     "tsdown": "^0.22.3",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "typescript": "^7.0.2",
     "unrun": "^0.3.1",
-    "vitest": "^2.1.8"
-  },
   "dependencies": {
-    "tsc": "^2.0.4"
+    "tsc": "^2.0.4",
+    "vitest": "^5.0.0",
   }
 }
