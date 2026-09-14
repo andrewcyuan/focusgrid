@@ -1,8 +1,16 @@
 # Past Mistakes
 
+## Compiler Command Names Are Not Package Names
+
+The unrelated `tsc` package replaced TypeScript's compiler command and blocked release checks. When a tool prints an unexpected installation warning, check which package owns its executable and remove conflicting dependencies.
+
 ## Lockfile Migration Must Preserve Dependency Roles
 
 Bun's lockfile importer merged workspace peer dependencies into dependencies and omitted workspace versions. Compare migrated workspace entries with each manifest, then verify a frozen install before treating a converted lockfile as complete.
+
+## Lockfiles Must Preserve Executable Metadata
+
+Missing `bin` metadata in `bun.lock` prevented clean installs from linking build and release commands, even though their packages were installed. Compare executable metadata with package manifests and verify the full release dry run after a clean frozen install; reinstalling alone cannot repair an incomplete lockfile.
 
 ## Optimized Input Paths Must Preserve Command Boundaries
 

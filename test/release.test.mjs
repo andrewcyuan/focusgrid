@@ -1,9 +1,30 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, rmSync, realpathSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+
+test("release tools have executable links owned by the correct packages", () => {
+  for (const [workspace, packageName, command] of [
+    ["../", "typescript", "tsc"],
+    ["../", "tsdown", "tsdown"],
+    ["../", "@changesets/cli", "changeset"],
+    ["../packages/playground/", "vite", "vite"],
+  ]) {
+    const manifestUrl = new URL(`${workspace}package.json`, import.meta.url);
+    const require = createRequire(manifestUrl);
+    const packagePath = require.resolve(`${packageName}/package.json`);
+    const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
+    const executable = new URL(`node_modules/.bin/${command}`, manifestUrl);
+    assert.equal(
+      realpathSync(executable),
+      realpathSync(join(packagePath, "..", manifest.bin[command])),
+      `${command} must use the executable from ${packageName}`,
+    );
+  }
+});
 
 function simulate(args, fail = "") {
   const root = mkdtempSync(join(tmpdir(), "focusgrid-release-test-"));

@@ -108,6 +108,46 @@ import { FocusGrid } from "@focusgrid/focusgrid/react";
 import "@focusgrid/focusgrid/react/styles.css";
 ```
 
+## Publishing to npm
+
+Use Bun `1.3.14` and Node.js. Run these commands from the repository root.
+Sign in with an npm account that can publish to the `@focusgrid` scope:
+
+```sh
+npm login
+bun pm whoami
+bun install --frozen-lockfile
+```
+
+For each release, add a changeset and apply the version updates. Skip these
+two commands for the first `0.1.0` release, which already has its versions set.
+
+```sh
+bun run changeset
+bun run version-packages
+```
+
+Review and commit the version, changelog, and `bun.lock` changes before publishing.
+Preview the packages, then publish and push the release tags:
+
+```sh
+bun run release:dry-run
+bun run release
+git push origin --tags
+```
+
+Both release commands check the frozen install, types, tests, and build.
+The dry run does not publish or create tags. The release publishes
+`@focusgrid/shortcut-engine`, `@focusgrid/focusgrid`, and
+`@focusgrid/ariakit-adapter` in that order with public access, then creates
+local package tags. It does not bump versions.
+
+If npm requires a one-time password, use `bun run release --otp <code>`.
+After a partial failure, rerun the release command; it tolerates versions
+that are already published. Verify each release with
+`bun info <package>@<version> version`. See [Packaging](docs/packaging.md)
+for more details.
+
 ## Docs
 
 - Focusgrid: [`docs/focusgrid/usage.md`](docs/focusgrid/usage.md), [`docs/focusgrid/api.md`](docs/focusgrid/api.md), and [`docs/focusgrid/commands.md`](docs/focusgrid/commands.md).
