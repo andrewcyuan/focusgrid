@@ -58,3 +58,11 @@ Examples changed logical pane or row state without moving browser focus, and
 omitted the container height needed to display the grid. Watch for keyboard
 handlers that only update ids, unhandled keymap actions, and percentage-height
 layouts with no sized parent; check example types and trace focus ownership.
+
+## Compiler Upgrades Need Configuration Checks
+
+Installing TypeScript 7 left the shared config using the removed `baseUrl` option and non-relative path targets. When upgrading the compiler, check removed options and run all workspace typechecks; use explicit relative `paths` targets.
+
+## Constructor Mocks Must Be Constructible
+
+The ResizeObserver mock used an arrow function, so calling it with `new` failed before lifecycle assertions ran. Use a regular function or class when mocking an API that production code constructs with `new`.
