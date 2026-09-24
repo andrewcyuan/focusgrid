@@ -6,7 +6,7 @@ import {
   validateKeySequenceInput,
   type ShortcutBinding,
   type ShortcutMatchResult,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 
 export type CompositeShortcutMatch<
   TContext = undefined,

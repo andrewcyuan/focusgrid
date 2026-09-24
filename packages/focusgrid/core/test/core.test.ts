@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseKeySequence } from "@focusgrid/shortcut-engine";
+import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 import {
   cardinalDirections,
   CommandRegistry,

@@ -1,12 +1,12 @@
 # Usage
 
-`@focusgrid/ariakit-adapter` connects Focusgrid's shortcut routing model to an
+`@andrewcyuan/ariakit-adapter` connects Focusgrid's shortcut routing model to an
 Ariakit `Composite` root. It does not render collection components or own row
 state. Ariakit owns composite focus behavior, the app owns data rendering and
 active-row state, and the adapter owns keyboard shortcut routing.
 
-The adapter exports from both `@focusgrid/ariakit-adapter` and
-`@focusgrid/ariakit-adapter/react`.
+The adapter exports from both `@andrewcyuan/ariakit-adapter` and
+`@andrewcyuan/ariakit-adapter/react`.
 
 ## Composite root
 
@@ -19,8 +19,8 @@ import { useMemo } from "react";
 import {
   createCompositeNavigationKeymap,
   useCompositeShortcutRouter,
-} from "@focusgrid/ariakit-adapter/react";
-import { parseKeySequence } from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/ariakit-adapter/react";
+import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 
 type MailRow = { id: string; subject: string };
 
@@ -135,7 +135,7 @@ rendering, scroll-into-view, or geometry calculations. Add app actions to the
 same keymap using Shortcut Engine bindings:
 
 ```ts
-import { parseKeySequence } from "@focusgrid/shortcut-engine";
+import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 
 const keymap = [
   ...createCompositeNavigationKeymap(),

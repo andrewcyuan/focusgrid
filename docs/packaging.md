@@ -14,8 +14,8 @@ bun run typecheck
 bun run test
 bun run build
 bun run lint
-bun run --filter @focusgrid/playground dev
-bun run --filter @focusgrid/playground e2e
+bun run --filter @andrewcyuan/playground dev
+bun run --filter @andrewcyuan/playground e2e
 ```
 
 Use `bun run test`, which runs Vitest. `bun test` selects Bun's own test runner.
@@ -30,9 +30,9 @@ the npm registry. Do not use sibling workspace entries, package aliases,
 Vite aliases, or source imports from this repository.
 
 ```sh
-bun add @focusgrid/focusgrid
+bun add @andrewcyuan/focusgrid
 # For direct shortcut engine or Ariakit adapter use:
-bun add @focusgrid/shortcut-engine @focusgrid/ariakit-adapter @ariakit/react
+bun add @andrewcyuan/shortcut-engine @andrewcyuan/ariakit-adapter @ariakit/react
 ```
 
 ## Versions and releases
@@ -48,8 +48,10 @@ The version command also updates `bun.lock`. Review and commit the version,
 changelog, and lockfile changes before publishing. For the first `0.1.0`
 release, keep the existing versions and skip these two commands.
 
-Authenticate to npm with an account that can publish to the `@focusgrid` scope
+Authenticate to npm with an account that can publish to the `@andrewcyuan` scope
 (for example, with `npm login`), then verify it with `bun pm whoami`.
+Packages use the personal scope of the `andrewcyuan` npm account; no organization
+is required. A dry run does not check publishing access.
 
 ```sh
 bun run release:dry-run
@@ -65,7 +67,7 @@ The dry run previews package contents without publishing or creating tags.
 If needed, pass a one-time password with `bun run release --otp <code>`.
 After a partial failure, rerun the release command: Bun tolerates already
 published versions. Successful packages receive local Git tags of the form
-`@focusgrid/focusgrid@0.1.0`; existing tags are left intact. Tags are not pushed
+`@andrewcyuan/focusgrid@0.1.0`; existing tags are left intact. Tags are not pushed
 automatically. Publication does not bump versions.
 
 Verify each released version with `bun info <package>@<version> version`.

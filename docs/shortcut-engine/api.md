@@ -1,6 +1,6 @@
 # API
 
-Shortcut Engine APIs live in `@focusgrid/shortcut-engine`.
+Shortcut Engine APIs live in `@andrewcyuan/shortcut-engine`.
 
 ```ts
 import {
@@ -8,7 +8,7 @@ import {
   normalizeKeyboardEvent,
   parseKeySequence,
   routeKeyboardEvent,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 ```
 
 ## Shared Types

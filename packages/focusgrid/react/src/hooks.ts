@@ -5,7 +5,7 @@ import {
   type CreateFocusGridControllerOptions,
   type FocusGridController,
   type FocusGridControllerState,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 
 export function useFocusGridController(
   createInitialState: () => FocusGridControllerState,

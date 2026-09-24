@@ -4,8 +4,8 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import type { FocusGridController, KeyBinding } from "@focusgrid/focusgrid/core";
-import { FocusGridDomController } from "@focusgrid/focusgrid/dom";
+import type { FocusGridController, KeyBinding } from "@andrewcyuan/focusgrid/core";
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useControllerLayout } from "./hooks";
 import {
   usePaneLifecycleEvents,

@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useMemo } from "react";
-import type { ComputedHandle, FocusGridController } from "@focusgrid/focusgrid/core";
-import { PointerResizeController } from "@focusgrid/focusgrid/dom";
+import type { ComputedHandle, FocusGridController } from "@andrewcyuan/focusgrid/core";
+import { PointerResizeController } from "@andrewcyuan/focusgrid/dom";
 
 export type ResizeHandleProps = {
   controller: FocusGridController;

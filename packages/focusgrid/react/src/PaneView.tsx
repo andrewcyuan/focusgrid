@@ -9,8 +9,8 @@ import type {
   FocusGridController,
   PaneId,
   Rect,
-} from "@focusgrid/focusgrid/core";
-import { shouldFocusPaneShellForPointer } from "@focusgrid/focusgrid/dom";
+} from "@andrewcyuan/focusgrid/core";
+import { shouldFocusPaneShellForPointer } from "@andrewcyuan/focusgrid/dom";
 
 export type PaneRenderContext = {
   paneId: PaneId;

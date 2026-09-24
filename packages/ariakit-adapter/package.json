@@ -1,5 +1,5 @@
 {
-  "name": "@focusgrid/ariakit-adapter",
+  "name": "@andrewcyuan/ariakit-adapter",
   "version": "0.1.0",
   "description": "React helpers for routing Focusgrid keyboard shortcuts through Ariakit composites.",
   "keywords": [
@@ -40,7 +40,7 @@
     }
   },
   "scripts": {
-    "build": "tsdown src/index.ts src/react.ts --config ../../tsdown.config.mjs --format esm,cjs --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle @ariakit/react --deps.never-bundle @focusgrid/shortcut-engine",
+    "build": "tsdown src/index.ts src/react.ts --config ../../tsdown.config.mjs --format esm,cjs --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle @ariakit/react --deps.never-bundle @andrewcyuan/shortcut-engine",
     "test": "vitest run --config ../../vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
@@ -51,7 +51,7 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "@focusgrid/shortcut-engine": "workspace:*"
+    "@andrewcyuan/shortcut-engine": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",

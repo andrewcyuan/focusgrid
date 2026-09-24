@@ -1,6 +1,6 @@
 # Usage
 
-`@focusgrid/shortcut-engine` is the shared shortcut layer used by Focusgrid
+`@andrewcyuan/shortcut-engine` is the shared shortcut layer used by Focusgrid
 packages. It parses key sequence strings, normalizes key strokes, and routes
 strokes through a typed keymap. It does not own focus, ARIA, command registries,
 or app state.
@@ -10,7 +10,7 @@ or app state.
 Shortcut chords use `-` between combined keys and spaces between strokes:
 
 ```ts
-import { parseKeySequence } from "@focusgrid/shortcut-engine";
+import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 
 parseKeySequence("Ctrl-B L");
 parseKeySequence("Meta-Shift-P");
@@ -30,7 +30,7 @@ settings UIs, `normalizeKeySequenceInput()` and `validateKeySequenceInput()`
 accept common `+` input and return the canonical form.
 
 ```ts
-import { validateKeySequenceInput } from "@focusgrid/shortcut-engine";
+import { validateKeySequenceInput } from "@andrewcyuan/shortcut-engine";
 
 validateKeySequenceInput("Ctrl+B Shift+Left");
 // { ok: true, value: "Ctrl-B Shift-Left", sequence: [...] }
@@ -47,7 +47,7 @@ import {
   KeyRouter,
   parseKeySequence,
   type ShortcutBinding,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 
 type AppContext = {
   mode: "normal" | "editing";
@@ -94,7 +94,7 @@ import {
   parseKeySequence,
   routeKeyboardEvent,
   type ShortcutBinding,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 
 type AppAction = "command.open" | "item.rename";
 

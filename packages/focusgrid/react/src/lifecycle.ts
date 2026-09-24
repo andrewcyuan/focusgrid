@@ -1,4 +1,4 @@
-import type { ComputedPane, PaneId, FocusGridController } from "@focusgrid/focusgrid/core";
+import type { ComputedPane, PaneId, FocusGridController } from "@andrewcyuan/focusgrid/core";
 import { useEffect, useRef } from "react";
 
 export type PaneLayoutChangeEvent = {

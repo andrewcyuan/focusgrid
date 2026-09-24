@@ -1,4 +1,4 @@
-import { createDefaultPaneKeymap } from "@focusgrid/focusgrid/core";
+import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/core";
 
 export const paneNavigationShortcuts = [
   "Ctrl-H panes",

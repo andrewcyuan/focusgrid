@@ -2,7 +2,7 @@ import type {
   FocusGridController,
   FocusGridControllerState,
   PaneId,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 import { hasInteractiveOwner, isTabbableElement } from "./interactivity";
 
 const PANE_SELECTOR = ".FocusgridPaneView";

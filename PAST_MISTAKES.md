@@ -1,5 +1,9 @@
 # Past Mistakes
 
+## Package Scopes Must Match The Intended Publisher
+
+The package names used the project name as an npm scope, which required an unintended organization. Use the owner's npm username for personal packages and verify scope ownership before documenting release prerequisites.
+
 ## Compiler Command Names Are Not Package Names
 
 The unrelated `tsc` package replaced TypeScript's compiler command and blocked release checks. When a tool prints an unexpected installation warning, check which package owns its executable and remove conflicting dependencies.

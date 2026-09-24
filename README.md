@@ -15,9 +15,9 @@ Similar to `tmux`, Focusgrid represents panes as a binary tree of nodes, enablin
 
 ```tsx
 import { useRef } from "react";
-import { createDefaultPaneKeymap } from "@focusgrid/focusgrid/core";
-import { FocusGrid, useFocusGridController } from "@focusgrid/focusgrid/react";
-import "@focusgrid/focusgrid/react/styles.css";
+import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/core";
+import { FocusGrid, useFocusGridController } from "@andrewcyuan/focusgrid/react";
+import "@andrewcyuan/focusgrid/react/styles.css";
 
 const keymap = createDefaultPaneKeymap().keymap;
 
@@ -96,22 +96,23 @@ export function List() {
 
 ## Packages
 
-- `@focusgrid/focusgrid`: pane layout, DOM behavior, and React bindings through explicit subpaths. You don't have to use focusgrid with react, but that's what I made and tested it with.
-- `@focusgrid/shortcut-engine`: key sequence parsing, normalization, and stateful shortcut routing.
-- `@focusgrid/ariakit-adapter`: React helpers for routing Focusgrid shortcuts through Ariakit `Composite` roots.
+- `@andrewcyuan/focusgrid`: pane layout, DOM behavior, and React bindings through explicit subpaths. You don't have to use focusgrid with react, but that's what I made and tested it with.
+- `@andrewcyuan/shortcut-engine`: key sequence parsing, normalization, and stateful shortcut routing.
+- `@andrewcyuan/ariakit-adapter`: React helpers for routing Focusgrid shortcuts through Ariakit `Composite` roots.
 
-`@focusgrid/focusgrid` intentionally has no root export. Import the layer you need:
+`@andrewcyuan/focusgrid` intentionally has no root export. Import the layer you need:
 
 ```ts
-import { createFocusGridController } from "@focusgrid/focusgrid/core";
-import { FocusGrid } from "@focusgrid/focusgrid/react";
-import "@focusgrid/focusgrid/react/styles.css";
+import { createFocusGridController } from "@andrewcyuan/focusgrid/core";
+import { FocusGrid } from "@andrewcyuan/focusgrid/react";
+import "@andrewcyuan/focusgrid/react/styles.css";
 ```
 
 ## Publishing to npm
 
 Use Bun `1.3.14` and Node.js. Run these commands from the repository root.
-Sign in with an npm account that can publish to the `@focusgrid` scope:
+Packages use the personal npm scope `@andrewcyuan`. Sign in as `andrewcyuan`
+and verify the account before publishing:
 
 ```sh
 npm login
@@ -138,8 +139,8 @@ git push origin --tags
 
 Both release commands check the frozen install, types, tests, and build.
 The dry run does not publish or create tags. The release publishes
-`@focusgrid/shortcut-engine`, `@focusgrid/focusgrid`, and
-`@focusgrid/ariakit-adapter` in that order with public access, then creates
+`@andrewcyuan/shortcut-engine`, `@andrewcyuan/focusgrid`, and
+`@andrewcyuan/ariakit-adapter` in that order with public access, then creates
 local package tags. It does not bump versions.
 
 If npm requires a one-time password, use `bun run release --otp <code>`.

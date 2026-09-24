@@ -1,13 +1,13 @@
 # API
 
-Ariakit Adapter APIs live in `@focusgrid/ariakit-adapter` and
-`@focusgrid/ariakit-adapter/react`.
+Ariakit Adapter APIs live in `@andrewcyuan/ariakit-adapter` and
+`@andrewcyuan/ariakit-adapter/react`.
 
 ```ts
 import {
   createCompositeNavigationKeymap,
   useCompositeShortcutRouter,
-} from "@focusgrid/ariakit-adapter/react";
+} from "@andrewcyuan/ariakit-adapter/react";
 ```
 
 ## `useCompositeShortcutRouter(options)`
@@ -52,7 +52,7 @@ type CompositeShortcutRouterResult<
 };
 ```
 
-`keymap` uses `ShortcutBinding` from `@focusgrid/shortcut-engine`. The hook
+`keymap` uses `ShortcutBinding` from `@andrewcyuan/shortcut-engine`. The hook
 routes DOM events with `routeKeyboardEvent()`, so multi-stroke bindings,
 shifted printable keys, modifier-only keydowns, repeatable two-stroke bindings,
 and prevent / stop behavior match the rest of Focusgrid.

@@ -4,16 +4,16 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
-      "@focusgrid/shortcut-engine": ["./packages/shortcut-engine/src/index.ts"],
-      "@focusgrid/ariakit-adapter": [
+      "@andrewcyuan/shortcut-engine": ["./packages/shortcut-engine/src/index.ts"],
+      "@andrewcyuan/ariakit-adapter": [
         "./packages/ariakit-adapter/src/index.ts"
       ],
-      "@focusgrid/ariakit-adapter/react": [
+      "@andrewcyuan/ariakit-adapter/react": [
         "./packages/ariakit-adapter/src/react.ts"
       ],
-      "@focusgrid/focusgrid/core": ["./packages/focusgrid/core/src/index.ts"],
-      "@focusgrid/focusgrid/dom": ["./packages/focusgrid/dom/src/index.ts"],
-      "@focusgrid/focusgrid/react": ["./packages/focusgrid/react/src/index.tsx"]
+      "@andrewcyuan/focusgrid/core": ["./packages/focusgrid/core/src/index.ts"],
+      "@andrewcyuan/focusgrid/dom": ["./packages/focusgrid/dom/src/index.ts"],
+      "@andrewcyuan/focusgrid/react": ["./packages/focusgrid/react/src/index.tsx"]
     },
     "strict": true,
     "declaration": true,

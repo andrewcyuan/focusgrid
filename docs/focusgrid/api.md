@@ -2,10 +2,10 @@
 
 Create a controller with `createFocusGridController()`. State reads and
 subscriptions live on the controller; programmatic mutations live on
-`controller.api`. Core APIs below are exported from `@focusgrid/focusgrid/core`.
+`controller.api`. Core APIs below are exported from `@andrewcyuan/focusgrid/core`.
 
 ```ts
-import { createFocusGridController } from "@focusgrid/focusgrid/core";
+import { createFocusGridController } from "@andrewcyuan/focusgrid/core";
 
 const controller = createFocusGridController(initialState);
 controller.api.split("editor", { side: "right", newPaneId: "terminal" });
@@ -250,7 +250,7 @@ unsubscribe();
 ```
 
 React consumers can import `useControllerState(controller)` and
-`useControllerLayout(controller)` from `@focusgrid/focusgrid/react` to subscribe
+`useControllerLayout(controller)` from `@andrewcyuan/focusgrid/react` to subscribe
 and render current state or computed layout. `useFocusGridController(factory,
 options?)` creates one controller per component lifetime; later factory or
 option changes do not replace it.
@@ -302,7 +302,7 @@ import {
   createFocusGridController,
   deserializeFocusGridControllerState,
   serializeFocusGridControllerState,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 
 const saved = serializeFocusGridControllerState(controller.getState());
 const restored = createFocusGridController(
@@ -375,7 +375,7 @@ Direct DOM consumers pass an existing scope element when constructing the DOM
 controller:
 
 ```ts
-import { FocusGridDomController } from "@focusgrid/focusgrid/dom";
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 
 const domController = new FocusGridDomController(controller, gridRoot, {
   keymap,

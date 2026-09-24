@@ -1,4 +1,4 @@
-import type { FocusGridController } from "@focusgrid/focusgrid/core";
+import type { FocusGridController } from "@andrewcyuan/focusgrid/core";
 
 export class RootResizeObserver {
   private resizeObserver?: ResizeObserver;

@@ -82,13 +82,13 @@ export {
   parseKeySequence,
   parseKeyStroke,
   validateKeySequenceInput,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 export type {
   KeySequence,
   KeySequenceValidationResult,
   KeyStroke,
   ShortcutBinding,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 export {
   createDefaultPaneKeymap,
   createDefaultPaneShortcuts,

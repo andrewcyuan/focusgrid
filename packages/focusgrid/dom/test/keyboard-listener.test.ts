@@ -3,11 +3,11 @@ import {
   createFocusGridController,
   type ComputedHandle,
   type FocusGridControllerState,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 import {
   normalizeKeyboardEvent,
   parseKeySequence,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 import { FocusGridDomController } from "../src/controller";
 import { KeyboardListener } from "../src/keyboard-listener";
 import { PointerResizeController } from "../src/pointer-resize";

@@ -4,22 +4,22 @@ The playground is the smallest useful FocusGrid example: it creates one
 controller, builds a keymap from editable shortcut values, and renders pane
 content from the pane render context.
 
-Focusgrid is published as `@focusgrid/focusgrid` with explicit subpath exports.
+Focusgrid is published as `@andrewcyuan/focusgrid` with explicit subpath exports.
 There is no root package export; import the layer you need:
 
 ```tsx
 import {
   createDefaultPaneKeymap,
   type FocusGridControllerState,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 import {
   FocusGrid,
   useFocusGridController,
   type PaneComponent,
   type PaneComponentProps,
   type PaneRenderContext,
-} from "@focusgrid/focusgrid/react";
-import "@focusgrid/focusgrid/react/styles.css";
+} from "@andrewcyuan/focusgrid/react";
+import "@andrewcyuan/focusgrid/react/styles.css";
 ```
 
 ## Container size

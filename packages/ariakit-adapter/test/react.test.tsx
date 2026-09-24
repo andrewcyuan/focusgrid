@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   parseKeySequence,
   type ShortcutBinding,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 import {
   createCompositeNavigationKeymap,
   normalizeCompositeNavigationShortcutOverrides,

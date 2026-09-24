@@ -5,7 +5,7 @@ input. Every controller owns a default command registry. Applications can add
 commands or replace individual defaults with `registry.register()`.
 
 ```ts
-import { createFocusGridController } from "@focusgrid/focusgrid/core";
+import { createFocusGridController } from "@andrewcyuan/focusgrid/core";
 
 const controller = createFocusGridController(initialState);
 controller.commands.run("pane.splitRight", controller);
@@ -179,7 +179,7 @@ up/down swap commands do nothing.
 
 ## Default keyboard bindings
 
-`createDefaultPaneKeymap()` from `@focusgrid/focusgrid/core` returns
+`createDefaultPaneKeymap()` from `@andrewcyuan/focusgrid/core` returns
 `{ keymap, errors }`. Pass `keymap` to `FocusGrid` or the DOM controller.
 Press and release `Ctrl-B`, then press the follower key:
 

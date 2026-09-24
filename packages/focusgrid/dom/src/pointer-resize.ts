@@ -2,7 +2,7 @@ import {
   type ComputedHandle,
   type FocusGridController,
   findSplitNode,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
 type PointerResizeState =

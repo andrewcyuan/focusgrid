@@ -6,6 +6,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@focusgrid/playground"
+    "@andrewcyuan/playground"
   ]
 }

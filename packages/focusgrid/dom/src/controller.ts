@@ -1,4 +1,4 @@
-import type { KeyBinding, FocusGridController } from "@focusgrid/focusgrid/core";
+import type { KeyBinding, FocusGridController } from "@andrewcyuan/focusgrid/core";
 import { KeyboardListener } from "./keyboard-listener";
 import { RootResizeObserver } from "./resize-observer";
 import { ApplicationFocusManager } from "./application-focus-manager";

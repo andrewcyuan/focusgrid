@@ -3,7 +3,7 @@ import {
   createFocusGridController,
   type ComputedPane,
   type FocusGridControllerState,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 import {
   advancePaneLifecycle,
   createPaneMap,

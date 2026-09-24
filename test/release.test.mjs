@@ -35,7 +35,7 @@ function simulate(args, fail = "") {
     for (const name of ["shortcut-engine", "focusgrid", "ariakit-adapter"]) {
       const dir = join(root, "packages", name);
       mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, "package.json"), JSON.stringify({ name: `@focusgrid/${name}`, version: "0.1.0" }));
+      writeFileSync(join(dir, "package.json"), JSON.stringify({ name: `@andrewcyuan/${name}`, version: "0.1.0" }));
     }
     const fakeCli = `#!/usr/bin/env node
 const fs = require("node:fs");

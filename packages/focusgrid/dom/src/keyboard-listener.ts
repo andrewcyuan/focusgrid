@@ -2,12 +2,12 @@ import {
   type KeyBinding,
   type FocusGridController,
   type ShortcutContext,
-} from "@focusgrid/focusgrid/core";
+} from "@andrewcyuan/focusgrid/core";
 import {
   KeyRouter,
   isEditableTarget,
   routeKeyboardEvent,
-} from "@focusgrid/shortcut-engine";
+} from "@andrewcyuan/shortcut-engine";
 
 export type KeyboardListenerOptions = {
   keymap?: KeyBinding[];

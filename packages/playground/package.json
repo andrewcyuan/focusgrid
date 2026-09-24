@@ -1,5 +1,5 @@
 {
-  "name": "@focusgrid/playground",
+  "name": "@andrewcyuan/playground",
   "version": "0.0.1",
   "private": true,
   "description": "Development playground for Focusgrid, Shortcut Engine, and the Ariakit adapter.",
@@ -20,9 +20,9 @@
   },
   "dependencies": {
     "@ariakit/react": "^0.4.34",
-    "@focusgrid/ariakit-adapter": "workspace:*",
-    "@focusgrid/focusgrid": "workspace:*",
-    "@focusgrid/shortcut-engine": "workspace:*",
+    "@andrewcyuan/ariakit-adapter": "workspace:*",
+    "@andrewcyuan/focusgrid": "workspace:*",
+    "@andrewcyuan/shortcut-engine": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "vite": "^6.0.7"

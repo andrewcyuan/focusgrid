@@ -23,31 +23,31 @@ export default defineConfig({
         ),
       },
       {
-        find: "@focusgrid/focusgrid/react/styles.css",
+        find: "@andrewcyuan/focusgrid/react/styles.css",
         replacement: fileURLToPath(
           new URL("../focusgrid/react/src/styles.css", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/shortcut-engine",
+        find: "@andrewcyuan/shortcut-engine",
         replacement: fileURLToPath(
           new URL("../shortcut-engine/src/index.ts", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/focusgrid/core",
+        find: "@andrewcyuan/focusgrid/core",
         replacement: fileURLToPath(
           new URL("../focusgrid/core/src/index.ts", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/focusgrid/dom",
+        find: "@andrewcyuan/focusgrid/dom",
         replacement: fileURLToPath(
           new URL("../focusgrid/dom/src/index.ts", import.meta.url),
         ),
       },
       {
-        find: "@focusgrid/focusgrid/react",
+        find: "@andrewcyuan/focusgrid/react",
         replacement: fileURLToPath(
           new URL("../focusgrid/react/src/index.tsx", import.meta.url),
         ),
