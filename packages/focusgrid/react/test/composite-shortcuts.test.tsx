@@ -9,7 +9,7 @@ import {
   normalizeCompositeNavigationShortcutOverrides,
   useCompositeShortcutRouter,
   type CompositeShortcutRouterResult,
-} from "../src/react";
+} from "../src/index";
 
 type TestEventInit = {
   key: string;

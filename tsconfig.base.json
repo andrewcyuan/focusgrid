@@ -5,12 +5,6 @@
     "moduleResolution": "Bundler",
     "paths": {
       "@andrewcyuan/shortcut-engine": ["./packages/shortcut-engine/src/index.ts"],
-      "@andrewcyuan/ariakit-adapter": [
-        "./packages/ariakit-adapter/src/index.ts"
-      ],
-      "@andrewcyuan/ariakit-adapter/react": [
-        "./packages/ariakit-adapter/src/react.ts"
-      ],
       "@andrewcyuan/focusgrid/core": ["./packages/focusgrid/core/src/index.ts"],
       "@andrewcyuan/focusgrid/dom": ["./packages/focusgrid/dom/src/index.ts"],
       "@andrewcyuan/focusgrid/react": ["./packages/focusgrid/react/src/index.tsx"]

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const packageDirectories = ["shortcut-engine", "focusgrid", "ariakit-adapter"];
+const packageDirectories = ["shortcut-engine", "focusgrid"];
 
 function run(command, args, cwd = repoRoot, capture = false) {
   const result = spawnSync(command, args, {

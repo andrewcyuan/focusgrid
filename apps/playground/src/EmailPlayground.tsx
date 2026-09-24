@@ -1,19 +1,17 @@
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
 import {
+  FocusGrid,
+  useFocusGridController,
+  type PaneComponentProps,
   createCompositeNavigationKeymap,
   useCompositeShortcutRouter,
   type CompositeNavigationShortcutArgs,
   type CompositeNavigationShortcutId,
-} from "@andrewcyuan/ariakit-adapter/react";
+} from "@andrewcyuan/focusgrid/react";
 import {
   findPaneNode,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
-import {
-  FocusGrid,
-  useFocusGridController,
-  type PaneComponentProps,
-} from "@andrewcyuan/focusgrid/react";
 import { parseKeySequence, type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";

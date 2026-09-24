@@ -295,7 +295,7 @@ test("Ariakit composite loads focused inside a Focusgrid pane", async ({
   ).toBeVisible();
 });
 
-test("Ariakit arrow keys and adapter shortcuts move DOM focus", async ({
+test("Ariakit arrow keys and custom shortcuts move DOM focus", async ({
   page,
 }) => {
   await page.goto("/ariakit");
@@ -324,7 +324,7 @@ test("Ariakit arrow keys and adapter shortcuts move DOM focus", async ({
   await expect(alpha).toBeFocused();
 });
 
-test("Ariakit adapter actions use the active row and prevent default", async ({
+test("Ariakit composite actions use the active row and prevent default", async ({
   page,
 }) => {
   await page.goto("/ariakit");
@@ -342,7 +342,7 @@ test("Ariakit adapter actions use the active row and prevent default", async ({
   await expect(leftPane.locator('[data-row-id="beta"]')).toBeFocused();
 });
 
-test("Ariakit adapter ignores typing in the embedded input", async ({ page }) => {
+test("Ariakit composite ignores typing in the embedded input", async ({ page }) => {
   await page.goto("/ariakit");
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');

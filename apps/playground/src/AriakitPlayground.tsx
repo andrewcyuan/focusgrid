@@ -4,19 +4,17 @@ import {
   useCompositeStore,
 } from "@ariakit/react";
 import {
+  FocusGrid,
+  useFocusGridController,
+  type PaneComponentProps,
   createCompositeNavigationKeymap,
   useCompositeShortcutRouter,
   type CompositeNavigationShortcutArgs,
   type CompositeNavigationShortcutId,
-} from "@andrewcyuan/ariakit-adapter/react";
+} from "@andrewcyuan/focusgrid/react";
 import {
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
-import {
-  FocusGrid,
-  useFocusGridController,
-  type PaneComponentProps,
-} from "@andrewcyuan/focusgrid/react";
 import {
   parseKeySequence,
   type ShortcutBinding,
@@ -240,7 +238,7 @@ function AriakitPane({ active, paneId }: PaneComponentProps) {
         </div>
 
         <label className="AriakitEditable">
-          <span>Editable input (adapter ignores typing)</span>
+          <span>Editable input (shortcuts ignore typing)</span>
           <input
             aria-label="Editable input"
             placeholder="Type J, K, G, or spaces here"

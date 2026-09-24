@@ -11,7 +11,7 @@ test("release tools have executable links owned by the correct packages", () => 
     ["../", "typescript", "tsc"],
     ["../", "tsdown", "tsdown"],
     ["../", "@changesets/cli", "changeset"],
-    ["../packages/playground/", "vite", "vite"],
+    ["../apps/playground/", "vite", "vite"],
   ]) {
     const manifestUrl = new URL(`${workspace}package.json`, import.meta.url);
     const require = createRequire(manifestUrl);
@@ -32,7 +32,7 @@ function simulate(args, fail = "") {
     mkdirSync(join(root, "scripts"));
     mkdirSync(join(root, "bin"));
     copyFileSync(new URL("../scripts/release.mjs", import.meta.url), join(root, "scripts/release.mjs"));
-    for (const name of ["shortcut-engine", "focusgrid", "ariakit-adapter"]) {
+    for (const name of ["shortcut-engine", "focusgrid"]) {
       const dir = join(root, "packages", name);
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "package.json"), JSON.stringify({ name: `@andrewcyuan/${name}`, version: "0.1.0" }));
@@ -62,7 +62,7 @@ test("dry run previews packages in dependency order and never tags", () => {
   const result = simulate(["--dry-run"]);
   assert.equal(result.status, 0, result.stderr);
   const publishes = result.calls.filter(({ args }) => args[0] === "publish");
-  assert.deepEqual(publishes.map(({ cwd }) => cwd.split("/").at(-1)), ["shortcut-engine", "focusgrid", "ariakit-adapter"]);
+  assert.deepEqual(publishes.map(({ cwd }) => cwd.split("/").at(-1)), ["shortcut-engine", "focusgrid"]);
   assert.ok(publishes.every(({ args }) => args.includes("--dry-run")));
   assert.ok(result.calls.every(({ command }) => command !== "git"));
 });
@@ -85,5 +85,5 @@ test("successful publication forwards OTP and creates package tags", () => {
   assert.equal(result.status, 0, result.stderr);
   const publishes = result.calls.filter(({ args }) => args[0] === "publish");
   assert.ok(publishes.every(({ args }) => args.includes("--tolerate-republish") && args.at(-1) === "123456"));
-  assert.equal(result.calls.filter(({ command, args }) => command === "git" && args.length === 2).length, 3);
+  assert.equal(result.calls.filter(({ command, args }) => command === "git" && args.length === 2).length, 2);
 });
