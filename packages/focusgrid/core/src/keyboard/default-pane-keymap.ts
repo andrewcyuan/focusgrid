@@ -1,214 +1,117 @@
-import {
-  validateKeySequenceInput,
-  type ShortcutBinding,
-} from "@andrewcyuan/shortcut-engine";
-import type { PaneId } from "../layout/types";
+import { parseKeySequence, type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
+import type { FocusGridController } from "../controller";
+import { splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane, resizeActivePane } from "../commands/pane-commands";
 
-export type ShortcutContext = {
-  activePaneId: PaneId | null;
-  activePaneType?: string;
-  inputFocused: boolean;
-};
-
-export type KeyBinding<
-  TAction extends string = string,
-  TArgs = unknown,
-> = ShortcutBinding<ShortcutContext, TAction, TArgs>;
-
-export type DefaultPaneCommand =
-  | "pane.splitRight"
-  | "pane.splitDown"
-  | "pane.close"
-  | "pane.focusLeft"
-  | "pane.focusRight"
-  | "pane.focusUp"
-  | "pane.focusDown"
-  | "pane.swapLeft"
-  | "pane.swapRight"
-  | "pane.swapUp"
-  | "pane.swapDown"
-  | "pane.resizeLeft"
-  | "pane.resizeRight"
-  | "pane.resizeUp"
-  | "pane.resizeDown";
-
-export type PaneShortcutAction<
-  TCommand extends DefaultPaneCommand = DefaultPaneCommand,
-> = {
-  id: string;
-  label: string;
-  command: TCommand;
-  defaultSequence: string;
-  args?: unknown;
-  repeat?: boolean;
-};
+export type KeyBinding = ShortcutBinding;
 
 export const defaultPaneShortcutActions = [
   {
     id: "split-right",
     label: "Split right",
-    command: "pane.splitRight",
+    action: (controller: FocusGridController) => splitActivePane(controller, "right"),
     defaultSequence: "Ctrl-B %",
   },
   {
     id: "split-down",
     label: "Split down",
-    command: "pane.splitDown",
+    action: (controller: FocusGridController) => splitActivePane(controller, "down"),
     defaultSequence: "Ctrl-B \"",
   },
   {
     id: "close",
     label: "Close active",
-    command: "pane.close",
+    action: (controller: FocusGridController) => closeActivePane(controller),
     defaultSequence: "Ctrl-B X",
   },
   {
     id: "focus-left",
     label: "Focus left",
-    command: "pane.focusLeft",
+    action: (controller: FocusGridController) => focusAdjacentPane(controller, "left"),
     defaultSequence: "Ctrl-B Left",
   },
   {
     id: "focus-right",
     label: "Focus right",
-    command: "pane.focusRight",
+    action: (controller: FocusGridController) => focusAdjacentPane(controller, "right"),
     defaultSequence: "Ctrl-B Right",
   },
   {
     id: "focus-up",
     label: "Focus up",
-    command: "pane.focusUp",
+    action: (controller: FocusGridController) => focusAdjacentPane(controller, "up"),
     defaultSequence: "Ctrl-B Up",
   },
   {
     id: "focus-down",
     label: "Focus down",
-    command: "pane.focusDown",
+    action: (controller: FocusGridController) => focusAdjacentPane(controller, "down"),
     defaultSequence: "Ctrl-B Down",
   },
   {
     id: "swap-left",
     label: "Swap left",
-    command: "pane.swapLeft",
+    action: (controller: FocusGridController) => swapAdjacentPane(controller, "left"),
     defaultSequence: "Ctrl-B Shift-Left",
   },
   {
     id: "swap-right",
     label: "Swap right",
-    command: "pane.swapRight",
+    action: (controller: FocusGridController) => swapAdjacentPane(controller, "right"),
     defaultSequence: "Ctrl-B Shift-Right",
   },
   {
     id: "swap-up",
     label: "Swap up",
-    command: "pane.swapUp",
+    action: (controller: FocusGridController) => swapAdjacentPane(controller, "up"),
     defaultSequence: "Ctrl-B Shift-Up",
   },
   {
     id: "swap-down",
     label: "Swap down",
-    command: "pane.swapDown",
+    action: (controller: FocusGridController) => swapAdjacentPane(controller, "down"),
     defaultSequence: "Ctrl-B Shift-Down",
   },
   {
     id: "resize-left",
     label: "Resize left",
-    command: "pane.resizeLeft",
+    action: (controller: FocusGridController) => resizeActivePane(controller, "left", 48),
     defaultSequence: "Ctrl-B H",
-    args: { deltaPx: 48 },
     repeat: true,
   },
   {
     id: "resize-right",
     label: "Resize right",
-    command: "pane.resizeRight",
+    action: (controller: FocusGridController) => resizeActivePane(controller, "right", 48),
     defaultSequence: "Ctrl-B L",
-    args: { deltaPx: 48 },
     repeat: true,
   },
   {
     id: "resize-up",
     label: "Resize up",
-    command: "pane.resizeUp",
+    action: (controller: FocusGridController) => resizeActivePane(controller, "up", 48),
     defaultSequence: "Ctrl-B K",
-    args: { deltaPx: 48 },
     repeat: true,
   },
   {
     id: "resize-down",
     label: "Resize down",
-    command: "pane.resizeDown",
+    action: (controller: FocusGridController) => resizeActivePane(controller, "down", 48),
     defaultSequence: "Ctrl-B J",
-    args: { deltaPx: 48 },
     repeat: true,
   },
-] as const satisfies readonly PaneShortcutAction[];
+] as const;
 
 export type PaneShortcutId = (typeof defaultPaneShortcutActions)[number]["id"];
-export type PaneShortcutOverrides = Partial<Record<PaneShortcutId, string>>;
 export type PaneShortcutValues = Record<PaneShortcutId, string>;
-export type CreateDefaultPaneKeymapOptions = {
-  overrides?: PaneShortcutOverrides;
-};
-export type PaneShortcutValidationError = {
-  id: PaneShortcutId;
-  command: DefaultPaneCommand;
-  sequence: string;
-  message: string;
-};
-export type CreateDefaultPaneKeymapResult = {
-  keymap: KeyBinding<DefaultPaneCommand>[];
-  errors: PaneShortcutValidationError[];
-};
 
 export function createDefaultPaneShortcuts(): PaneShortcutValues {
-  return Object.fromEntries(
-    defaultPaneShortcutActions.map((action) => [
-      action.id,
-      action.defaultSequence,
-    ]),
-  ) as PaneShortcutValues;
+  return Object.fromEntries(defaultPaneShortcutActions.map(action => [action.id, action.defaultSequence])) as PaneShortcutValues;
 }
 
-export function createDefaultPaneKeymap(
-  options: CreateDefaultPaneKeymapOptions = {},
-): CreateDefaultPaneKeymapResult {
-  const shortcuts = options.overrides ?? {};
-  const keymap: KeyBinding<DefaultPaneCommand>[] = [];
-  const errors: PaneShortcutValidationError[] = [];
-
-  for (const action of defaultPaneShortcutActions) {
-    const sequence = (shortcuts[action.id] ?? action.defaultSequence).trim();
-    const args = "args" in action ? action.args : undefined;
-    const repeat = "repeat" in action ? action.repeat : undefined;
-
-    if (!sequence) {
-      continue;
-    }
-
-    const validation = validateKeySequenceInput(sequence);
-
-    if (!validation.ok) {
-      errors.push({
-        id: action.id,
-        command: action.command,
-        sequence,
-        message: validation.error,
-      });
-      continue;
-    }
-
-    keymap.push({
-      sequence: validation.sequence,
-      action: action.command,
-      args,
-      preventDefault: true,
-      repeat,
-    });
-  }
-
-  return {
-    keymap,
-    errors,
-  };
+export function createDefaultPaneKeymap(controller: FocusGridController): ShortcutBinding[] {
+  return defaultPaneShortcutActions.map(definition => ({
+    sequence: parseKeySequence(definition.defaultSequence),
+    action: () => { definition.action(controller); },
+    repeat: "repeat" in definition ? definition.repeat : undefined,
+  }));
 }

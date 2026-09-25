@@ -4,15 +4,15 @@ import {
   useFocusGridController,
   type PaneComponentProps,
   createCompositeNavigationKeymap,
-  useCompositeShortcutRouter,
-  type CompositeNavigationShortcutArgs,
-  type CompositeNavigationShortcutId,
+  useShortcuts,
+  ShortcutScope,
+  type CompositeNavigationDirection,
 } from "@andrewcyuan/focusgrid/react";
 import {
   findPaneNode,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
-import { parseKeySequence, type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
+import { parseKeySequence, isEditableTarget } from "@andrewcyuan/shortcut-engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";
 import {
@@ -28,26 +28,7 @@ import {
   paneNavigationShortcuts,
 } from "./pane-navigation";
 
-type EmailCollectionAction = CompositeNavigationShortcutId | "open";
-type EmailCollectionArgs = CompositeNavigationShortcutArgs | undefined;
-
-const emailPaneKeymap = createDemoPaneKeymap();
 const collectionShortcuts = ["Arrows", "H/J/K/L", "Enter"] as const;
-const emailCollectionKeymap: ShortcutBinding<
-  undefined,
-  EmailCollectionAction,
-  EmailCollectionArgs
->[] = [
-  ...createCompositeNavigationKeymap({
-    overrides: {
-      "move-left": "H",
-      "move-right": "L",
-      "move-up": "K",
-      "move-down": "J",
-    },
-  }),
-  { sequence: parseKeySequence("Enter"), action: "open" },
-];
 
 function createEmailState(): FocusGridControllerState {
   return {
@@ -82,6 +63,7 @@ function createEmailState(): FocusGridControllerState {
 
 export function EmailPlayground() {
   const controller = useFocusGridController(createEmailState);
+  const emailPaneKeymap = createDemoPaneKeymap(controller);
   const applicationRef = useRef<HTMLDivElement>(null);
   const [mailboxId, setMailboxId] =
     useState<MockMailbox["id"]>("inbox");
@@ -211,7 +193,11 @@ interface MailboxSidebarProps extends PaneComponentProps {
   onSelectMailbox: (mailboxId: MockMailbox["id"]) => void;
 }
 
-function MailboxSidebar({
+function MailboxSidebar(props: MailboxSidebarProps) {
+  return <ShortcutScope style={{ display: "contents" }}><MailboxSidebarContent {...props} /></ShortcutScope>;
+}
+
+function MailboxSidebarContent({
   active,
   mailboxId,
   onSelectMailbox,
@@ -224,11 +210,7 @@ function MailboxSidebar({
     );
     if (mailbox) onSelectMailbox(mailbox.id);
   }, [composite, onSelectMailbox]);
-  const onMatch = useCollectionNavigation(composite, selectActiveMailbox);
-  const router = useCompositeShortcutRouter({
-    keymap: emailCollectionKeymap,
-    onMatch,
-  });
+  useCollectionNavigation(composite, selectActiveMailbox);
 
   useEffect(() => {
     if (active) composite.move(mailboxRowId(mailboxId));
@@ -241,7 +223,7 @@ function MailboxSidebar({
         <small>{mockMailboxes.length} views</small>
       </div>
       <Composite
-        {...router.compositeProps}
+        data-focusgrid-composite=""
         store={composite}
         className="MailboxComposite"
         aria-label="Mailboxes"
@@ -274,7 +256,11 @@ interface ThreadListProps extends PaneComponentProps {
   onOpenThread: (threadId: string) => void;
 }
 
-function ThreadList({
+function ThreadList(props: ThreadListProps) {
+  return <ShortcutScope style={{ display: "contents" }}><ThreadListContent {...props} /></ShortcutScope>;
+}
+
+function ThreadListContent({
   active,
   activeThreadId,
   mailbox,
@@ -290,11 +276,7 @@ function ThreadList({
     );
     if (thread) onOpenThread(thread.id);
   }, [composite, onOpenThread, threads]);
-  const onMatch = useCollectionNavigation(composite, openActiveThread);
-  const router = useCompositeShortcutRouter({
-    keymap: emailCollectionKeymap,
-    onMatch,
-  });
+  useCollectionNavigation(composite, openActiveThread);
 
   useEffect(() => {
     if (!active) return;
@@ -311,7 +293,7 @@ function ThreadList({
         <small>{threads.length} conversations</small>
       </div>
       <Composite
-        {...router.compositeProps}
+        data-focusgrid-composite=""
         store={composite}
         className="ThreadComposite"
         aria-label={`${mailbox.label} threads`}
@@ -382,30 +364,22 @@ function useCollectionNavigation(
   composite: CompositeStore,
   onOpen: () => void,
 ) {
-  return useCallback(
-    ({ action }: { action: EmailCollectionAction }) => {
-      switch (action) {
-        case "move-left":
-        case "move-up":
-          composite.move(composite.previous());
-          break;
-        case "move-right":
-        case "move-down":
-          composite.move(composite.next());
-          break;
-        case "move-start":
-          composite.move(composite.first());
-          break;
-        case "move-end":
-          composite.move(composite.last());
-          break;
-        case "open":
-          onOpen();
-          break;
-      }
-    },
-    [composite, onOpen],
-  );
+  const move = (direction: CompositeNavigationDirection) => {
+    const target = {
+      left: () => composite.previous(), up: () => composite.previous(),
+      right: () => composite.next(), down: () => composite.next(),
+      start: () => composite.first(), end: () => composite.last(),
+    }[direction]();
+    composite.move(target);
+  };
+  useShortcuts([
+    ...createCompositeNavigationKeymap(move),
+    ...([ ["H", "left"], ["J", "down"], ["K", "up"], ["L", "right"] ] as const).map(([key, direction]) => ({
+      sequence: parseKeySequence(key), action: () => move(direction),
+      when: (event: KeyboardEvent) => !isEditableTarget(event.target),
+    })),
+    { sequence: parseKeySequence("Enter"), action: onOpen, when: event => !isEditableTarget(event.target) },
+  ]);
 }
 
 function mailboxRowId(mailboxId: MockMailbox["id"]) {

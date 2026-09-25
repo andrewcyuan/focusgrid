@@ -4,12 +4,12 @@ export default defineConfig({
   testDir: "./test",
   testMatch: "**/*.spec.ts",
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: "http://127.0.0.1:5197",
   },
   webServer: {
-    command: "bun run dev --port 5173",
-    reuseExistingServer: true,
+    command: "bun run dev --port 5197 --strictPort",
+    reuseExistingServer: false,
     timeout: 30_000,
-    url: "http://127.0.0.1:5173",
+    url: "http://127.0.0.1:5197",
   },
 });

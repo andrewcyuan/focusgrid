@@ -5,11 +5,11 @@ import {
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
 import {
-  normalizeKeyboardEvent,
+  createShortcutEngine,
   parseKeySequence,
+  normalizeKeyboardEvent,
 } from "@andrewcyuan/shortcut-engine";
 import { FocusGridDomController } from "../src/controller";
-import { KeyboardListener } from "../src/keyboard-listener";
 import { PointerResizeController } from "../src/pointer-resize";
 
 function keyboardEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
@@ -48,19 +48,6 @@ function controllerState(): FocusGridControllerState {
       height: 600,
     },
   };
-}
-
-function keydownEvent(key: string, target: EventTarget | null = null): KeyboardEvent {
-  return {
-    key,
-    ctrlKey: false,
-    metaKey: false,
-    altKey: false,
-    shiftKey: false,
-    target,
-    preventDefault: vi.fn(),
-    stopPropagation: vi.fn(),
-  } as unknown as KeyboardEvent;
 }
 
 function pointerEvent(input: {
@@ -203,201 +190,6 @@ describe("normalizeKeyboardEvent", () => {
   });
 });
 
-describe("KeyboardListener command routing", () => {
-  it.each([
-    ["textarea", { tagName: "TEXTAREA" }, true],
-    ["disabled textarea", { tagName: "TEXTAREA", disabled: true }, false],
-    ["text input", { tagName: "INPUT", type: "text" }, true],
-    ["readonly input", { tagName: "INPUT", type: "text", readOnly: true }, false],
-    ["checkbox", { tagName: "INPUT", type: "checkbox" }, false],
-    ["contenteditable", { tagName: "DIV", isContentEditable: true }, true],
-    [
-      "textbox role",
-      { tagName: "DIV", getAttribute: (name: string) => name === "role" ? "TEXTBOX" : null },
-      true,
-    ],
-  ] as const)("uses shared editable behavior for %s", (_, target, editable) => {
-    const controller = createFocusGridController(controllerState());
-    const run = vi.fn();
-    controller.commands.register("editable", run);
-    let onKey: ((event: KeyboardEvent) => void) | null = null;
-    const root = {
-      addEventListener: vi.fn((__, listener: EventListener) => {
-        onKey = listener as (event: KeyboardEvent) => void;
-      }),
-      removeEventListener: vi.fn(),
-    } as unknown as HTMLElement;
-    const listener = new KeyboardListener(controller, root, {
-      keymap: [{
-        sequence: parseKeySequence("E"),
-        action: "editable",
-        when: (context) => context.inputFocused,
-      }],
-    });
-
-    listener.mount();
-    onKey?.(keydownEvent("E", target as unknown as EventTarget));
-    expect(run).toHaveBeenCalledTimes(editable ? 1 : 0);
-    listener.destroy();
-  });
-
-  it("runs every keyboard resize through the current registry handler", () => {
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.fn();
-    controller.commands.register("pane.resizeRight", resize);
-    let onKey: ((event: KeyboardEvent) => void) | null = null;
-    const root = {
-      addEventListener: vi.fn((_, listener: EventListener) => {
-        onKey = listener as (event: KeyboardEvent) => void;
-      }),
-      removeEventListener: vi.fn(),
-    } as unknown as HTMLElement;
-    const listener = new KeyboardListener(controller, root, {
-      keymap: [
-        {
-          sequence: parseKeySequence("H"),
-          action: "pane.resizeRight",
-          args: { deltaPx: 10 },
-        },
-      ],
-    });
-
-    listener.mount();
-    onKey?.(keydownEvent("H"));
-    onKey?.(keydownEvent("H"));
-    onKey?.(keydownEvent("H"));
-
-    expect(resize).toHaveBeenCalledTimes(3);
-    expect(resize.mock.calls.map((call) => call[1])).toEqual([
-      { deltaPx: 10 },
-      { deltaPx: 10 },
-      { deltaPx: 10 },
-    ]);
-
-    listener.destroy();
-  });
-
-  it("does not run default keyboard resize commands blocked by the active pane axis", () => {
-    const state = controllerState();
-    if (state.root.kind !== "split") {
-      throw new Error("expected split fixture");
-    }
-    state.root = {
-      ...state.root,
-      children: [
-        {
-          kind: "pane",
-          id: "left-node",
-          paneId: "left",
-          canResizeX: false,
-        },
-        state.root.children[1]!,
-      ],
-    };
-    const controller = createFocusGridController(state);
-    const resize = vi.spyOn(controller.api, "resize");
-    let onKey: ((event: KeyboardEvent) => void) | null = null;
-    const root = {
-      addEventListener: vi.fn((_, listener: EventListener) => {
-        onKey = listener as (event: KeyboardEvent) => void;
-      }),
-      removeEventListener: vi.fn(),
-    } as unknown as HTMLElement;
-    const listener = new KeyboardListener(controller, root, {
-      keymap: [
-        {
-          sequence: parseKeySequence("H"),
-          action: "pane.resizeRight",
-          args: { deltaPx: 10 },
-        },
-      ],
-    });
-
-    listener.mount();
-    onKey?.(keydownEvent("H"));
-    onKey?.(keydownEvent("H"));
-
-    expect(resize).not.toHaveBeenCalled();
-
-    listener.destroy();
-  });
-
-  it("runs default keyboard resize commands on the unblocked axis", () => {
-    const state = controllerState();
-    if (state.root.kind !== "split") {
-      throw new Error("expected split fixture");
-    }
-    state.root = {
-      ...state.root,
-      children: [
-        {
-          kind: "pane",
-          id: "left-node",
-          paneId: "left",
-          canResizeY: false,
-        },
-        state.root.children[1]!,
-      ],
-    };
-    const controller = createFocusGridController(state);
-    const resize = vi.spyOn(controller.api, "resize");
-    let onKey: ((event: KeyboardEvent) => void) | null = null;
-    const root = {
-      addEventListener: vi.fn((_, listener: EventListener) => {
-        onKey = listener as (event: KeyboardEvent) => void;
-      }),
-      removeEventListener: vi.fn(),
-    } as unknown as HTMLElement;
-    const listener = new KeyboardListener(controller, root, {
-      keymap: [
-        {
-          sequence: parseKeySequence("H"),
-          action: "pane.resizeRight",
-          args: { deltaPx: 10 },
-        },
-      ],
-    });
-
-    listener.mount();
-    onKey?.(keydownEvent("H"));
-
-    expect(resize).toHaveBeenCalledWith("left", {
-      direction: "right",
-      deltaPx: 10,
-    });
-
-    listener.destroy();
-  });
-
-  it("runs non-resize commands immediately", () => {
-    const controller = createFocusGridController(controllerState());
-    const run = vi.spyOn(controller.commands, "run");
-    let onKey: ((event: KeyboardEvent) => void) | null = null;
-    const root = {
-      addEventListener: vi.fn((_, listener: EventListener) => {
-        onKey = listener as (event: KeyboardEvent) => void;
-      }),
-      removeEventListener: vi.fn(),
-    } as unknown as HTMLElement;
-    const listener = new KeyboardListener(controller, root, {
-      keymap: [
-        {
-          sequence: parseKeySequence("X"),
-          action: "pane.close",
-        },
-      ],
-    });
-
-    listener.mount();
-    onKey?.(keydownEvent("X"));
-
-    expect(run).toHaveBeenCalledTimes(1);
-    expect(run).toHaveBeenCalledWith("pane.close", controller, undefined);
-
-    listener.destroy();
-  });
-});
-
 describe("FocusGridDomController lifecycle", () => {
   it("mounts and destroys keyboard and resize observers idempotently", () => {
     const observe = vi.fn();
@@ -419,6 +211,9 @@ describe("FocusGridDomController lifecycle", () => {
     } as unknown as HTMLElement;
     const domController = new FocusGridDomController(controller, root, {
       keymap: [],
+      engine: createShortcutEngine(),
+      scopeId: "grid",
+      parentScopeId: null,
     });
 
     domController.mount();
@@ -434,6 +229,59 @@ describe("FocusGridDomController lifecycle", () => {
 
     expect(root.removeEventListener).toHaveBeenCalledTimes(1);
     expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("shared engine grid boundaries", () => {
+  function root() {
+    return {
+      tabIndex: -1,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      getBoundingClientRect: () => ({ width: 1000, height: 600 }),
+    } as unknown as HTMLElement;
+  }
+
+  it("does not reset another grid's pending sequence when inactive pane state changes", () => {
+    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+    const engine = createShortcutEngine();
+    const active = createFocusGridController(controllerState());
+    const inactive = createFocusGridController(controllerState());
+    const action = vi.fn();
+    const first = new FocusGridDomController(active, root(), {
+      engine, scopeId: "active", parentScopeId: null,
+      keymap: [{ sequence: parseKeySequence("G G"), action }],
+    });
+    const second = new FocusGridDomController(inactive, root(), {
+      engine, scopeId: "inactive", parentScopeId: null,
+    });
+    first.mount(); second.mount();
+    engine.setActiveScope("active");
+    const key = () => ({ key: "g", preventDefault() {}, stopPropagation() {} }) as KeyboardEvent;
+    engine.handle(key());
+    inactive.api.focus("right");
+    engine.handle(key());
+    expect(action).toHaveBeenCalledOnce();
+    engine.handle(key());
+    active.api.focus("right");
+    expect(engine.handle(key())).toBe("pending");
+    expect(action).toHaveBeenCalledOnce();
+    first.destroy(); second.destroy();
+  });
+
+  it("keeps updated bindings across native mount cycles", () => {
+    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+    const engine = createShortcutEngine(), action = vi.fn();
+    const dom = new FocusGridDomController(createFocusGridController(controllerState()), root(), {
+      engine, scopeId: "grid", parentScopeId: null,
+    });
+    dom.mount();
+    dom.setKeymap([{ sequence: parseKeySequence("K"), action }]);
+    dom.destroy(); dom.mount();
+    engine.setActiveScope("grid");
+    engine.handle({ key: "k", preventDefault() {}, stopPropagation() {} } as KeyboardEvent);
+    expect(action).toHaveBeenCalledOnce();
+    dom.destroy();
   });
 });
 

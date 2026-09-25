@@ -5,8 +5,6 @@ export type {
 } from "./controller";
 
 export { normalizeKeyboardEvent } from "@andrewcyuan/shortcut-engine";
-export { KeyboardListener } from "./keyboard-listener";
-export type { KeyboardListenerOptions } from "./keyboard-listener";
 
 export { PointerResizeController } from "./pointer-resize";
 export { RootResizeObserver } from "./resize-observer";

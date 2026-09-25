@@ -1,4 +1,3 @@
-import { CommandRegistry, createDefaultCommandRegistry } from "./commands/registry";
 import { createId } from "./utils/ids";
 import {
   focusPane,
@@ -65,7 +64,6 @@ export type ResizeHandleOptions = {
 
 export class FocusGridController {
   readonly api: FocusGridControllerApi;
-  readonly commands: CommandRegistry;
   readonly directionalFocusOverflow: boolean;
   private state: FocusGridControllerState;
   private readonly paneDefaults: PaneDefaults;
@@ -76,7 +74,6 @@ export class FocusGridController {
     this.paneDefaults = options.paneDefaults ?? {};
     this.directionalFocusOverflow = options.directionalFocusOverflow ?? false;
     this.state = applyPaneDefaultsToState(initialState, this.paneDefaults);
-    this.commands = createDefaultCommandRegistry();
     this.api = {
       split: (paneId, splitOptions) => {
         const newPaneId = splitOptions.newPaneId ?? createId("pane");

@@ -1,3 +1,4 @@
+import { ShortcutScope } from "./shortcuts";
 import type {
   ComponentType,
   CSSProperties,
@@ -37,7 +38,7 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
   };
 
   return (
-    <div
+    <ShortcutScope
       className="FocusgridPaneView"
       data-active={pane.active}
       data-pane-id={pane.paneId}
@@ -54,7 +55,7 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
         active: pane.active,
         controller,
       })}
-    </div>
+    </ShortcutScope>
   );
 }
 

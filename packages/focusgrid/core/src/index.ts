@@ -27,12 +27,9 @@ export type {
 } from "./controller";
 
 export {
-  CommandRegistry,
-  DEFAULT_PANE_RESIZE_DELTA_PX,
-  createDefaultCommandRegistry,
-} from "./commands/registry";
-export type { PaneResizeCommandArgs } from "./commands/registry";
-export type { CommandContext, CommandHandler } from "./commands/types";
+  splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane,
+  resizeActivePane, DEFAULT_PANE_RESIZE_DELTA_PX,
+} from "./commands/pane-commands";
 export {
   findPaneNode,
   getPaneCommandCapabilities,
@@ -94,15 +91,4 @@ export {
   createDefaultPaneShortcuts,
   defaultPaneShortcutActions,
 } from "./keyboard/default-pane-keymap";
-export type {
-  DefaultPaneCommand,
-  CreateDefaultPaneKeymapResult,
-  CreateDefaultPaneKeymapOptions,
-  PaneShortcutAction,
-  PaneShortcutId,
-  PaneShortcutOverrides,
-  PaneShortcutValidationError,
-  PaneShortcutValues,
-  KeyBinding,
-  ShortcutContext,
-} from "./keyboard/default-pane-keymap";
+export type { PaneShortcutId, PaneShortcutValues, KeyBinding } from "./keyboard/default-pane-keymap";

@@ -1,5 +1,7 @@
 import {
   useEffect,
+  useContext,
+  useId,
   useRef,
   type ReactNode,
   type RefObject,
@@ -12,6 +14,7 @@ import {
   type PaneCloseEvent,
   type PaneLayoutChangeEvent,
 } from "./lifecycle";
+import { ShortcutScopeContext, useShortcutEngine } from "./shortcuts";
 import { PaneView } from "./PaneView";
 import { ResizeHandle } from "./ResizeHandle";
 import type { PaneRenderContext } from "./PaneView";
@@ -23,7 +26,7 @@ export type FocusGridFocusManagement = {
 
 export type FocusGridProps = {
   controller: FocusGridController;
-  keymap?: KeyBinding[];
+  keymap?: readonly KeyBinding[];
   renderPane: (ctx: PaneRenderContext) => ReactNode;
   className?: string;
   onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
@@ -40,6 +43,10 @@ export function FocusGrid({
   onPaneClose,
   focusManagement,
 }: FocusGridProps) {
+  const engine = useShortcutEngine();
+  const parentScopeId = useContext(ShortcutScopeContext);
+  const scopeId = useId();
+  const domControllerRef = useRef<FocusGridDomController | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const layout = useControllerLayout(controller);
   const focusManagementMode = focusManagement?.mode;
@@ -54,15 +61,24 @@ export function FocusGrid({
     const scope = focusManagementScopeRef?.current ?? null;
 
     const domController = new FocusGridDomController(controller, root, {
-      keymap,
+      engine,
+      scopeId,
+      parentScopeId,
       focusManagement: focusManagementMode === "application"
         ? { mode: "application", scope }
         : undefined,
     });
 
     domController.mount();
-    return () => domController.destroy();
-  }, [controller, keymap, focusManagementMode, focusManagementScopeRef]);
+    domControllerRef.current = domController;
+    return () => {
+      domController.destroy();
+      domControllerRef.current = null;
+    };
+  }, [controller, engine, scopeId, parentScopeId, focusManagementMode, focusManagementScopeRef]);
+  useEffect(() => {
+    domControllerRef.current?.setKeymap(keymap ?? []);
+  });
 
   usePaneLifecycleEvents(
     controller,
@@ -76,23 +92,25 @@ export function FocusGrid({
     : "FocusgridFocusGrid";
 
   return (
-    <div ref={rootRef} className={rootClassName}>
-      {layout.panes.map((pane) => (
-        <PaneView
-          key={pane.paneId}
-          controller={controller}
-          pane={pane}
-          renderPane={renderPane}
-        />
-      ))}
+    <ShortcutScopeContext.Provider value={scopeId}>
+      <div ref={rootRef} className={rootClassName}>
+        {layout.panes.map((pane) => (
+          <PaneView
+            key={pane.paneId}
+            controller={controller}
+            pane={pane}
+            renderPane={renderPane}
+          />
+        ))}
 
-      {layout.handles.map((handle) => (
-        <ResizeHandle
-          key={handle.id}
-          controller={controller}
-          handle={handle}
-        />
-      ))}
-    </div>
+        {layout.handles.map((handle) => (
+          <ResizeHandle
+            key={handle.id}
+            controller={controller}
+            handle={handle}
+          />
+        ))}
+      </div>
+    </ShortcutScopeContext.Provider>
   );
 }

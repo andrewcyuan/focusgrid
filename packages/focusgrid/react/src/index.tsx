@@ -20,3 +20,6 @@ export {
 } from "./hooks";
 
 export * from "./composite-shortcuts";
+
+export { ShortcutProvider, ShortcutScope, useShortcuts, useShortcutEngine } from "./shortcuts";
+export type { ShortcutProviderProps, ShortcutScopeProps } from "./shortcuts";

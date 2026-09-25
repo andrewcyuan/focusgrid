@@ -19,7 +19,7 @@ Missing `bin` metadata in `bun.lock` prevented clean installs from linking build
 ## Optimized Input Paths Must Preserve Command Boundaries
 
 - **Mistake:** Keyboard resize batching interpreted built-in command names in the DOM layer and called the controller API directly, bypassing registered replacement handlers.
-- **Fix pattern:** Route every matched shortcut through the command registry; remove or design optimizations around the extension boundary rather than bypassing it.
+- **Fix pattern:** Execute the callback selected by the registered binding; do not dispatch by shortcut name or bypass a replacement handler. The old command registry has since been replaced by scoped callback bindings.
 
 ## Historical React State Must Be Scoped To Its Source
 
@@ -78,3 +78,11 @@ Installing TypeScript 7 left the shared config using the removed `baseUrl` optio
 ## Constructor Mocks Must Be Constructible
 
 The ResizeObserver mock used an arrow function, so calling it with `new` failed before lifecycle assertions ran. Use a regular function or class when mocking an API that production code constructs with `new`.
+
+## Browser Tests Must Own Their Server
+
+Reusing the default Vite port let browser tests run against an unrelated local app. Use a dedicated test port with strict binding and disable automatic server reuse.
+
+## Child Layout Effects Cannot Read Ancestor Refs Reliably
+
+Moving FocusGrid DOM setup into a layout effect read the application's ancestor ref before React attached it. Keep setup that needs ancestor refs in a passive effect; test initial focus and StrictMode mounts in a browser.

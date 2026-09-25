@@ -1,5 +1,5 @@
 import type { KeyBinding, FocusGridController } from "@andrewcyuan/focusgrid/core";
-import { KeyboardListener } from "./keyboard-listener";
+import type { ShortcutEngine, ShortcutRegistration } from "@andrewcyuan/shortcut-engine";
 import { RootResizeObserver } from "./resize-observer";
 import { ApplicationFocusManager } from "./application-focus-manager";
 
@@ -9,13 +9,17 @@ export type FocusGridDomFocusManagement = {
 };
 
 export type FocusGridDomControllerOptions = {
-  keymap?: KeyBinding[];
+  keymap?: readonly KeyBinding[];
+  engine: ShortcutEngine;
+  scopeId: string;
+  parentScopeId: string | null;
   focusManagement?: FocusGridDomFocusManagement;
 };
 
 export class FocusGridDomController {
   private mountedResources: {
-    keyboard: KeyboardListener;
+    cleanupShortcuts: () => void;
+    bindings: ShortcutRegistration;
     resizeObserver: RootResizeObserver;
     focusManager?: ApplicationFocusManager;
   } | null = null;
@@ -23,7 +27,7 @@ export class FocusGridDomController {
   constructor(
     private readonly controller: FocusGridController,
     private readonly rootEl: HTMLElement,
-    private readonly options: FocusGridDomControllerOptions = {},
+    private options: FocusGridDomControllerOptions,
   ) {}
 
   mount(): void {
@@ -41,9 +45,35 @@ export class FocusGridDomController {
     }
 
     this.rootEl.tabIndex = this.rootEl.tabIndex < 0 ? 0 : this.rootEl.tabIndex;
-    const keyboard = new KeyboardListener(this.controller, this.rootEl, {
-      keymap: this.options.keymap,
+    const { engine, scopeId, parentScopeId } = this.options;
+    const removeScope = engine.registerScope({ id: scopeId, parentId: parentScopeId, element: this.rootEl });
+    let bindings: ShortcutRegistration;
+    try {
+      bindings = engine.registerBindings(scopeId, this.options.keymap ?? []);
+    } catch (error) {
+      removeScope();
+      throw error;
+    }
+    const onFocusIn = (event: FocusEvent) => {
+      const pane = event.composedPath().find(target =>
+        target instanceof HTMLElement &&
+        target.hasAttribute("data-pane-id") &&
+        (target.closest(".FocusgridFocusGrid") ?? this.rootEl) === this.rootEl,
+      ) as HTMLElement | undefined;
+      if (pane?.dataset.paneId) this.controller.api.focus(pane.dataset.paneId);
+    };
+    this.rootEl.addEventListener("focusin", onFocusIn);
+    const unsubscribe = this.controller.subscribe((next, previous) => {
+      if (next.activePaneId !== previous.activePaneId && engine.isScopeActive(scopeId)) {
+        engine.reset();
+      }
     });
+    const cleanupShortcuts = () => {
+      this.rootEl.removeEventListener("focusin", onFocusIn);
+      unsubscribe();
+      bindings.dispose();
+      removeScope();
+    };
     const resizeObserver = new RootResizeObserver(this.controller, this.rootEl);
     let focusManager: ApplicationFocusManager | undefined;
     if (this.options.focusManagement?.mode === "application") {
@@ -54,15 +84,19 @@ export class FocusGridDomController {
       );
     }
 
-    this.mountedResources = { keyboard, resizeObserver, focusManager };
+    this.mountedResources = { cleanupShortcuts, bindings, resizeObserver, focusManager };
     try {
-      keyboard.mount();
       resizeObserver.mount();
       focusManager?.mount();
     } catch (error) {
       this.destroy();
       throw error;
     }
+  }
+
+  setKeymap(bindings: readonly KeyBinding[]): void {
+    this.mountedResources?.bindings.update(bindings);
+    this.options = { ...this.options, keymap: bindings };
   }
 
   destroy(): void {
@@ -72,7 +106,7 @@ export class FocusGridDomController {
 
     const resources = this.mountedResources;
     this.mountedResources = null;
-    resources.keyboard.destroy();
+    resources.cleanupShortcuts();
     resources.resizeObserver.destroy();
     resources.focusManager?.destroy();
   }

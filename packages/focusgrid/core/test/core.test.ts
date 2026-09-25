@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 import {
   cardinalDirections,
-  CommandRegistry,
+  splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane, resizeActivePane,
   createDefaultPaneKeymap,
   createDefaultPaneShortcuts,
   createFocusGridController,
@@ -1245,30 +1245,13 @@ describe("controller", () => {
     const controller = createFocusGridController(horizontalSplitState());
 
     expect(
-      controller.commands.run("pane.resizeRight", controller, { deltaPx: 48 }),
+      resizeActivePane(controller, "right", 48),
     ).toBe(true);
 
     const root = controller.getState().root;
     expect(root.kind).toBe("split");
     expect(root.sizes[0]).toBeCloseTo(0.548);
     expect(root.sizes[1]).toBeCloseTo(0.452);
-  });
-
-  it("does not let stale command unregister callbacks remove newer handlers", () => {
-    const controller = createFocusGridController(initialState());
-    const commands = controller.commands;
-    const calls: string[] = [];
-    const unregisterA = commands.register("custom", () => {
-      calls.push("a");
-    });
-
-    commands.register("custom", () => {
-      calls.push("b");
-    });
-    unregisterA();
-
-    expect(commands.run("custom", controller)).toBe(true);
-    expect(calls).toEqual(["b"]);
   });
 
   it("blocks default split, remove, and resize commands with pane capabilities", () => {
@@ -1283,7 +1266,7 @@ describe("controller", () => {
       },
     });
     const beforeSplitRight = splitRight.getState();
-    expect(splitRight.commands.run("pane.splitRight", splitRight)).toBe(true);
+    expect(splitActivePane(splitRight, "right")).toBeNull();
     expect(splitRight.getState()).toBe(beforeSplitRight);
 
     const splitDown = createFocusGridController({
@@ -1297,7 +1280,7 @@ describe("controller", () => {
       },
     });
     const beforeSplitDown = splitDown.getState();
-    expect(splitDown.commands.run("pane.splitDown", splitDown)).toBe(true);
+    expect(splitActivePane(splitDown, "down")).toBeNull();
     expect(splitDown.getState()).toBe(beforeSplitDown);
 
     const remove = createFocusGridController({
@@ -1311,7 +1294,7 @@ describe("controller", () => {
       },
     });
     const beforeRemove = remove.getState();
-    expect(remove.commands.run("pane.close", remove)).toBe(true);
+    expect(closeActivePane(remove)).toBe(false);
     expect(remove.getState()).toBe(beforeRemove);
 
     const resize = createFocusGridController({
@@ -1326,8 +1309,8 @@ describe("controller", () => {
     });
     const beforeResize = resize.getState();
     expect(
-      resize.commands.run("pane.resizeRight", resize, { deltaPx: 48 }),
-    ).toBe(true);
+      resizeActivePane(resize, "right", 48),
+    ).toBe(false);
     expect(resize.getState()).toBe(beforeResize);
   });
 
@@ -1460,7 +1443,7 @@ describe("controller", () => {
     const controller = createFocusGridController(horizontalSplitState());
 
     expect("focusDirection" in controller.api).toBe(false);
-    expect(controller.commands.run("pane.focusRight", controller)).toBe(true);
+    expect(focusAdjacentPane(controller, "right")).toBe(true);
     expect(controller.getState().activePaneId).toBe("right");
   });
 
@@ -1590,7 +1573,7 @@ describe("controller", () => {
   it("runs default pane directional focus commands against the active pane", () => {
     const controller = createFocusGridController(horizontalSplitState());
 
-    expect(controller.commands.run("pane.focusRight", controller)).toBe(true);
+    expect(focusAdjacentPane(controller, "right")).toBe(true);
 
     expect(controller.getState().activePaneId).toBe("right");
   });
@@ -1599,14 +1582,14 @@ describe("controller", () => {
     const controller = createFocusGridController(threePaneHorizontalState("left", {
       middle: { canFocus: false },
     }));
-    expect(controller.commands.run("pane.focusRight", controller)).toBe(true);
+    expect(focusAdjacentPane(controller, "right")).toBe(true);
     expect(controller.getState().activePaneId).toBe("right");
 
     const allBlocked = createFocusGridController(threePaneHorizontalState("left", {
       middle: { canFocus: false },
       right: { canFocus: false },
     }));
-    expect(allBlocked.commands.run("pane.focusRight", allBlocked)).toBe(true);
+    expect(focusAdjacentPane(allBlocked, "right")).toBe(false);
     expect(allBlocked.getState().activePaneId).toBe("left");
   });
 
@@ -1623,7 +1606,7 @@ describe("controller", () => {
       },
     });
     expect(
-      resize.commands.run("pane.resizeDown", resize, { deltaPx: 48 }),
+      resizeActivePane(resize, "down", 48),
     ).toBe(true);
     const resizeRoot = resize.getState().root;
     expect(resizeRoot.kind).toBe("split");
@@ -1640,7 +1623,7 @@ describe("controller", () => {
         ],
       },
     });
-    expect(swap.commands.run("pane.swapDown", swap)).toBe(true);
+    expect(swapAdjacentPane(swap, "down")).toBe(true);
     expect(swap.getState().root).toMatchObject({
       kind: "split",
       children: [{ paneId: "bottom" }, { paneId: "top" }],
@@ -1649,13 +1632,13 @@ describe("controller", () => {
 
   it("wraps directional focus only when overflow is enabled", () => {
     const blocked = createFocusGridController(threePaneHorizontalState("right"));
-    expect(blocked.commands.run("pane.focusRight", blocked)).toBe(true);
+    expect(focusAdjacentPane(blocked, "right")).toBe(false);
     expect(blocked.getState().activePaneId).toBe("right");
 
     const wrapping = createFocusGridController(threePaneHorizontalState("right"), {
       directionalFocusOverflow: true,
     });
-    expect(wrapping.commands.run("pane.focusRight", wrapping)).toBe(true);
+    expect(focusAdjacentPane(wrapping, "right")).toBe(true);
     expect(wrapping.getState().activePaneId).toBe("left");
   });
 
@@ -1667,7 +1650,7 @@ describe("controller", () => {
       { directionalFocusOverflow: true },
     );
 
-    expect(controller.commands.run("pane.focusRight", controller)).toBe(true);
+    expect(focusAdjacentPane(controller, "right")).toBe(true);
     expect(controller.getState().activePaneId).toBe("middle");
 
     const allBlocked = createFocusGridController(
@@ -1678,14 +1661,14 @@ describe("controller", () => {
       { directionalFocusOverflow: true },
     );
 
-    expect(allBlocked.commands.run("pane.focusRight", allBlocked)).toBe(true);
+    expect(focusAdjacentPane(allBlocked, "right")).toBe(false);
     expect(allBlocked.getState().activePaneId).toBe("right");
   });
 
   it("runs default pane directional swap commands against the active pane", () => {
     const controller = createFocusGridController(horizontalSplitState());
 
-    expect(controller.commands.run("pane.swapRight", controller)).toBe(true);
+    expect(swapAdjacentPane(controller, "right")).toBe(true);
 
     const state = controller.getState();
     expect(state.activePaneId).toBe("left");
@@ -1698,7 +1681,7 @@ describe("controller", () => {
     const activeBlocked = createFocusGridController(threePaneHorizontalState("left", {
       left: { canSwapX: false },
     }));
-    expect(activeBlocked.commands.run("pane.swapRight", activeBlocked)).toBe(true);
+    expect(swapAdjacentPane(activeBlocked, "right")).toBe(false);
     expect(activeBlocked.getState().root).toMatchObject({
       kind: "split",
       children: [
@@ -1713,7 +1696,7 @@ describe("controller", () => {
     const targetBlocked = createFocusGridController(threePaneHorizontalState("left", {
       middle: { canSwapX: false },
     }));
-    expect(targetBlocked.commands.run("pane.swapRight", targetBlocked)).toBe(true);
+    expect(swapAdjacentPane(targetBlocked, "right")).toBe(false);
     expect(targetBlocked.getState().root).toMatchObject({
       kind: "split",
       children: [
@@ -2148,62 +2131,17 @@ describe("keyboard", () => {
     );
   });
 
-  it("creates the default pane keymap from the exported shortcut actions", () => {
-    const { keymap, errors } = createDefaultPaneKeymap();
-
-    expect(errors).toEqual([]);
+  it("creates callback bindings that act on the current active pane", () => {
+    const controller = createFocusGridController(horizontalSplitState());
+    const keymap = createDefaultPaneKeymap(controller);
     expect(keymap).toHaveLength(defaultPaneShortcutActions.length);
-    expect(keymap).toContainEqual({
-      sequence: parseKeySequence("Ctrl-B %"),
-      action: "pane.splitRight",
-      args: undefined,
-      preventDefault: true,
-      repeat: undefined,
-    });
-    expect(keymap).toContainEqual({
-      sequence: parseKeySequence("Ctrl-B L"),
-      action: "pane.resizeRight",
-      args: { deltaPx: 48 },
-      preventDefault: true,
-      repeat: true,
-    });
-  });
-
-  it("applies default pane keymap overrides and reports invalid bindings", () => {
-    const { keymap, errors } = createDefaultPaneKeymap({
-      overrides: {
-        "split-right": "Ctrl-B R",
-        close: "",
-        "focus-left": "Ctrl+B",
-        "focus-right": "Ctrl+",
-      },
-    });
-
-    expect(errors).toEqual([
-      {
-        id: "focus-right",
-        command: "pane.focusRight",
-        sequence: "Ctrl+",
-        message: expect.stringContaining("Invalid key stroke"),
-      },
-    ]);
-    expect(
-      keymap.find((binding) => binding.action === "pane.splitRight"),
-    ).toMatchObject({
-      sequence: parseKeySequence("Ctrl-B R"),
-      action: "pane.splitRight",
-    });
-    expect(keymap.some((binding) => binding.action === "pane.close")).toBe(
-      false,
-    );
-    expect(
-      keymap.find((binding) => binding.action === "pane.focusLeft"),
-    ).toMatchObject({
-      sequence: parseKeySequence("Ctrl-B"),
-      action: "pane.focusLeft",
-    });
-    expect(
-      keymap.some((binding) => binding.action === "pane.focusRight"),
-    ).toBe(false);
+    const resize = keymap.find(binding => JSON.stringify(binding.sequence) === JSON.stringify(parseKeySequence("Ctrl-B L")))!;
+    expect(resize.repeat).toBe(true);
+    resize.action({} as KeyboardEvent);
+    expect(controller.getComputedLayout().panes[0]!.rect.width).toBeGreaterThan(500);
+    const split = keymap.find(binding => JSON.stringify(binding.sequence) === JSON.stringify(parseKeySequence("Ctrl-B %")))!;
+    controller.api.focus("right");
+    split.action({} as KeyboardEvent);
+    expect(controller.getComputedLayout().panes).toHaveLength(3);
   });
 });

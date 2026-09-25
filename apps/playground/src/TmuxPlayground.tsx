@@ -1,5 +1,5 @@
+import { validateKeySequenceInput } from "@andrewcyuan/shortcut-engine";
 import {
-  createDefaultPaneKeymap,
   defaultPaneShortcutActions,
   paneSplitSides,
   findPaneNode,
@@ -71,8 +71,15 @@ export function TmuxPlayground() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
-    () => createDefaultPaneKeymap({ overrides: shortcuts }).keymap,
-    [shortcuts]
+    () => defaultPaneShortcutActions.flatMap(definition => {
+      const parsed = validateKeySequenceInput(shortcuts[definition.id]);
+      return parsed.ok && parsed.sequence.length ? [{
+        sequence: parsed.sequence,
+        action: () => { definition.action(controller); },
+        repeat: "repeat" in definition ? definition.repeat : undefined,
+      }] : [];
+    }),
+    [controller, shortcuts]
   );
 
   useEffect(() => {

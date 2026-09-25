@@ -8,26 +8,24 @@ import {
   useFocusGridController,
   type PaneComponentProps,
   createCompositeNavigationKeymap,
-  useCompositeShortcutRouter,
-  type CompositeNavigationShortcutArgs,
-  type CompositeNavigationShortcutId,
+  useShortcuts,
+  ShortcutScope,
+  type CompositeNavigationDirection,
 } from "@andrewcyuan/focusgrid/react";
 import {
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
 import {
   parseKeySequence,
-  type ShortcutBinding,
+  isEditableTarget,
 } from "@andrewcyuan/shortcut-engine";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";
 import {
   createDemoPaneKeymap,
   paneNavigationShortcuts,
 } from "./pane-navigation";
 
-type AriakitDemoAction = CompositeNavigationShortcutId | "Enter" | "Space";
-type AriakitDemoArgs = CompositeNavigationShortcutArgs | undefined;
 
 const rows = [
   { id: "alpha", label: "Alpha" },
@@ -44,32 +42,6 @@ const shortcutSummary = [
   "Enter",
   "Space",
   ...paneNavigationShortcuts,
-];
-const paneKeymap = createDemoPaneKeymap();
-
-const ariakitKeymap: ShortcutBinding<
-  undefined,
-  AriakitDemoAction,
-  AriakitDemoArgs
->[] = [
-  ...createCompositeNavigationKeymap({
-    overrides: {
-      "move-left": "H",
-      "move-right": "L",
-      "move-up": "K",
-      "move-down": "J",
-      "move-start": "G G",
-      "move-end": "Shift-G",
-    },
-  }),
-  {
-    sequence: parseKeySequence("Enter"),
-    action: "Enter",
-  },
-  {
-    sequence: parseKeySequence("Space"),
-    action: "Space",
-  },
 ];
 
 function createAriakitState(): FocusGridControllerState {
@@ -106,6 +78,7 @@ function createAriakitState(): FocusGridControllerState {
 
 export function AriakitPlayground() {
   const controller = useFocusGridController(createAriakitState);
+  const paneKeymap = createDemoPaneKeymap(controller);
   const applicationRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -133,7 +106,11 @@ export function AriakitPlayground() {
   );
 }
 
-function AriakitPane({ active, paneId }: PaneComponentProps) {
+function AriakitPane(props: PaneComponentProps) {
+  return <ShortcutScope style={{ display: "contents" }}><AriakitPaneContent {...props} /></ShortcutScope>;
+}
+
+function AriakitPaneContent({ active, paneId }: PaneComponentProps) {
   const composite = useCompositeStore({ orientation: "both" });
   const [action, setAction] = useState<{
     key: "Enter" | "Space";
@@ -141,66 +118,31 @@ function AriakitPane({ active, paneId }: PaneComponentProps) {
     defaultPrevented: boolean;
   } | null>(null);
 
-  const onMatch = useCallback(
-    ({
-      action: matchedAction,
-      event,
-    }: {
-      action: AriakitDemoAction;
-      event: KeyboardEvent;
-    }) => {
-      switch (matchedAction) {
-        case "move-left":
-          composite.move(composite.previous());
-          return;
-        case "move-right":
-          composite.move(composite.next());
-          return;
-        case "move-up":
-          composite.move(composite.up());
-          return;
-        case "move-down":
-          composite.move(composite.down());
-          return;
-        case "move-start":
-          composite.move(composite.first());
-          return;
-        case "move-end":
-          composite.move(composite.last());
-          return;
-        case "Enter":
-        case "Space": {
-          const eventTarget = event.target;
-          const activeId =
-            eventTarget instanceof HTMLElement && eventTarget.id
-              ? eventTarget.id
-              : composite.getState().activeId;
-          const row = rows.find(
-            (candidate) => createRowId(paneId, candidate.id) === activeId,
-          )?.label;
-
-          if (row) {
-            setAction({
-              key: matchedAction,
-              row,
-              defaultPrevented: event.defaultPrevented,
-            });
-          }
-        }
-      }
-    },
-    [composite, paneId],
-  );
-
-  const shortcutRouter = useCompositeShortcutRouter<
-    undefined,
-    AriakitDemoAction,
-    AriakitDemoArgs,
-    HTMLDivElement
-  >({
-    keymap: ariakitKeymap,
-    onMatch,
-  });
+  const move = (direction: CompositeNavigationDirection) => {
+    const target = {
+      left: () => composite.previous(), right: () => composite.next(),
+      up: () => composite.up(), down: () => composite.down(),
+      start: () => composite.first(), end: () => composite.last(),
+    }[direction]();
+    composite.move(target);
+  };
+  const activate = (key: "Enter" | "Space", event: KeyboardEvent) => {
+    const target = event.target;
+    const activeId = target instanceof HTMLElement && target.id ? target.id : composite.getState().activeId;
+    const row = rows.find(candidate => createRowId(paneId, candidate.id) === activeId)?.label;
+    if (row) setAction({ key, row, defaultPrevented: event.defaultPrevented });
+  };
+  useShortcuts([
+    ...createCompositeNavigationKeymap(move),
+    ...([ ["H", "left"], ["J", "down"], ["K", "up"], ["L", "right"], ["G G", "start"], ["Shift-G", "end"] ] as const).map(([key, direction]) => ({
+      sequence: parseKeySequence(key), action: () => move(direction),
+      when: (event: KeyboardEvent) => !isEditableTarget(event.target),
+    })),
+    ...(["Enter", "Space"] as const).map(key => ({
+      sequence: parseKeySequence(key), action: (event: KeyboardEvent) => activate(key, event),
+      when: (event: KeyboardEvent) => !isEditableTarget(event.target),
+    })),
+  ]);
 
   return (
     <section className="AriakitPane" data-active={active}>
@@ -217,7 +159,7 @@ function AriakitPane({ active, paneId }: PaneComponentProps) {
       </div>
 
       <Composite
-        {...shortcutRouter.compositeProps}
+        data-focusgrid-composite=""
         store={composite}
         className="AriakitComposite"
         aria-label={`Ariakit rows in ${paneId}`}

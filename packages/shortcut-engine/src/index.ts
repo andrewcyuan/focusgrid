@@ -2,9 +2,7 @@ export {
   normalizeKeyboardEvent,
   isEditableTarget,
   isModifierOnlyKey,
-  routeKeyboardEvent,
 } from "./dom";
-export type { KeyboardEventRouteOptions } from "./dom";
 export { createKeyStroke, normalizeKeyName, strokeToId } from "./normalize";
 export {
   normalizeKeySequenceInput,
@@ -12,17 +10,7 @@ export {
   parseKeyStroke,
   validateKeySequenceInput,
 } from "./parser";
-export { createTrie, KeyRouter } from "./trie";
-export type {
-  KeySequenceValidationResult,
-} from "./parser";
-export type {
-  KeyRouterOptions,
-  KeyTrieNode,
-} from "./trie";
-export type {
-  KeySequence,
-  KeyStroke,
-  ShortcutBinding,
-  ShortcutMatchResult,
-} from "./keymap";
+export { createShortcutEngine, ShortcutEngine } from "./engine";
+export type { ShortcutScopeOptions, ShortcutRegistration, ShortcutEngineOptions, ShortcutStatus } from "./engine";
+export type { KeySequenceValidationResult } from "./parser";
+export type { KeySequence, KeyStroke, ShortcutBinding } from "./keymap";
