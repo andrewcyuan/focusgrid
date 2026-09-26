@@ -59,7 +59,7 @@ export class FocusGridController {
   readonly minHeight: number;
   readonly directionalFocusOverflow: boolean;
   private currentState: FocusGridControllerState;
-  private layout: ComputedLayout | null = null;
+  private cachedLayout: ComputedLayout | null = null;
   private readonly paneDefaults: PaneDefaults;
   private readonly listeners = new Set<Listener>();
 
@@ -80,7 +80,7 @@ export class FocusGridController {
 
   /** Computed render data; stable until the next committed change. */
   getLayout(): ComputedLayout {
-    return this.layout ??= computeLayout(this.currentState);
+    return this.cachedLayout ??= computeLayout(this.currentState);
   }
 
   getPane(paneId: PaneId): PaneNode | null {
@@ -111,7 +111,7 @@ export class FocusGridController {
   focusAdjacent(direction: CardinalDirection): boolean {
     const state = this.currentState;
     if (!state.activePaneId) return false;
-    const target = findPaneForFocusCommand(state, state.activePaneId, direction, this.directionalFocusOverflow);
+    const target = findPaneForFocusCommand(state.root, this.getLayout(), state.activePaneId, direction, this.directionalFocusOverflow);
     if (!target || !this.domController.focus(target)) return false;
     this.focus(target);
     return true;
@@ -121,7 +121,7 @@ export class FocusGridController {
     const state = this.currentState;
     const active = findPaneNode(state.root, state.activePaneId);
     if (!active) return false;
-    const targetId = findPaneInDirection(state, active.paneId, direction);
+    const targetId = findPaneInDirection(state.root, this.getLayout(), active.paneId, direction);
     const target = findPaneNode(state.root, targetId);
     const capability = isHorizontalDirection(direction) ? PaneCommandCapability.SwapX : PaneCommandCapability.SwapY;
     return target && active[capability] !== false && target[capability] !== false
@@ -192,7 +192,7 @@ export class FocusGridController {
 
   resizeHandle(splitId: NodeId, props: ResizeHandleOptions): boolean {
     const state = this.currentState;
-    const rect = computeLayout(state).rectByNodeId.get(splitId);
+    const rect = this.getLayout().rectByNodeId.get(splitId);
     if (!rect) return false;
     const root = transformLayout(state.root, (node) => node.kind === "split" && node.id === splitId
       ? resizeSplit(node, node.orientation === "horizontal" ? rect.width : rect.height, props.index, props.deltaPx, props.snapshotSizes, this.minWidth, this.minHeight)
@@ -235,7 +235,7 @@ export class FocusGridController {
 
     const next = { ...previous, ...patch };
     this.currentState = next;
-    this.layout = null;
+    this.cachedLayout = null;
 
     for (const listener of this.listeners) {
       listener(next, previous);
@@ -248,7 +248,7 @@ export class FocusGridController {
     if (!onPaneLayoutChange && !onPaneClose) return () => {};
     return this.subscribe((next, previous) => {
       const previousPanes = new Map(computeLayout(previous).panes.map(pane => [pane.paneId, pane]));
-      const nextPanes = computeLayout(next).panes;
+      const nextPanes = (next === this.currentState ? this.getLayout() : computeLayout(next)).panes;
       for (const pane of nextPanes) {
         const previousPane = previousPanes.get(pane.paneId);
         previousPanes.delete(pane.paneId);

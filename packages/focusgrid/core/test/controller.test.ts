@@ -1,6 +1,7 @@
 import { createController, observedState } from "./observe-controller";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FocusGridController, findPaneNode, validateFocusGridControllerState, type FocusGridControllerProps } from "../src";
+import * as geometry from "../src/layout/geometry";
 import * as ids from "../src/utils/ids";
 
 function props(): FocusGridControllerProps {
@@ -228,4 +229,18 @@ describe("controller read methods", () => {
     expect(controller.getSplitSizes("editor-node")).toBeNull();
     expect(controller.getLayout().handles).toEqual([]);
   });
+});
+
+
+it("uses the controller's private layout cache for command geometry", () => {
+  const controller = createController(props());
+  controller.split("editor-node", { side: "right", newPaneId: "terminal", splitId: "workspace" });
+  const compute = vi.spyOn(geometry, "computeLayout");
+  controller.getLayout();
+  expect(controller.focusAdjacent("right")).toBe(false);
+  expect(controller.swapAdjacent("right")).toBe(false);
+  controller.resizeHandle("workspace", { index: 0, deltaPx: 50 });
+  expect(compute).toHaveBeenCalledTimes(1);
+  controller.getLayout();
+  expect(compute).toHaveBeenCalledTimes(2);
 });

@@ -25,7 +25,7 @@ function focusDirection(
   paneId: string,
   direction: CardinalDirection,
 ): boolean {
-  const target = findPaneInDirection(observedState(controller), paneId, direction);
+  const target = findPaneInDirection(observedState(controller).root, controller.getLayout(), paneId, direction);
 
   return target !== null && controller.focus(target);
 }
@@ -638,7 +638,7 @@ describe("controller", () => {
   it("directional swap selects the remembered pane in a nested branch", () => {
     const controller = createController(verticalMiddleTrifoldState());
     controller.focus("left");
-    expect(findPaneInDirection(observedState(controller), "left", "right")).toBe("middle-bottom");
+    expect(findPaneInDirection(observedState(controller).root, controller.getLayout(), "left", "right")).toBe("middle-bottom");
     expect(defaultPaneShortcutActions.find(action => action.id === "swap-right")!.action(controller)).toBe(true);
     const swapped = observedState(controller);
 
@@ -1318,7 +1318,7 @@ describe("controller", () => {
 
   it("returns the same state when no directional sibling matches", () => {
     const state = horizontalSplitState();
-    expect(findPaneInDirection(state, "left", "left")).toBeNull();
+    expect(findPaneInDirection(state.root, computeLayout(state), "left", "left")).toBeNull();
   });
 
   it("runs default pane directional focus commands against the active pane", () => {

@@ -1,5 +1,4 @@
 import { PaneCommandCapability } from "./types";
-import { computeLayout } from "./geometry";
 import { buildLayoutIndex, collectPaneIds } from "./tree";
 import {
   isHorizontalDirection,
@@ -14,7 +13,7 @@ import type {
   LayoutIndex,
   CardinalDirection,
   ComputedPane,
-  FocusGridControllerState,
+  ComputedLayout,
   PaneId,
   LayoutNode,
   NodeId,
@@ -22,15 +21,15 @@ import type {
 } from "./types";
 
 export function findPaneInDirection(
-  state: FocusGridControllerState,
+  root: LayoutNode,
+  layout: ComputedLayout,
   paneId: PaneId,
   direction: CardinalDirection,
 ): PaneId | null {
-  const index = buildLayoutIndex(state.root);
+  const index = buildLayoutIndex(root);
   const paneNode = index.paneNodeByPaneId.get(paneId);
   if (!paneNode) return null;
 
-  const layout = computeLayout(state);
   const activePane = layout.panes.find((pane) => pane.paneId === paneId);
   if (!activePane) return null;
 
@@ -48,16 +47,16 @@ export function findPaneInDirection(
 }
 
 export function findPaneForFocusCommand(
-  state: FocusGridControllerState,
+  root: LayoutNode,
+  layout: ComputedLayout,
   paneId: PaneId,
   direction: CardinalDirection,
   overflow: boolean,
 ): PaneId | null {
-  const layout = computeLayout(state);
   const activePane = layout.panes.find((pane) => pane.paneId === paneId);
   if (!activePane) return null;
 
-  const index = buildLayoutIndex(state.root);
+  const index = buildLayoutIndex(root);
   const candidates = layout.panes.filter((pane) =>
     pane.paneId !== paneId && index.paneNodeByPaneId.get(pane.paneId)?.[PaneCommandCapability.Focus] !== false,
   );
