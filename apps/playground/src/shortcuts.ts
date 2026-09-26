@@ -3,7 +3,7 @@ import {
   defaultPaneShortcutActions,
   type PaneShortcutValues,
 } from "@andrewcyuan/focusgrid/core";
-import { normalizeKeySequenceInput } from "@andrewcyuan/shortcut-engine";
+import { normalizeShortcut } from "@andrewcyuan/shortcut-engine";
 
 const shortcutStorageKey = "focusgrid.playground.shortcuts";
 
@@ -28,7 +28,7 @@ export function loadSavedShortcuts(): PaneShortcutValues {
         const value = (parsed as Record<string, unknown>)[action.id];
         shortcuts[action.id] =
           typeof value === "string"
-            ? normalizeKeySequenceInput(value)
+            ? value.trim() ? normalizeShortcut(value) : ""
             : action.defaultSequence;
         return shortcuts;
       },

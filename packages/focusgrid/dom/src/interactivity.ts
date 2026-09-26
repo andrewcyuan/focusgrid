@@ -116,3 +116,11 @@ export function isUnavailableElement(element: HTMLElement): boolean {
 
   return false;
 }
+
+export function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable || target.getAttribute("role")?.toLowerCase() === "textbox") return true;
+  if (target.matches("textarea, select")) return !target.matches(":disabled");
+  return target instanceof HTMLInputElement && !target.disabled && !target.readOnly &&
+    ["date", "datetime-local", "email", "file", "month", "number", "password", "search", "tel", "text", "time", "url", "week"].includes(target.type);
+}

@@ -1,3 +1,4 @@
+import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
 import {
   FocusGrid,
@@ -12,7 +13,6 @@ import {
   findPaneNode,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
-import { parseKeySequence, isEditableTarget } from "@andrewcyuan/shortcut-engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";
 import {
@@ -375,10 +375,10 @@ function useCollectionNavigation(
   useShortcuts([
     ...createCompositeNavigationKeymap(move),
     ...([ ["H", "left"], ["J", "down"], ["K", "up"], ["L", "right"] ] as const).map(([key, direction]) => ({
-      sequence: parseKeySequence(key), action: () => move(direction),
+      sequence: key, action: () => move(direction),
       when: (event: KeyboardEvent) => !isEditableTarget(event.target),
     })),
-    { sequence: parseKeySequence("Enter"), action: onOpen, when: event => !isEditableTarget(event.target) },
+    { sequence: "Enter", action: onOpen, when: event => !isEditableTarget(event.target) },
   ]);
 }
 

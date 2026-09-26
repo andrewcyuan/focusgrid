@@ -46,7 +46,7 @@ export class FocusGridDomController {
 
     this.rootEl.tabIndex = this.rootEl.tabIndex < 0 ? 0 : this.rootEl.tabIndex;
     const { engine, scopeId, parentScopeId } = this.options;
-    const removeScope = engine.registerScope({ id: scopeId, parentId: parentScopeId, element: this.rootEl });
+    const removeScope = engine.registerScope({ id: scopeId, parentId: parentScopeId });
     let bindings: ShortcutRegistration;
     try {
       bindings = engine.registerBindings(scopeId, this.options.keymap ?? []);
@@ -54,6 +54,8 @@ export class FocusGridDomController {
       removeScope();
       throw error;
     }
+    const previousScope = this.rootEl.getAttribute("data-shortcut-scope");
+    this.rootEl.setAttribute("data-shortcut-scope", scopeId);
     const onFocusIn = (event: FocusEvent) => {
       const pane = event.composedPath().find(target =>
         target instanceof HTMLElement &&
@@ -73,6 +75,8 @@ export class FocusGridDomController {
       unsubscribe();
       bindings.dispose();
       removeScope();
+      if (previousScope === null) this.rootEl.removeAttribute("data-shortcut-scope");
+      else this.rootEl.setAttribute("data-shortcut-scope", previousScope);
     };
     const resizeObserver = new RootResizeObserver(this.controller, this.rootEl);
     let focusManager: ApplicationFocusManager | undefined;

@@ -6,21 +6,9 @@ import {
 } from "@andrewcyuan/focusgrid/core";
 import {
   createShortcutEngine,
-  parseKeySequence,
-  normalizeKeyboardEvent,
 } from "@andrewcyuan/shortcut-engine";
 import { FocusGridDomController } from "../src/controller";
 import { PointerResizeController } from "../src/pointer-resize";
-
-function keyboardEvent(input: Partial<KeyboardEvent>): KeyboardEvent {
-  return {
-    key: input.key ?? "",
-    ctrlKey: input.ctrlKey ?? false,
-    metaKey: input.metaKey ?? false,
-    altKey: input.altKey ?? false,
-    shiftKey: input.shiftKey ?? false,
-  } as KeyboardEvent;
-}
 
 function controllerState(): FocusGridControllerState {
   return {
@@ -119,77 +107,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("normalizeKeyboardEvent", () => {
-  it("keeps shift for alphabetic keys", () => {
-    expect(
-      normalizeKeyboardEvent(
-        keyboardEvent({
-          key: "B",
-          shiftKey: true,
-        }),
-      ),
-    ).toEqual({
-      key: "b",
-      ctrl: false,
-      meta: false,
-      alt: false,
-      shift: true,
-    });
-  });
-
-  it("drops shift for symbols already produced by shift", () => {
-    expect(
-      normalizeKeyboardEvent(
-        keyboardEvent({
-          key: "%",
-          ctrlKey: true,
-          shiftKey: true,
-        }),
-      ),
-    ).toEqual({
-      key: "%",
-      ctrl: true,
-      meta: false,
-      alt: false,
-      shift: false,
-    });
-  });
-
-  it("converts shifted number keys to their produced symbol", () => {
-    expect(
-      normalizeKeyboardEvent(
-        keyboardEvent({
-          key: "5",
-          ctrlKey: true,
-          shiftKey: true,
-        }),
-      ),
-    ).toEqual({
-      key: "%",
-      ctrl: true,
-      meta: false,
-      alt: false,
-      shift: false,
-    });
-  });
-
-  it("normalizes browser arrow key names to plain directions", () => {
-    expect(
-      normalizeKeyboardEvent(
-        keyboardEvent({
-          key: "ArrowRight",
-        }),
-      ),
-    ).toEqual({
-      key: "right",
-      ctrl: false,
-      meta: false,
-      alt: false,
-      shift: false,
-    });
-  });
-});
-
 describe("FocusGridDomController lifecycle", () => {
   it("mounts and destroys keyboard and resize observers idempotently", () => {
     const observe = vi.fn();
@@ -202,6 +119,9 @@ describe("FocusGridDomController lifecycle", () => {
     const controller = createFocusGridController(controllerState());
     const root = {
       tabIndex: -1,
+      getAttribute: () => null,
+      setAttribute: vi.fn(),
+      removeAttribute: vi.fn(),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       getBoundingClientRect: vi.fn(() => ({
@@ -236,6 +156,9 @@ describe("shared engine grid boundaries", () => {
   function root() {
     return {
       tabIndex: -1,
+      getAttribute: () => null,
+      setAttribute: vi.fn(),
+      removeAttribute: vi.fn(),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       getBoundingClientRect: () => ({ width: 1000, height: 600 }),
@@ -250,7 +173,7 @@ describe("shared engine grid boundaries", () => {
     const action = vi.fn();
     const first = new FocusGridDomController(active, root(), {
       engine, scopeId: "active", parentScopeId: null,
-      keymap: [{ sequence: parseKeySequence("G G"), action }],
+      keymap: [{ sequence: "G G", action }],
     });
     const second = new FocusGridDomController(inactive, root(), {
       engine, scopeId: "inactive", parentScopeId: null,
@@ -276,7 +199,7 @@ describe("shared engine grid boundaries", () => {
       engine, scopeId: "grid", parentScopeId: null,
     });
     dom.mount();
-    dom.setKeymap([{ sequence: parseKeySequence("K"), action }]);
+    dom.setKeymap([{ sequence: "K", action }]);
     dom.destroy(); dom.mount();
     engine.setActiveScope("grid");
     engine.handle({ key: "k", preventDefault() {}, stopPropagation() {} } as KeyboardEvent);

@@ -1,4 +1,4 @@
-import { parseKeySequence, type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
+import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import type { FocusGridController } from "../controller";
 import { splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane, resizeActivePane } from "../commands/pane-commands";
 
@@ -110,7 +110,7 @@ export function createDefaultPaneShortcuts(): PaneShortcutValues {
 
 export function createDefaultPaneKeymap(controller: FocusGridController): ShortcutBinding[] {
   return defaultPaneShortcutActions.map(definition => ({
-    sequence: parseKeySequence(definition.defaultSequence),
+    sequence: definition.defaultSequence,
     action: () => { definition.action(controller); },
     repeat: "repeat" in definition ? definition.repeat : undefined,
   }));

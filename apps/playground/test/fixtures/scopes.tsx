@@ -5,11 +5,11 @@ import {
   ShortcutProvider, ShortcutScope, useShortcuts, FocusGrid, useFocusGridController,
 } from "@andrewcyuan/focusgrid/react";
 import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/core";
-import { parseKeySequence, type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
+import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import "@andrewcyuan/focusgrid/react/styles.css";
 
 function bind(sequence: string, action: (event: KeyboardEvent) => void): ShortcutBinding {
-  return { sequence: parseKeySequence(sequence), action };
+  return { sequence: sequence, action };
 }
 function Contributor({ value, report }: { value: string; report: (value: string) => void }) {
   useShortcuts([bind("F2", () => report(value))]);

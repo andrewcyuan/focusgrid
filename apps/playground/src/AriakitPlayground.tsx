@@ -1,3 +1,4 @@
+import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
 import {
   Composite,
   CompositeItem,
@@ -15,10 +16,6 @@ import {
 import {
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
-import {
-  parseKeySequence,
-  isEditableTarget,
-} from "@andrewcyuan/shortcut-engine";
 import { useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";
 import {
@@ -135,11 +132,11 @@ function AriakitPaneContent({ active, paneId }: PaneComponentProps) {
   useShortcuts([
     ...createCompositeNavigationKeymap(move),
     ...([ ["H", "left"], ["J", "down"], ["K", "up"], ["L", "right"], ["G G", "start"], ["Shift-G", "end"] ] as const).map(([key, direction]) => ({
-      sequence: parseKeySequence(key), action: () => move(direction),
+      sequence: key, action: () => move(direction),
       when: (event: KeyboardEvent) => !isEditableTarget(event.target),
     })),
     ...(["Enter", "Space"] as const).map(key => ({
-      sequence: parseKeySequence(key), action: (event: KeyboardEvent) => activate(key, event),
+      sequence: key, action: (event: KeyboardEvent) => activate(key, event),
       when: (event: KeyboardEvent) => !isEditableTarget(event.target),
     })),
   ]);

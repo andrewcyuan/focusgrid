@@ -1,6 +1,7 @@
+import { mountShortcutListener } from "@andrewcyuan/focusgrid/dom";
 import { useBrowserLayoutEffect } from "./use-browser-layout-effect";
 import {
-  createContext, forwardRef, useContext, useId, useImperativeHandle,
+  createContext, forwardRef, useContext, useId, useEffect,
   useRef, useState,
   type HTMLAttributes, type ReactNode,
 } from "react";
@@ -21,7 +22,7 @@ export type ShortcutProviderProps = {
 export function ShortcutProvider({ children, engine: suppliedEngine, ownerDocument }: ShortcutProviderProps) {
   const [localEngine] = useState(createShortcutEngine);
   const engine = suppliedEngine ?? localEngine;
-  useBrowserLayoutEffect(() => engine.mount(ownerDocument ?? document), [engine, ownerDocument]);
+  useEffect(() => mountShortcutListener(engine, ownerDocument ?? document), [engine, ownerDocument]);
   return <EngineContext.Provider value={engine}>{children}</EngineContext.Provider>;
 }
 
@@ -40,12 +41,10 @@ export const ShortcutScope = forwardRef<HTMLDivElement, ShortcutScopeProps>(func
   const id = suppliedId ?? generatedId;
   const engine = useShortcutEngine();
   const parentId = useContext(ShortcutScopeContext);
-  const elementRef = useRef<HTMLDivElement>(null);
-  useImperativeHandle(forwardedRef, () => elementRef.current!, []);
-  useBrowserLayoutEffect(() => engine.registerScope({ id, parentId, element: elementRef.current! }), [engine, id, parentId]);
+  useBrowserLayoutEffect(() => engine.registerScope({ id, parentId }), [engine, id, parentId]);
   return (
     <ShortcutScopeContext.Provider value={id}>
-      <div {...props} id={id} ref={elementRef}>{children}</div>
+      <div {...props} id={id} data-shortcut-scope={id} ref={forwardedRef}>{children}</div>
     </ShortcutScopeContext.Provider>
   );
 });

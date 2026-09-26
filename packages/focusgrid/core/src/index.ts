@@ -71,21 +71,7 @@ export type {
   FocusGridStateValidationResult,
 } from "./validation";
 
-export {
-  createKeyStroke,
-  normalizeKeyName,
-  strokeToId,
-  normalizeKeySequenceInput,
-  parseKeySequence,
-  parseKeyStroke,
-  validateKeySequenceInput,
-} from "@andrewcyuan/shortcut-engine";
-export type {
-  KeySequence,
-  KeySequenceValidationResult,
-  KeyStroke,
-  ShortcutBinding,
-} from "@andrewcyuan/shortcut-engine";
+export type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 export {
   createDefaultPaneKeymap,
   createDefaultPaneShortcuts,

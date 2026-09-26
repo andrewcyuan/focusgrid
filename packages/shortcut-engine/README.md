@@ -1,32 +1,30 @@
 # Shortcut engine
 
-Shortcut engine routes one keyboard sequence through nested scopes, from the active scope to its ancestors, and runs callback bindings.
+Shortcut engine routes string key sequences through the active scope and its ancestors, running the deepest matching callback.
 
 ```ts
-import { createShortcutEngine, parseKeySequence } from "@andrewcyuan/shortcut-engine";
+import { createShortcutEngine } from "@andrewcyuan/shortcut-engine";
 
 const engine = createShortcutEngine();
-const removeScope = engine.registerScope({
-  id: "editor",
-  parentId: null,
-  element: document.querySelector("#editor")!,
-});
+const removeScope = engine.registerScope({ id: "editor", parentId: null });
 const shortcuts = engine.registerBindings("editor", [
-  {
-    sequence: parseKeySequence("Ctrl-K Ctrl-H"),
-    action: event => window.alert(`Help opened with ${event.key}`),
-  },
+  { sequence: "ctrl-k ctrl-h", action: () => window.alert("Help") },
 ]);
-const unmount = engine.mount(document);
+engine.setActiveScope("editor");
+
+const onKey = (event: KeyboardEvent) => { engine.handle(event); };
+document.addEventListener("keydown", onKey, { capture: true });
 
 // On teardown:
+// document.removeEventListener("keydown", onKey, { capture: true });
 // shortcuts.dispose();
 // removeScope();
-// unmount();
 ```
 
-Use one engine per document. Focus selects the nearest registered element's scope; `setActiveScope(id)` also supports explicit activation, and `null` disables routing.
+Use hyphens for combinations and spaces between strokes: `ctrl-k`, `ctrl-k h`. Modifiers are `ctrl`, `cmd`, `alt`, and `shift`; named keys include `left`, `enter`, `escape`, and `space`. Plus-separated combinations and modifier aliases are not supported. `normalizeShortcut(value)` validates and canonicalizes a string when needed by an editor; bindings are compiled automatically.
 
-Each scope has a `parentId`; multiple components can call `registerBindings` for the same scope. The deepest complete match wins, even when a deeper scope has a partial match. Within one scope, the latest eligible registration wins; disposing it restores the previous binding. `shortcuts.update(bindings)` preserves registration priority.
+Scopes contain a parent ID and binding contributions, with no DOM elements. The caller updates `setActiveScope(id)` when focus changes; `null` disables routing. Focusgrid provides the DOM and React integration.
 
-Bindings accept `when(event)`, `preventDefault` (default `true`), and `repeat` for repeating two-stroke followers within 500 ms. Callbacks capture their own state. Pending sequences consume browser events and reset when the active scope changes; `engine.reset()` clears them explicitly. A complete parent shortcut runs immediately, so a child sequence that extends that exact shortcut cannot complete.
+The deepest complete match wins immediately, even if a deeper scope has a partial match. Within one scope, the latest eligible registration wins; disposing it restores the previous binding. `shortcuts.update(bindings)` preserves registration priority.
+
+Bindings accept `when(event)`, `preventDefault` (default `true`), and `repeat` for repeating two-stroke followers within 500 ms. Pending sequences consume browser events and reset on active-scope changes; `engine.reset()` clears them explicitly.

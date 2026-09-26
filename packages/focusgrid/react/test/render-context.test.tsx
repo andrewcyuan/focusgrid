@@ -1,4 +1,3 @@
-import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 import { createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -138,7 +137,7 @@ describe("pane render context", () => {
     const controller = createFocusGridController(state());
     const keymap: KeyBinding[] = [
       {
-        sequence: parseKeySequence("Ctrl-K"),
+        sequence: "Ctrl-K",
         action: () => {},
       },
     ];

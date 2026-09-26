@@ -1,4 +1,4 @@
-import { validateKeySequenceInput } from "@andrewcyuan/shortcut-engine";
+import { normalizeShortcut } from "@andrewcyuan/shortcut-engine";
 import {
   defaultPaneShortcutActions,
   paneSplitSides,
@@ -72,12 +72,15 @@ export function TmuxPlayground() {
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
     () => defaultPaneShortcutActions.flatMap(definition => {
-      const parsed = validateKeySequenceInput(shortcuts[definition.id]);
-      return parsed.ok && parsed.sequence.length ? [{
-        sequence: parsed.sequence,
-        action: () => { definition.action(controller); },
-        repeat: "repeat" in definition ? definition.repeat : undefined,
-      }] : [];
+      try {
+        return [{
+          sequence: normalizeShortcut(shortcuts[definition.id]),
+          action: () => { definition.action(controller); },
+          repeat: "repeat" in definition ? definition.repeat : undefined,
+        }];
+      } catch {
+        return [];
+      }
     }),
     [controller, shortcuts]
   );

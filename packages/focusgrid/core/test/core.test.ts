@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 import {
   cardinalDirections,
   splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane, resizeActivePane,
@@ -2135,11 +2134,11 @@ describe("keyboard", () => {
     const controller = createFocusGridController(horizontalSplitState());
     const keymap = createDefaultPaneKeymap(controller);
     expect(keymap).toHaveLength(defaultPaneShortcutActions.length);
-    const resize = keymap.find(binding => JSON.stringify(binding.sequence) === JSON.stringify(parseKeySequence("Ctrl-B L")))!;
+    const resize = keymap.find(binding => JSON.stringify(binding.sequence) === JSON.stringify("Ctrl-B L"))!;
     expect(resize.repeat).toBe(true);
     resize.action({} as KeyboardEvent);
     expect(controller.getComputedLayout().panes[0]!.rect.width).toBeGreaterThan(500);
-    const split = keymap.find(binding => JSON.stringify(binding.sequence) === JSON.stringify(parseKeySequence("Ctrl-B %")))!;
+    const split = keymap.find(binding => JSON.stringify(binding.sequence) === JSON.stringify("Ctrl-B %"))!;
     controller.api.focus("right");
     split.action({} as KeyboardEvent);
     expect(controller.getComputedLayout().panes).toHaveLength(3);

@@ -7,13 +7,12 @@ import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/core";
 import {
   FocusGrid, ShortcutProvider, useFocusGridController, useShortcuts,
 } from "@andrewcyuan/focusgrid/react";
-import { parseKeySequence } from "@andrewcyuan/shortcut-engine";
 import "@andrewcyuan/focusgrid/react/styles.css";
 
 function Editor() {
   // Each rendered pane already provides a shortcut scope.
   useShortcuts([
-    { sequence: parseKeySequence("Ctrl-S"), action: () => alert("Saved") },
+    { sequence: "ctrl-s", action: () => alert("Saved") },
   ]);
   return <textarea aria-label="Editor" />;
 }
@@ -50,4 +49,4 @@ API overview:
 - `controller.api` provides `split`, `wrapRootInSplit`, `remove`, `swap`, `resize`, `resizeHandle`, `focus`, `updatePaneCommandGuards`, `setPaneData`, and `setContainerSize`; `getState`, `getComputedLayout`, `getPaneData`, and `subscribe` expose state.
 - `splitActivePane`, `closeActivePane`, `focusAdjacentPane`, `swapAdjacentPane`, and `resizeActivePane` are direct command functions that respect pane capabilities. `createDefaultPaneKeymap(controller)` connects them to default shortcuts; supply your own bindings to change the keys.
 - `validateFocusGridControllerState`, `serializeFocusGridControllerState`, and `deserializeFocusGridControllerState` validate, save, and restore layouts.
-- From `@andrewcyuan/focusgrid/dom`, `FocusGridDomController(controller, root, { engine, scopeId, parentScopeId, keymap })` registers the grid with a shared engine through `mount()` and `destroy()`; `setKeymap` updates its bindings. Native callers mount the engine separately and register any nested scopes themselves.
+- From `@andrewcyuan/focusgrid/dom`, `FocusGridDomController(controller, root, { engine, scopeId, parentScopeId, keymap })` registers the grid with a shared engine through `mount()` and `destroy()`; `setKeymap` updates its bindings. Native callers use `mountShortcutListener(engine, document)` for focus tracking and one capture listener, and mark nested scope elements with `data-shortcut-scope`.

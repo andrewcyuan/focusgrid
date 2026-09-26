@@ -1,4 +1,5 @@
-import { isEditableTarget, parseKeySequence, type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
+import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
+import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 
 export type CompositeNavigationDirection = "left" | "right" | "up" | "down" | "start" | "end";
 
@@ -10,7 +11,7 @@ export function createCompositeNavigationKeymap(
     ["Down", "down"], ["Home", "start"], ["End", "end"],
   ];
   return keys.map(([key, direction]) => ({
-    sequence: parseKeySequence(key),
+    sequence: key,
     action: event => move(direction, event),
     when: event => !isEditableTarget(event.target),
   }));

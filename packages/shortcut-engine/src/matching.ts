@@ -1,76 +1,41 @@
 import type { ShortcutBinding } from "./keymap";
 
-export type IndexedBinding = { binding: ShortcutBinding; keys: readonly string[] };
-export type SequenceState = {
-  pending: readonly string[];
-  repeat: { leader: string; expiresAt: number } | null;
-};
-export type MatchTransition = {
-  state: SequenceState;
-  status: "ignored" | "pending" | "handled";
-  binding?: ShortcutBinding;
-};
+export type SequenceState = { pending: string; repeat: { leader: string; expiresAt: number } | null };
+export const idleSequence = (): SequenceState => ({ pending: "", repeat: null });
 
-export function idleSequence(): SequenceState {
-  return { pending: [], repeat: null };
-}
-
-// Bindings arrive in scope depth and registration priority order.
-export function matchSequence(
-  bindings: readonly IndexedBinding[],
-  sequence: readonly string[],
-): { binding?: ShortcutBinding; pending: boolean } {
-  let pending = false;
-  for (const candidate of bindings) {
-    if (!sequence.every((key, index) => key === candidate.keys[index])) continue;
-    if (sequence.length === candidate.keys.length) {
-      return { binding: candidate.binding, pending: false };
-    }
-    pending = true;
-  }
-  return { pending };
+// Bindings are ordered by scope depth, then registration priority.
+function match(bindings: readonly ShortcutBinding[], sequence: string) {
+  return {
+    binding: bindings.find(binding => binding.sequence === sequence),
+    pending: bindings.some(binding => binding.sequence.startsWith(`${sequence} `)),
+  };
 }
 
 export function transitionSequence(
   state: SequenceState,
   key: string,
-  bindings: readonly IndexedBinding[],
-  now: number,
-  repeatTimeoutMs: number,
-): MatchTransition {
-  if (state.repeat && now <= state.repeat.expiresAt) {
-    const sequence = [state.repeat.leader, key];
-    const match = matchSequence(bindings, sequence);
-    if (!match.binding?.repeat) return { state: idleSequence(), status: "handled" };
-    return complete(match.binding, sequence, now, repeatTimeoutMs);
-  }
-  let sequence = [...state.pending, key];
-  let match = matchSequence(bindings, sequence);
-  if (!match.binding && !match.pending && state.pending.length) {
-    sequence = [key];
-    match = matchSequence(bindings, sequence);
-  }
-  if (match.binding) return complete(match.binding, sequence, now, repeatTimeoutMs);
-  if (match.pending) {
-    return { state: { pending: sequence, repeat: null }, status: "pending" };
-  }
-  return { state: idleSequence(), status: state.pending.length ? "handled" : "ignored" };
-}
-
-function complete(
-  binding: ShortcutBinding,
-  sequence: readonly string[],
+  bindings: readonly ShortcutBinding[],
   now: number,
   timeout: number,
-): MatchTransition {
-  return {
-    status: "handled",
-    binding,
-    state: {
-      pending: [],
-      repeat: binding.repeat && sequence.length === 2
-        ? { leader: sequence[0]!, expiresAt: now + timeout }
-        : null,
-    },
-  };
+): { state: SequenceState; status: "ignored" | "pending" | "handled"; binding?: ShortcutBinding } {
+  const repeating = state.repeat !== null && now <= state.repeat.expiresAt;
+  const prefix = repeating ? state.repeat!.leader : state.pending;
+  let sequence = prefix ? `${prefix} ${key}` : key;
+  let result = match(bindings, sequence);
+  if (repeating && !result.binding?.repeat) return { state: idleSequence(), status: "handled" };
+  if (!result.binding && !result.pending && prefix) {
+    sequence = key;
+    result = match(bindings, sequence);
+  }
+  if (result.binding) {
+    const strokes = sequence.split(" ");
+    return {
+      status: "handled", binding: result.binding,
+      state: { pending: "", repeat: result.binding.repeat && strokes.length === 2
+        ? { leader: strokes[0]!, expiresAt: now + timeout } : null },
+    };
+  }
+  return result.pending
+    ? { state: { pending: sequence, repeat: null }, status: "pending" }
+    : { state: idleSequence(), status: prefix ? "handled" : "ignored" };
 }
