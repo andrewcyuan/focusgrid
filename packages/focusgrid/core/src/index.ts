@@ -18,12 +18,12 @@ export type {
   SplitNode,
   FocusGridControllerState,
 } from "./layout/types";
-export { createFocusGridController, FocusGridController } from "./controller";
+export { FocusGridController } from "./controller";
 export type {
-  CreateFocusGridControllerOptions,
+  FocusGridControllerProps,
   Listener,
   PaneDefaults,
-  FocusGridControllerApi,
+  ResizeHandleOptions,
 } from "./controller";
 
 export {
@@ -51,12 +51,11 @@ export {
   paneSwapDirections,
   paneCommandCapabilityKeys,
 } from "./layout/types";
+export { computeLayout } from "./layout/solver";
 export { collectPaneIds, findSplitNode } from "./layout/tree";
 export type {
   ResizePaneOptions,
   SplitPaneOptions,
-  UpdatePaneCommandGuardsOptions,
-  WrapRootInSplitOptions,
 } from "./layout/operations";
 export {
   deserializeFocusGridControllerState,
@@ -77,4 +76,4 @@ export {
   createDefaultPaneShortcuts,
   defaultPaneShortcutActions,
 } from "./keyboard/default-pane-keymap";
-export type { PaneShortcutId, PaneShortcutValues, KeyBinding } from "./keyboard/default-pane-keymap";
+export type { PaneShortcutId, PaneShortcutValues } from "./keyboard/default-pane-keymap";

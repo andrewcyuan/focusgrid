@@ -51,20 +51,6 @@ export function applyPaneCapabilityDefaults(
   return next;
 }
 
-export function patchPaneCapabilities(
-  pane: PaneNode,
-  patch: PaneCommandCapabilityInput,
-): PaneNode {
-  let next = pane;
-  for (const key of paneCommandCapabilityKeys) {
-    if (Object.prototype.hasOwnProperty.call(patch, key) && pane[key] !== patch[key]) {
-      if (next === pane) next = { ...pane };
-      next[key] = patch[key];
-    }
-  }
-  return next;
-}
-
 export function findPaneNode(
   state: FocusGridControllerState,
   paneId: PaneId | null,

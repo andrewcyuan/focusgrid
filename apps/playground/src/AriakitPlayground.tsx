@@ -7,7 +7,7 @@ import {
 import {
   FocusGrid,
   useFocusGridController,
-  type PaneComponentProps,
+  type Pane,
   createCompositeNavigationKeymap,
   useShortcuts,
   ShortcutScope,
@@ -103,11 +103,11 @@ export function AriakitPlayground() {
   );
 }
 
-function AriakitPane(props: PaneComponentProps) {
+function AriakitPane(props: Pane) {
   return <ShortcutScope style={{ display: "contents" }}><AriakitPaneContent {...props} /></ShortcutScope>;
 }
 
-function AriakitPaneContent({ active, paneId }: PaneComponentProps) {
+function AriakitPaneContent({ active, paneId }: Pane) {
   const composite = useCompositeStore({ orientation: "both" });
   const [action, setAction] = useState<{
     key: "Enter" | "Space";

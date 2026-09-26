@@ -1,4 +1,4 @@
-import type { KeyBinding, FocusGridController } from "@andrewcyuan/focusgrid/core";
+import type { ShortcutBinding, FocusGridController } from "@andrewcyuan/focusgrid/core";
 import type { ShortcutEngine, ShortcutRegistration } from "@andrewcyuan/shortcut-engine";
 import { RootResizeObserver } from "./resize-observer";
 import { ApplicationFocusManager } from "./application-focus-manager";
@@ -9,7 +9,7 @@ export type FocusGridDomFocusManagement = {
 };
 
 export type FocusGridDomControllerOptions = {
-  keymap?: readonly KeyBinding[];
+  keymap?: readonly ShortcutBinding[];
   engine: ShortcutEngine;
   scopeId: string;
   parentScopeId: string | null;
@@ -62,7 +62,7 @@ export class FocusGridDomController {
         target.hasAttribute("data-pane-id") &&
         (target.closest(".FocusgridFocusGrid") ?? this.rootEl) === this.rootEl,
       ) as HTMLElement | undefined;
-      if (pane?.dataset.paneId) this.controller.api.focus(pane.dataset.paneId);
+      if (pane?.dataset.paneId) this.controller.focus(pane.dataset.paneId);
     };
     this.rootEl.addEventListener("focusin", onFocusIn);
     const unsubscribe = this.controller.subscribe((next, previous) => {
@@ -98,7 +98,7 @@ export class FocusGridDomController {
     }
   }
 
-  setKeymap(bindings: readonly KeyBinding[]): void {
+  setKeymap(bindings: readonly ShortcutBinding[]): void {
     this.mountedResources?.bindings.update(bindings);
     this.options = { ...this.options, keymap: bindings };
   }

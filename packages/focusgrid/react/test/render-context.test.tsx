@@ -2,8 +2,8 @@ import { createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
-  createFocusGridController,
-  type KeyBinding,
+  FocusGridController,
+  type ShortcutBinding,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
 import {
@@ -11,7 +11,7 @@ import {
   ShortcutProvider,
   useControllerState,
   useFocusGridController,
-  type PaneRenderContext,
+  type Pane,
   type FocusGridFocusManagement,
 } from "../src/index";
 import type { FocusGridDomFocusManagement } from "../../dom/src";
@@ -46,8 +46,8 @@ function state(): FocusGridControllerState {
 
 describe("pane render context", () => {
   it("passes computed pane context to renderPane", () => {
-    const controller = createFocusGridController(state());
-    const contexts: PaneRenderContext[] = [];
+    const controller = new FocusGridController(state());
+    const contexts: Pane[] = [];
 
     renderToStaticMarkup(
       <ShortcutProvider>
@@ -78,7 +78,7 @@ describe("pane render context", () => {
   });
 
   it("creates a stable controller with useFocusGridController", () => {
-    let controllerFromHook: ReturnType<typeof createFocusGridController> | null =
+    let controllerFromHook: FocusGridController | null =
       null;
 
     function TestApp() {
@@ -99,11 +99,11 @@ describe("pane render context", () => {
 
     expect(markup).toContain("<span>left</span>");
     expect(markup).toContain("<span>right</span>");
-    expect(controllerFromHook?.getState().activePaneId).toBe("right");
+    expect(controllerFromHook?.state.activePaneId).toBe("right");
   });
 
   it("reads state from the supplied controller hook", () => {
-    const controller = createFocusGridController(state());
+    const controller = new FocusGridController(state());
     let activePaneId: string | null | undefined;
 
     function TestApp() {
@@ -117,7 +117,7 @@ describe("pane render context", () => {
   });
 
   it("notifies subscribers after controller api mutations", () => {
-    const controller = createFocusGridController(state());
+    const controller = new FocusGridController(state());
     const listenerCalls: Array<string | null> = [];
     const transitions: Array<[string | null, string | null]> = [];
     const unsubscribe = controller.subscribe((nextState, previousState) => {
@@ -125,17 +125,17 @@ describe("pane render context", () => {
       transitions.push([previousState.activePaneId, nextState.activePaneId]);
     });
 
-    controller.api.focus("left");
+    controller.focus("left");
     unsubscribe();
-    controller.api.focus("right");
+    controller.focus("right");
 
     expect(listenerCalls).toEqual(["left"]);
     expect(transitions).toEqual([["right", "left"]]);
   });
 
   it("accepts a callback keymap inside the shared provider", () => {
-    const controller = createFocusGridController(state());
-    const keymap: KeyBinding[] = [
+    const controller = new FocusGridController(state());
+    const keymap: ShortcutBinding[] = [
       {
         sequence: "Ctrl-K",
         action: () => {},
@@ -157,7 +157,7 @@ describe("pane render context", () => {
   });
 
   it("accepts exported application focus options without server side effects", () => {
-    const controller = createFocusGridController(state());
+    const controller = new FocusGridController(state());
     const scopeRef = createRef<HTMLElement>();
     const focusManagement: FocusGridFocusManagement = {
       mode: "application",

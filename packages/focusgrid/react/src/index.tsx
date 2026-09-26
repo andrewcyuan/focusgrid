@@ -4,9 +4,7 @@ export type { PaneCloseEvent, PaneLayoutChangeEvent } from "./lifecycle";
 
 export { PaneView } from "./PaneView";
 export type {
-  PaneComponent,
-  PaneComponentProps,
-  PaneRenderContext,
+  Pane,
   PaneViewProps,
 } from "./PaneView";
 

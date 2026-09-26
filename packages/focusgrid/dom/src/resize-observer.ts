@@ -32,6 +32,6 @@ export class RootResizeObserver {
   }
 
   private dispatchSize(width: number, height: number): void {
-    this.controller.api.setContainerSize(Math.floor(width), Math.floor(height));
+    this.controller.setContainerSize(Math.floor(width), Math.floor(height));
   }
 }

@@ -1,6 +1,5 @@
 import { ShortcutScope } from "./shortcuts";
 import type {
-  ComponentType,
   CSSProperties,
   PointerEvent,
   ReactNode,
@@ -13,20 +12,17 @@ import type {
 } from "@andrewcyuan/focusgrid/core";
 import { shouldFocusPaneShellForPointer } from "@andrewcyuan/focusgrid/dom";
 
-export type PaneRenderContext = {
+export type Pane = {
   paneId: PaneId;
   rect: Rect;
   active: boolean;
   controller: FocusGridController;
 };
 
-export type PaneComponentProps = PaneRenderContext;
-export type PaneComponent = ComponentType<PaneComponentProps>;
-
 export type PaneViewProps = {
   controller: FocusGridController;
   pane: ComputedPane;
-  renderPane: (ctx: PaneRenderContext) => ReactNode;
+  renderPane: (ctx: Pane) => ReactNode;
 };
 
 export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
@@ -45,7 +41,7 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
       tabIndex={-1}
       style={style}
       onPointerDown={(event) => {
-        controller.api.focus(pane.paneId);
+        controller.focus(pane.paneId);
         focusPaneShellForNonInteractivePointer(event);
       }}
     >

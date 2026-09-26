@@ -3,7 +3,7 @@ import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
 import {
   FocusGrid,
   useFocusGridController,
-  type PaneComponentProps,
+  type Pane,
   createCompositeNavigationKeymap,
   useShortcuts,
   ShortcutScope,
@@ -87,11 +87,11 @@ export function EmailPlayground() {
         (thread) => thread.mailboxId === nextMailboxId,
       );
 
-      controller.api.remove("email-reader");
+      controller.remove("email-reader");
       setReaderThreadId(null);
       setMailboxId(nextMailboxId);
       setActiveThreadId(firstThread?.id ?? "");
-      controller.api.focus("email-inbox");
+      controller.focus("email-inbox");
     },
     [controller],
   );
@@ -101,12 +101,12 @@ export function EmailPlayground() {
       setActiveThreadId(threadId);
       setReaderThreadId(threadId);
 
-      if (findPaneNode(controller.getState(), "email-reader")) {
-        controller.api.focus("email-reader");
+      if (findPaneNode(controller.state, "email-reader")) {
+        controller.focus("email-reader");
         return;
       }
 
-      controller.api.wrapRootInSplit({
+      controller.split(findPaneNode(controller.state, "email-inbox")!.id, {
         side: "right",
         newPaneId: "email-reader",
         minWidth: 300,
@@ -118,9 +118,9 @@ export function EmailPlayground() {
   );
 
   const closeReader = useCallback(() => {
-    controller.api.remove("email-reader");
+    controller.remove("email-reader");
     setReaderThreadId(null);
-    controller.api.focus("email-inbox");
+    controller.focus("email-inbox");
   }, [controller]);
 
   return (
@@ -188,7 +188,7 @@ function EmailTopBar({ mailboxId }: { mailboxId: MockMailbox["id"] }) {
   );
 }
 
-interface MailboxSidebarProps extends PaneComponentProps {
+interface MailboxSidebarProps extends Pane {
   mailboxId: MockMailbox["id"];
   onSelectMailbox: (mailboxId: MockMailbox["id"]) => void;
 }
@@ -248,7 +248,7 @@ function MailboxSidebarContent({
   );
 }
 
-interface ThreadListProps extends PaneComponentProps {
+interface ThreadListProps extends Pane {
   activeThreadId: string;
   mailbox: MockMailbox;
   threads: readonly MockThread[];
@@ -320,7 +320,7 @@ function ThreadListContent({
   );
 }
 
-interface ReaderProps extends PaneComponentProps {
+interface ReaderProps extends Pane {
   thread: MockThread;
   message: MockMessage;
   onBack: () => void;

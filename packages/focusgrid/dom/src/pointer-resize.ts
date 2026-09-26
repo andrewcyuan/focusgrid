@@ -53,7 +53,7 @@ export class PointerResizeController {
     const ownerDocument = this.resolveOwnerDocument(event, captureTarget);
     const pointerCaptureTarget = this.resolveCaptureTarget(captureTarget);
 
-    const split = findSplitNode(this.controller.getState().root, handle.splitId);
+    const split = findSplitNode(this.controller.state.root, handle.splitId);
     if (!split) return;
 
     this.state = {
@@ -80,7 +80,7 @@ export class PointerResizeController {
       return;
     }
 
-    if (!findSplitNode(this.controller.getState().root, this.state.splitId)) {
+    if (!findSplitNode(this.controller.state.root, this.state.splitId)) {
       return;
     }
 
@@ -143,11 +143,11 @@ export class PointerResizeController {
       return;
     }
 
-    if (!findSplitNode(this.controller.getState().root, this.state.splitId)) {
+    if (!findSplitNode(this.controller.state.root, this.state.splitId)) {
       return;
     }
 
-    this.controller.api.resizeHandle(this.state.splitId, {
+    this.controller.resizeHandle(this.state.splitId, {
       index: this.state.index,
       deltaPx: this.state.pendingDeltaPx,
       snapshotSizes: this.state.startSizes,

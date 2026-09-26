@@ -76,8 +76,8 @@ export class ApplicationFocusManager {
       this.rememberedFocus.set(paneId, target);
     }
 
-    if (this.controller.getState().activePaneId !== paneId) {
-      this.controller.api.focus(paneId);
+    if (this.controller.state.activePaneId !== paneId) {
+      this.controller.focus(paneId);
     }
   };
 
@@ -155,7 +155,7 @@ export class ApplicationFocusManager {
   }
 
   private restoreActivePane(): void {
-    const activePaneId = this.controller.getState().activePaneId;
+    const activePaneId = this.controller.state.activePaneId;
     if (!activePaneId) {
       return;
     }

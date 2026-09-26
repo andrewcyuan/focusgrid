@@ -6,7 +6,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import type { FocusGridController, KeyBinding } from "@andrewcyuan/focusgrid/core";
+import type { FocusGridController, ShortcutBinding } from "@andrewcyuan/focusgrid/core";
 import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useControllerLayout } from "./hooks";
 import {
@@ -17,7 +17,7 @@ import {
 import { ShortcutScopeContext, useShortcutEngine } from "./shortcuts";
 import { PaneView } from "./PaneView";
 import { ResizeHandle } from "./ResizeHandle";
-import type { PaneRenderContext } from "./PaneView";
+import type { Pane } from "./PaneView";
 
 export type FocusGridFocusManagement = {
   mode: "application";
@@ -26,8 +26,8 @@ export type FocusGridFocusManagement = {
 
 export type FocusGridProps = {
   controller: FocusGridController;
-  keymap?: readonly KeyBinding[];
-  renderPane: (ctx: PaneRenderContext) => ReactNode;
+  keymap?: readonly ShortcutBinding[];
+  renderPane: (ctx: Pane) => ReactNode;
   className?: string;
   onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
   onPaneClose?: (event: PaneCloseEvent) => void;

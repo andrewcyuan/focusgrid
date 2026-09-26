@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createFocusGridController,
+  FocusGridController,
   type ComputedHandle,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
@@ -116,7 +116,7 @@ describe("FocusGridDomController lifecycle", () => {
     }) as unknown as typeof ResizeObserver;
     vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 
-    const controller = createFocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState());
     const root = {
       tabIndex: -1,
       getAttribute: () => null,
@@ -168,8 +168,8 @@ describe("shared engine grid boundaries", () => {
   it("does not reset another grid's pending sequence when inactive pane state changes", () => {
     vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
     const engine = createShortcutEngine();
-    const active = createFocusGridController(controllerState());
-    const inactive = createFocusGridController(controllerState());
+    const active = new FocusGridController(controllerState());
+    const inactive = new FocusGridController(controllerState());
     const action = vi.fn();
     const first = new FocusGridDomController(active, root(), {
       engine, scopeId: "active", parentScopeId: null,
@@ -182,11 +182,11 @@ describe("shared engine grid boundaries", () => {
     engine.setActiveScope("active");
     const key = () => ({ key: "g", preventDefault() {}, stopPropagation() {} }) as KeyboardEvent;
     engine.handle(key());
-    inactive.api.focus("right");
+    inactive.focus("right");
     engine.handle(key());
     expect(action).toHaveBeenCalledOnce();
     engine.handle(key());
-    active.api.focus("right");
+    active.focus("right");
     expect(engine.handle(key())).toBe("pending");
     expect(action).toHaveBeenCalledOnce();
     first.destroy(); second.destroy();
@@ -195,7 +195,7 @@ describe("shared engine grid boundaries", () => {
   it("keeps updated bindings across native mount cycles", () => {
     vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
     const engine = createShortcutEngine(), action = vi.fn();
-    const dom = new FocusGridDomController(createFocusGridController(controllerState()), root(), {
+    const dom = new FocusGridDomController(new FocusGridController(controllerState()), root(), {
       engine, scopeId: "grid", parentScopeId: null,
     });
     dom.mount();
@@ -210,8 +210,8 @@ describe("shared engine grid boundaries", () => {
 
 describe("PointerResizeController batching", () => {
   it("does not enter drag state for a missing split", () => {
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const controller = new FocusGridController(controllerState());
+    const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const missing = { ...resizeHandle(), splitId: "missing" };
 
@@ -228,8 +228,8 @@ describe("PointerResizeController batching", () => {
   it("coalesces pointer moves using the latest absolute drag delta", () => {
     vi.useFakeTimers();
 
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const controller = new FocusGridController(controllerState());
+    const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const handle = resizeHandle();
 
@@ -253,8 +253,8 @@ describe("PointerResizeController batching", () => {
   it("flushes the latest pending resize when the drag ends before the frame runs", () => {
     vi.useFakeTimers();
 
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const controller = new FocusGridController(controllerState());
+    const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const handle = resizeHandle();
 
@@ -275,7 +275,7 @@ describe("PointerResizeController batching", () => {
   });
 
   it("registers document-level drag listeners when a drag starts", () => {
-    const controller = createFocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState());
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -303,8 +303,8 @@ describe("PointerResizeController batching", () => {
   it("continues resizing from document pointer moves after leaving the handle", () => {
     vi.useFakeTimers();
 
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const controller = new FocusGridController(controllerState());
+    const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -331,8 +331,8 @@ describe("PointerResizeController batching", () => {
   it("flushes pending resize, removes listeners, and releases capture on pointer up", () => {
     vi.useFakeTimers();
 
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const controller = new FocusGridController(controllerState());
+    const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -375,8 +375,8 @@ describe("PointerResizeController batching", () => {
   it("cleans up pointer cancel without leaving a pending frame", () => {
     vi.useFakeTimers();
 
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const controller = new FocusGridController(controllerState());
+    const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -402,8 +402,8 @@ describe("PointerResizeController batching", () => {
   it("keeps document listeners active when pointer capture is unavailable", () => {
     vi.useFakeTimers();
 
-    const controller = createFocusGridController(controllerState());
-    const resize = vi.spyOn(controller.api, "resizeHandle");
+    const controller = new FocusGridController(controllerState());
+    const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
     const target = { ownerDocument } as Element;

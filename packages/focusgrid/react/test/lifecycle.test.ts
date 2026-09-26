@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  createFocusGridController,
+  FocusGridController,
   type ComputedPane,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
@@ -30,8 +30,8 @@ describe("pane lifecycle diff", () => {
       activePaneId: "editor",
       container: { width: 100, height: 100 },
     };
-    const firstController = createFocusGridController(controllerState);
-    const secondController = createFocusGridController(controllerState);
+    const firstController = new FocusGridController(controllerState);
+    const secondController = new FocusGridController(controllerState);
     const first = advancePaneLifecycle(
       null,
       firstController,

@@ -24,10 +24,9 @@ import type {
   PaneSwapDirection,
   PaneNode,
   PaneCommandCapabilityInput,
-  SplitNode,
   FocusGridControllerState,
 } from "./types";
-import { patchPaneCapabilities } from "../pane-guards";
+import { applyPaneCapabilityDefaults } from "../pane-guards";
 
 export function focusPane(
   state: FocusGridControllerState,
@@ -73,15 +72,8 @@ export function focusPaneInDirection(
 export type SplitPaneOptions = PaneCommandCapabilityInput & {
   side: PaneSplitSide;
   newPaneId?: PaneId;
-  minWidth?: number;
-  minHeight?: number;
-  data?: unknown;
-  preserveActivePane?: boolean;
-};
-
-export type WrapRootInSplitOptions = PaneCommandCapabilityInput & {
-  side: PaneSplitSide;
-  newPaneId?: PaneId;
+  newPaneNodeId?: NodeId;
+  splitId?: NodeId;
   minWidth?: number;
   minHeight?: number;
   data?: unknown;
@@ -99,22 +91,27 @@ export type ResizePaneOptions = {
   deltaPx: number;
 };
 
-export type UpdatePaneCommandGuardsOptions = PaneCommandCapabilityInput;
-
 export function splitPane(
   state: FocusGridControllerState,
-  paneId: PaneId,
+  paneNodeId: NodeId,
   options: SplitPaneOptions & ResolvedNewPaneIds
 ): FocusGridControllerState {
   const newPaneId = options.newPaneId;
   const direction = splitSideToDirection(options.side);
   const index = buildLayoutIndex(state.root);
 
-  if (index.paneNodeByPaneId.has(newPaneId)) {
+  const target = index.nodeById.get(paneNodeId);
+  if (
+    target?.kind !== "pane" ||
+    index.paneNodeByPaneId.has(newPaneId) ||
+    index.nodeById.has(options.newPaneNodeId) ||
+    index.nodeById.has(options.splitId) ||
+    options.newPaneNodeId === options.splitId
+  ) {
     return state;
   }
 
-  const nextRoot = updatePane(state.root, paneId, (node) => {
+  const nextRoot = updatePane(state.root, target.paneId, (node) => {
     const originalPane = node;
 
     const newPane = createPaneNode(options, {
@@ -138,40 +135,6 @@ export function splitPane(
     return state;
   }
 
-  const activePaneId = options.preserveActivePane
-    ? state.activePaneId
-    : newPaneId;
-
-  return {
-    ...state,
-    root: activePaneId ? markFocusedPanePath(nextRoot, activePaneId) : nextRoot,
-    activePaneId,
-  };
-}
-
-export function wrapRootInSplit(
-  state: FocusGridControllerState,
-  options: WrapRootInSplitOptions & ResolvedNewPaneIds
-): FocusGridControllerState {
-  const newPaneId = options.newPaneId;
-  const index = buildLayoutIndex(state.root);
-
-  if (index.paneNodeByPaneId.has(newPaneId)) {
-    return state;
-  }
-
-  const newPane = createPaneNode(options);
-  const direction = splitSideToDirection(options.side);
-  const nextRoot: SplitNode = {
-    kind: "split",
-    id: options.splitId,
-    direction,
-    children:
-      options.side === "left" || options.side === "up"
-        ? [newPane, state.root]
-        : [state.root, newPane],
-    sizes: [0.5, 0.5],
-  };
   const activePaneId = options.preserveActivePane
     ? state.activePaneId
     : newPaneId;
@@ -208,17 +171,6 @@ export function removePane(
     root: activePaneId ? markFocusedPanePath(nextRoot, activePaneId) : nextRoot,
     activePaneId,
   };
-}
-
-export function updatePaneCommandGuards(
-  state: FocusGridControllerState,
-  paneId: PaneId,
-  options: UpdatePaneCommandGuardsOptions
-): FocusGridControllerState {
-  const nextRoot = updatePane(state.root, paneId, (pane) =>
-    patchPaneCapabilities(pane, options),
-  );
-  return nextRoot === state.root ? state : { ...state, root: nextRoot };
 }
 
 export function swapPanes(
@@ -375,17 +327,19 @@ function splitSideToDirection(side: PaneSplitSide): Direction {
 }
 
 function createPaneNode(
-  options: (SplitPaneOptions | WrapRootInSplitOptions) & ResolvedNewPaneIds,
+  options: SplitPaneOptions & ResolvedNewPaneIds,
   defaults: Pick<PaneNode, "minWidth" | "minHeight"> = {},
 ): PaneNode {
-  return patchPaneCapabilities(
+  const minWidth = options.minWidth ?? defaults.minWidth;
+  const minHeight = options.minHeight ?? defaults.minHeight;
+  return applyPaneCapabilityDefaults(
     {
       kind: "pane",
       id: options.newPaneNodeId,
       paneId: options.newPaneId,
-      minWidth: options.minWidth ?? defaults.minWidth,
-      minHeight: options.minHeight ?? defaults.minHeight,
-      data: options.data,
+      ...(minWidth === undefined ? {} : { minWidth }),
+      ...(minHeight === undefined ? {} : { minHeight }),
+      ...(options.data === undefined ? {} : { data: options.data }),
     },
     options,
   );

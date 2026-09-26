@@ -6,22 +6,16 @@ import {
   resizePane,
   splitPane,
   swapPanes,
-  updatePaneCommandGuards,
-  wrapRootInSplit,
   type ResizePaneOptions,
   type SplitPaneOptions,
-  type UpdatePaneCommandGuardsOptions,
-  type WrapRootInSplitOptions,
 } from "./layout/operations";
-import { computeLayout } from "./layout/solver";
 import type {
-  ComputedLayout,
   PaneNode,
   FocusGridControllerState,
 } from "./layout/types";
 import { paneCommandCapabilityKeys, type NodeId, type PaneId } from "./layout/types";
 import type { PaneCommandCapabilityInput } from "./layout/types";
-import { findPaneNode, transformLayout, updatePane } from "./layout/tree";
+import { buildLayoutIndex, transformLayout, updatePane } from "./layout/tree";
 import { assertValidFocusGridControllerState } from "./validation";
 import { applyPaneCapabilityDefaults } from "./pane-guards";
 
@@ -35,25 +29,9 @@ export type PaneDefaults = PaneCommandCapabilityInput & {
   minHeight?: number;
 };
 
-export type CreateFocusGridControllerOptions = {
+export type FocusGridControllerProps = FocusGridControllerState & {
   paneDefaults?: PaneDefaults;
   directionalFocusOverflow?: boolean;
-};
-
-export type FocusGridControllerApi = {
-  split(paneId: PaneId, options: SplitPaneOptions): PaneId | null;
-  wrapRootInSplit(options: WrapRootInSplitOptions): PaneId | null;
-  remove(paneId: PaneId): boolean;
-  swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean;
-  resize(paneId: PaneId, options: ResizePaneOptions): boolean;
-  resizeHandle(splitId: NodeId, options: ResizeHandleOptions): boolean;
-  focus(paneId: PaneId): boolean;
-  updatePaneCommandGuards(
-    paneId: PaneId,
-    options: UpdatePaneCommandGuardsOptions,
-  ): boolean;
-  setPaneData(paneId: PaneId, data: unknown): boolean;
-  setContainerSize(width: number, height: number): boolean;
 };
 
 export type ResizeHandleOptions = {
@@ -63,103 +41,88 @@ export type ResizeHandleOptions = {
 };
 
 export class FocusGridController {
-  readonly api: FocusGridControllerApi;
   readonly directionalFocusOverflow: boolean;
-  private state: FocusGridControllerState;
+  private currentState: FocusGridControllerState;
   private readonly paneDefaults: PaneDefaults;
   private listeners = new Set<Listener>();
 
-  constructor(initialState: FocusGridControllerState, options: CreateFocusGridControllerOptions = {}) {
-    assertValidFocusGridControllerState(initialState);
-    this.paneDefaults = options.paneDefaults ?? {};
-    this.directionalFocusOverflow = options.directionalFocusOverflow ?? false;
-    this.state = applyPaneDefaultsToState(initialState, this.paneDefaults);
-    this.api = {
-      split: (paneId, splitOptions) => {
-        const newPaneId = splitOptions.newPaneId ?? createId("pane");
-        const next = splitPane(this.state, paneId, {
-          ...this.paneDefaults,
-          ...splitOptions,
-          newPaneId,
-          newPaneNodeId: createId("node"),
-          splitId: createId("split"),
-        });
-
-        return this.commit(next) ? newPaneId : null;
-      },
-      wrapRootInSplit: (wrapOptions) => {
-        const newPaneId = wrapOptions.newPaneId ?? createId("pane");
-        const next = wrapRootInSplit(this.state, {
-          ...this.paneDefaults,
-          ...wrapOptions,
-          newPaneId,
-          newPaneNodeId: createId("node"),
-          splitId: createId("split"),
-        });
-
-        return this.commit(next) ? newPaneId : null;
-      },
-      remove: (paneId) => this.commit(removePane(this.state, paneId)),
-      swap: (firstPaneId, secondPaneId) =>
-        this.commit(swapPanes(this.state, firstPaneId, secondPaneId)),
-      resize: (paneId, resizeOptions) =>
-        this.commit(resizePane(this.state, paneId, resizeOptions)),
-      resizeHandle: (splitId, resizeOptions) =>
-        this.commit(
-          resizeHandleOperation(
-            this.state,
-            splitId,
-            resizeOptions.index,
-            resizeOptions.deltaPx,
-            resizeOptions.snapshotSizes,
-          ),
-        ),
-      focus: (paneId) => this.commit(focusPane(this.state, paneId)),
-      updatePaneCommandGuards: (paneId, capabilityOptions) =>
-        this.commit(
-          updatePaneCommandGuards(this.state, paneId, capabilityOptions),
-        ),
-      setPaneData: (paneId, data) =>
-        this.commit(setPaneData(this.state, paneId, data)),
-      setContainerSize: (width, height) => {
-        if (
-          this.state.container.width === width &&
-          this.state.container.height === height
-        ) {
-          return false;
-        }
-
-        return this.commit({
-          ...this.state,
-          container: {
-            width,
-            height,
-          },
-        });
-      },
-    };
+  constructor({
+    paneDefaults = {},
+    directionalFocusOverflow = false,
+    ...state
+  }: FocusGridControllerProps) {
+    assertValidFocusGridControllerState(state);
+    this.paneDefaults = paneDefaults;
+    this.directionalFocusOverflow = directionalFocusOverflow;
+    this.currentState = applyPaneDefaultsToState(state, paneDefaults);
   }
 
-  getState(): FocusGridControllerState {
-    return this.state;
+  split(paneNodeId: NodeId, props: SplitPaneOptions): PaneId | null {
+    const pane = buildLayoutIndex(this.currentState.root).nodeById.get(paneNodeId);
+    if (pane?.kind !== "pane") return null;
+    const newPaneId = props.newPaneId ?? createId("pane");
+    const next = splitPane(this.currentState, paneNodeId, {
+      ...this.paneDefaults,
+      ...props,
+      newPaneId,
+      newPaneNodeId: props.newPaneNodeId ?? createId("node"),
+      splitId: props.splitId ?? createId("split"),
+    });
+    return this.commit(next) ? newPaneId : null;
   }
 
-  getComputedLayout(): ComputedLayout {
-    return computeLayout(this.state);
+  remove(paneId: PaneId): boolean {
+    return this.commit(removePane(this.currentState, paneId));
   }
 
-  getPaneData<T = unknown>(paneId: PaneId): T | undefined {
-    const pane = findPaneNode(this.state.root, paneId);
-    return pane?.data as T | undefined;
+  swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean {
+    return this.commit(swapPanes(this.currentState, firstPaneId, secondPaneId));
+  }
+
+  resize(paneId: PaneId, props: ResizePaneOptions): boolean {
+    return this.commit(resizePane(this.currentState, paneId, props));
+  }
+
+  resizeHandle(splitId: NodeId, props: ResizeHandleOptions): boolean {
+    return this.commit(
+      resizeHandleOperation(this.currentState, splitId, props.index, props.deltaPx, props.snapshotSizes),
+    );
+  }
+
+  focus(paneId: PaneId): boolean {
+    return this.commit(focusPane(this.currentState, paneId));
+  }
+
+  updatePane(
+    paneId: PaneId,
+    patch: Partial<Omit<PaneNode, "kind" | "id" | "paneId">>,
+  ): boolean {
+    const root = updatePane(this.currentState.root, paneId, (pane) =>
+      Object.entries(patch).every(([key, value]) => Object.is(pane[key as keyof PaneNode], value))
+        ? pane
+        : Object.fromEntries(
+            Object.entries({ ...pane, ...patch }).filter(([, value]) => value !== undefined),
+          ) as PaneNode,
+    );
+    return this.commit(root === this.currentState.root ? this.currentState : { ...this.currentState, root });
+  }
+
+  setContainerSize(width: number, height: number): boolean {
+    if (this.currentState.container.width === width && this.currentState.container.height === height) return false;
+    return this.commit({ ...this.currentState, container: { width, height } });
+  }
+
+  get state(): FocusGridControllerState {
+    return this.currentState;
   }
 
   private commit(next: FocusGridControllerState): boolean {
-    if (next === this.state) {
+    if (next === this.currentState) {
       return false;
     }
 
-    const previous = this.state;
-    this.state = next;
+    const previous = this.currentState;
+    this.currentState = next;
 
     for (const listener of this.listeners) {
       listener(next, previous);
@@ -175,13 +138,6 @@ export class FocusGridController {
       this.listeners.delete(listener);
     };
   }
-}
-
-export function createFocusGridController(
-  initialState: FocusGridControllerState,
-  options?: CreateFocusGridControllerOptions,
-): FocusGridController {
-  return new FocusGridController(initialState, options);
 }
 
 function applyPaneDefaultsToState(
@@ -226,18 +182,7 @@ function applyPaneDefaultsToPane(
 
   return {
     ...paneWithCapabilities,
-    minWidth,
-    minHeight,
+    ...(minWidth === undefined ? {} : { minWidth }),
+    ...(minHeight === undefined ? {} : { minHeight }),
   };
-}
-
-function setPaneData(
-  state: FocusGridControllerState,
-  paneId: PaneId,
-  data: unknown,
-): FocusGridControllerState {
-  const root = updatePane(state.root, paneId, (pane) =>
-    Object.is(pane.data, data) ? pane : { ...pane, data },
-  );
-  return root === state.root ? state : { ...state, root };
 }

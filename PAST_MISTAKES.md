@@ -86,3 +86,7 @@ Reusing the default Vite port let browser tests run against an unrelated local a
 ## Child Layout Effects Cannot Read Ancestor Refs Reliably
 
 Moving FocusGrid DOM setup into a layout effect read the application's ancestor ref before React attached it. Keep setup that needs ancestor refs in a passive effect; test initial focus and StrictMode mounts in a browser.
+
+## Optional Pane Fields Must Be Absent When Cleared
+
+Pane creation wrote undefined minimum sizes, which the state validator rejected. When creating defaults or clearing partial pane fields, omit undefined optional fields and validate the resulting state in a regression test.

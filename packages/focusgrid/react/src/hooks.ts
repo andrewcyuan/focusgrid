@@ -1,23 +1,19 @@
 import { useRef, useSyncExternalStore } from "react";
 import {
-  createFocusGridController,
+  FocusGridController,
+  computeLayout,
   type ComputedLayout,
-  type CreateFocusGridControllerOptions,
-  type FocusGridController,
+  type FocusGridControllerProps,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
 
 export function useFocusGridController(
-  createInitialState: () => FocusGridControllerState,
-  options?: CreateFocusGridControllerOptions,
+  createProps: () => FocusGridControllerProps,
 ): FocusGridController {
   const controllerRef = useRef<FocusGridController | null>(null);
 
   if (!controllerRef.current) {
-    controllerRef.current = createFocusGridController(
-      createInitialState(),
-      options,
-    );
+    controllerRef.current = new FocusGridController(createProps());
   }
 
   return controllerRef.current;
@@ -28,14 +24,13 @@ export function useControllerState(
 ): FocusGridControllerState {
   return useSyncExternalStore(
     controller.subscribe.bind(controller),
-    controller.getState.bind(controller),
-    controller.getState.bind(controller),
+    () => controller.state,
+    () => controller.state,
   );
 }
 
 export function useControllerLayout(
   controller: FocusGridController,
 ): ComputedLayout {
-  useControllerState(controller);
-  return controller.getComputedLayout();
+  return computeLayout(useControllerState(controller));
 }

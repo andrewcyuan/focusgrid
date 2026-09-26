@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createFocusGridController,
+  FocusGridController,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
 import {
@@ -222,7 +222,7 @@ function fixture() {
   root.append(left, right);
   scope.append(header, root);
   document.body.append(scope);
-  const controller = createFocusGridController(controllerState());
+  const controller = new FocusGridController(controllerState());
   const manager = new ApplicationFocusManager(
     controller,
     root as unknown as HTMLElement,
@@ -292,13 +292,13 @@ describe("ApplicationFocusManager", () => {
     expect(f.document.activeElement).toBe(f.leftFirst);
 
     f.leftSecond.focus();
-    f.controller.api.focus("right");
+    f.controller.focus("right");
     expect(f.document.activeElement).toBe(f.rightFirst);
     f.rightSecond.focus();
 
-    f.controller.api.focus("left");
+    f.controller.focus("left");
     expect(f.document.activeElement).toBe(f.leftSecond);
-    f.controller.api.focus("right");
+    f.controller.focus("right");
     expect(f.document.activeElement).toBe(f.rightSecond);
   });
 
@@ -306,7 +306,7 @@ describe("ApplicationFocusManager", () => {
     const f = fixture();
     f.manager.mount();
     f.rightSecond.focus();
-    expect(f.controller.getState().activePaneId).toBe("right");
+    expect(f.controller.state.activePaneId).toBe("right");
   });
 
   it("drops disconnected memory and falls back to the first tabbable descendant", () => {
@@ -316,8 +316,8 @@ describe("ApplicationFocusManager", () => {
     f.leftSecond.focus();
     f.leftSecond.remove();
     f.document.activeElement = f.document.body;
-    f.controller.api.focus("right");
-    f.controller.api.focus("left");
+    f.controller.focus("right");
+    f.controller.focus("left");
     expect(f.document.activeElement).toBe(f.leftFirst);
   });
 
@@ -351,7 +351,7 @@ describe("ApplicationFocusManager", () => {
     f.scope.append(input);
     f.manager.mount();
     input.focus();
-    f.controller.api.focus("right");
+    f.controller.focus("right");
     expect(f.document.activeElement).toBe(input);
   });
 

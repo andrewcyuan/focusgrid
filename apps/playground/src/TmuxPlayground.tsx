@@ -11,14 +11,13 @@ import {
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
 import {
-  type PaneComponent,
-  type PaneComponentProps,
   FocusGrid,
   useControllerState,
   useFocusGridController,
-  type PaneRenderContext,
+  type Pane,
 } from "@andrewcyuan/focusgrid/react";
 import {
+  type ComponentType,
   useEffect,
   useCallback,
   useMemo,
@@ -61,7 +60,7 @@ function createInitialState(): FocusGridControllerState {
   };
 }
 
-const paneComponents: Record<string, PaneComponent> = {
+const paneComponents: Record<string, ComponentType<Pane>> = {
   alpha: TextPane,
   beta: TextPane,
 };
@@ -188,7 +187,7 @@ function Toolbar({
         return;
       }
 
-      controller.api.updatePaneCommandGuards(activePaneId, {
+      controller.updatePane(activePaneId, {
         [key]: !(activePane[key] ?? true),
       });
     },
@@ -204,13 +203,14 @@ function Toolbar({
             <button type="button" onClick={onToggleSidebar}>
               {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
             </button>
-            <div className="ToolbarButtonGroup" aria-label="Wrap root in split">
+            <div className="ToolbarButtonGroup" aria-label="Split active pane">
               {paneSplitSides.map((side) => (
                 <button
+                  disabled={!activePane}
                   key={side}
                   type="button"
                   onClick={() => {
-                    controller.api.wrapRootInSplit({
+                    controller.split(activePane!.id, {
                       side,
                       minWidth:
                         side === "left" || side === "right" ? 180 : undefined,
@@ -220,7 +220,7 @@ function Toolbar({
                     });
                   }}
                 >
-                  Root {side}
+                  Split {side}
                 </button>
               ))}
             </div>
@@ -248,7 +248,7 @@ function Toolbar({
                   return;
                 }
 
-                controller.api.swap(activePaneId, swapTargetId);
+                controller.swap(activePaneId, swapTargetId);
               }}
             >
               Swap
@@ -300,13 +300,13 @@ const paneCapabilityToggles: { key: PaneCommandCapabilityKey; label: string }[] 
   { key: "canFocus", label: "Can focus" },
 ];
 
-function PaneSlot({ ctx }: { ctx: PaneRenderContext }) {
+function PaneSlot({ ctx }: { ctx: Pane }) {
   const Component = paneComponents[ctx.paneId] ?? TextPane;
 
   return <Component {...ctx} />;
 }
 
-function TextPane({ paneId, active, controller }: PaneComponentProps) {
+function TextPane({ paneId, active, controller }: Pane) {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -327,7 +327,7 @@ function TextPane({ paneId, active, controller }: PaneComponentProps) {
         ref={inputRef}
         defaultValue={`This is pane "${paneId}". Focus this textbox to focus its pane.`}
         onFocus={() => {
-          controller.api.focus(paneId);
+          controller.focus(paneId);
         }}
       />
     </section>
