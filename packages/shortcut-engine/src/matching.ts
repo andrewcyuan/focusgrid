@@ -22,8 +22,7 @@ export function transitionSequence(
   const prefix = repeating ? state.repeat!.leader : state.pending;
   let sequence = prefix ? `${prefix} ${key}` : key;
   let result = match(bindings, sequence);
-  if (repeating && !result.binding?.repeat) return { state: idleSequence(), status: "handled" };
-  if (!result.binding && !result.pending && prefix) {
+  if ((repeating && !result.binding?.repeat) || (!result.binding && !result.pending && prefix)) {
     sequence = key;
     result = match(bindings, sequence);
   }

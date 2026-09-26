@@ -114,3 +114,7 @@ Removing `controller.state` left rendering, pointer resizing, and playground com
 ## Recursive Rendering Must Preserve Pane Identity
 
 Changing React parent boundaries when a split is added or removed can remount editors and lose their uncontrolled values and focus. Keep recursive traversal separate from stable keyed pane siblings, and test the original DOM element, selection, text, and focus through split, swap, and collapse.
+
+## Repeat Windows Must Allow New Commands
+
+Repeat mode swallowed new prefixes and direct shortcuts for 500 ms after a resize command. When a key is not a repeat follower, try it as a new shortcut; test rapid repeat-to-prefix and repeat-to-direct transitions with textarea contents intact.

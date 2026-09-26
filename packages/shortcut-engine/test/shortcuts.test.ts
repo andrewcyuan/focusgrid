@@ -93,3 +93,34 @@ it("supports contributors mounting before scopes, rejects cycles, and makes clea
   removeRoot(); removeChild(); removeChild(); registration.dispose(); registration.dispose();
   expect(engine.handle(key("x"))).toBe("ignored");
 });
+
+it("starts a new prefix and runs direct bindings during the repeat window", () => {
+  const engine = setup(), resize = vi.fn(), split = vi.fn(), focus = vi.fn();
+  engine.registerBindings("root", [
+    binding("ctrl-b l", resize, { repeat: true }),
+    binding("ctrl-b %", split),
+    binding("ctrl-h", focus),
+  ]);
+  engine.handle(key("b", { ctrlKey: true }));
+  engine.handle(key("l"));
+  expect(engine.handle(key("b", { ctrlKey: true }))).toBe("pending");
+  engine.handle(key("5", { shiftKey: true }));
+  expect(split).toHaveBeenCalledOnce();
+  engine.handle(key("b", { ctrlKey: true }));
+  engine.handle(key("l"));
+  engine.handle(key("h", { ctrlKey: true }));
+  expect(focus).toHaveBeenCalledOnce();
+  expect(resize).toHaveBeenCalledTimes(2);
+});
+
+it("keeps an initial prefix pending regardless of the repeat timeout", () => {
+  let now = 0;
+  const engine = createShortcutEngine({ now: () => now }), action = vi.fn();
+  engine.registerScope({ id: "root", parentId: null });
+  engine.registerBindings("root", [binding("ctrl-s |", action)]);
+  engine.setActiveScope("root");
+  engine.handle(key("s", { ctrlKey: true }));
+  now = 10_000;
+  engine.handle(key("\\", { shiftKey: true }));
+  expect(action).toHaveBeenCalledOnce();
+});

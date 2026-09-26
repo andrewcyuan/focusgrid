@@ -142,3 +142,19 @@ test("binding updates replace the registered sequence", async ({ page }) => {
   await expect(editor).toBeFocused();
   await expect(editor).toHaveValue("abcdef");
 });
+
+test("a fresh prefix immediately after repeatable resize starts the next command", async ({ page }) => {
+  const editor = await focusEditor(page, "pane-a-plain");
+  const pane = page.locator('[data-pane-id="pane-a"]');
+  const width = (await pane.boundingBox())!.width;
+  await page.keyboard.press("Control+b");
+  await page.keyboard.press("l");
+  await page.keyboard.press("l");
+  await page.keyboard.press("Control+b");
+  await page.keyboard.press("Shift+5");
+  await expect(page.locator("[data-pane-id]")).toHaveCount(3);
+  await expect(editor).toHaveValue("abcdef");
+  await expect(editor).toBeFocused();
+  // Splitting the resized pane halves its width; both resize followers ran.
+  expect((await pane.boundingBox())!.width).toBeGreaterThan(width / 2);
+});

@@ -25,8 +25,8 @@ test("pane shortcuts are handled before focused textareas edit text", async ({
   await alphaText.fill("abcdef");
   await setTextareaSelection(alphaText, 3, 3);
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("Shift+5");
+  await page.keyboard.press("Control+S");
+  await page.keyboard.press("Shift+Backslash");
 
   await expect(alphaText).toHaveValue("abcdef");
   await expect(page.locator(".TextPane")).toHaveCount(3);
@@ -45,8 +45,8 @@ test("clicking non-focusable pane content focuses the pane shell for shortcuts",
 
   await expect(alphaPane).toBeFocused();
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("Shift+5");
+  await page.keyboard.press("Control+S");
+  await page.keyboard.press("Shift+Backslash");
 
   await expect(page.locator(".TextPane")).toHaveCount(3);
 });
@@ -60,8 +60,8 @@ test("pane shortcuts stay scoped to the focused FocusGrid subtree", async ({
   await splitRightShortcut.focus();
   await expect(splitRightShortcut).toBeFocused();
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("Shift+5");
+  await page.keyboard.press("Control+S");
+  await page.keyboard.press("Shift+Backslash");
 
   await expect(page.locator(".TextPane")).toHaveCount(2);
   await expect(splitRightShortcut).toBeFocused();
@@ -86,7 +86,7 @@ test("directional swap shortcuts move the active pane from a focused textarea", 
   expect(initialBetaBox).not.toBeNull();
   expect(initialAlphaBox!.x).toBeLessThan(initialBetaBox!.x);
 
-  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Control+S");
   await page.keyboard.press("Shift+ArrowRight");
 
   await expect(alphaText).toHaveValue("abcdef");
@@ -112,7 +112,7 @@ test("invalid shortcut continuations are no-opped instead of typed", async ({
   await alphaText.fill("abcdef");
   await setTextareaSelection(alphaText, 3, 3);
 
-  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Control+S");
   await page.keyboard.press("Z");
 
   await expect(alphaText).toHaveValue("abcdef");
@@ -122,7 +122,7 @@ test("invalid shortcut continuations are no-opped instead of typed", async ({
   await expect(alphaText).toHaveValue("abcZdef");
 });
 
-test("repeatable leader followers run without replaying the leader", async ({
+test("direct resize shortcuts work repeatedly without a prefix", async ({
   page,
 }) => {
   await page.goto("/");
@@ -137,10 +137,9 @@ test("repeatable leader followers run without replaying the leader", async ({
   const initialBox = await alphaPane.boundingBox();
   expect(initialBox).not.toBeNull();
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("L");
-  await page.keyboard.press("L");
-  await page.keyboard.press("L");
+  await page.keyboard.press("Control+Shift+L");
+  await page.keyboard.press("Control+Shift+L");
+  await page.keyboard.press("Control+Shift+L");
 
   await expect(alphaText).toHaveValue("abcdef");
   await expect
@@ -152,8 +151,8 @@ test("repeatable leader followers run without replaying the leader", async ({
 
   const postGrowthWidth = (await alphaPane.boundingBox())?.width ?? 0;
 
-  await page.keyboard.press("H");
-  await page.keyboard.press("H");
+  await page.keyboard.press("Control+Shift+H");
+  await page.keyboard.press("Control+Shift+H");
 
   await expect(alphaText).toHaveValue("abcdef");
   await expect
@@ -205,20 +204,19 @@ test("focus, vertical split, and close keep editors usable without editing text"
   const alpha = page.getByRole("textbox", { name: "Pane alpha", exact: true });
   const beta = page.getByRole("textbox", { name: "Pane beta", exact: true });
   await alpha.fill("keep alpha");
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Control+L");
   await expect(beta).toBeFocused();
   await beta.fill("keep beta");
   await setTextareaSelection(beta, 4, 4);
 
-  await page.keyboard.press("Control+B");
-  await page.keyboard.press('Shift+Quote');
+  await page.keyboard.press("Control+S");
+  await page.keyboard.press('-');
   await expect(page.locator(".TextPane")).toHaveCount(3);
   await expect(beta).toHaveValue("keep beta");
   const newEditor = page.locator('[data-active="true"] textarea');
   await expect(newEditor).toBeFocused();
   await newEditor.fill("new pane");
-  await page.keyboard.press("Control+B");
+  await page.keyboard.press("Control+S");
   await page.keyboard.press("X");
 
   await expect(page.locator(".TextPane")).toHaveCount(2);
@@ -238,4 +236,30 @@ test("window reactivation leaves toolbar focus in place", async ({ page, context
   await page.evaluate(() => window.dispatchEvent(new FocusEvent("focus")));
   await expect(button).toBeFocused();
   await otherPage.close();
+});
+
+test("tmux direct focus keys move both ways across horizontal and vertical panes", async ({ page }) => {
+  await page.goto("/");
+  const alpha = page.getByRole("textbox", { name: "Pane alpha", exact: true });
+  const beta = page.getByRole("textbox", { name: "Pane beta", exact: true });
+  await alpha.fill("keep alpha");
+  await setTextareaSelection(alpha, 4, 4);
+  await page.keyboard.press("Control+l");
+  await expect(beta).toBeFocused();
+  await beta.fill("keep beta");
+  await page.keyboard.press("Control+h");
+  await expect(alpha).toBeFocused();
+  await page.keyboard.press("Control+l");
+  await page.keyboard.press("Control+s");
+  await page.keyboard.press("-");
+  const bottom = page.locator('[data-pane-id]:not([data-pane-id="alpha"]):not([data-pane-id="beta"]) textarea');
+  await expect(bottom).toBeFocused();
+  await bottom.fill("keep bottom");
+  await page.keyboard.press("Control+k");
+  await expect(beta).toBeFocused();
+  await page.keyboard.press("Control+j");
+  await expect(bottom).toBeFocused();
+  await expect(alpha).toHaveValue("keep alpha");
+  await expect(beta).toHaveValue("keep beta");
+  await expect(bottom).toHaveValue("keep bottom");
 });

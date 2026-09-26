@@ -27,7 +27,7 @@ Scopes contain a parent ID and binding contributions, with no DOM elements. The 
 
 The deepest complete match wins immediately, even if a deeper scope has a partial match. Within one scope, the latest eligible registration wins; disposing it restores the previous binding. `shortcuts.update(bindings)` preserves registration priority.
 
-Bindings accept `when(event)`, `preventDefault` (default `true`), and `repeat` for repeating two-stroke followers within 500 ms. Pending sequences consume browser events and reset on active-scope changes; `engine.reset()` clears them explicitly.
+Bindings accept `when(event)`, `preventDefault` (default `true`), and `repeat` for repeating two-stroke followers within 500 ms. The repeat window is configurable with `repeatTimeoutMs`; a fresh prefix or direct binding can start immediately within it. Initial prefixes have no timeout. Pending sequences consume browser events and reset on active-scope changes; `engine.reset()` clears them explicitly.
 
 ## React
 

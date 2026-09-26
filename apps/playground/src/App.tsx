@@ -6,6 +6,7 @@ import {
   type Pane,
 } from "@andrewcyuan/focusgrid/react";
 import { useEffect, useRef, useState } from "react";
+import { createPlaygroundKeymap } from "./keymap";
 
 export function App() {
   const [domController] = useState(() => new FocusGridDomController());
@@ -37,11 +38,12 @@ export function App() {
           <a href="/">Reset</a>
         </header>
         <p>
-          Click a pane to type. Drag a divider to resize. Press <kbd>Ctrl B</kbd>, then:
-          {" "}<kbd>%</kbd> split right · <kbd>"</kbd> split down · <kbd>← ↑ ↓ →</kbd> focus ·
-          {" "}<kbd>Shift + arrow</kbd> swap · <kbd>H J K L</kbd> resize · <kbd>X</kbd> close.
+          Click a pane to type. Drag a divider to resize. <kbd>Ctrl S</kbd>, then:
+          {" "}<kbd>|</kbd> split right · <kbd>-</kbd> split down · <kbd>X</kbd> close ·
+          {" "}<kbd>Shift + arrow</kbd> swap.
+          {" "}Without a prefix: <kbd>Ctrl + H J K L</kbd> focus · <kbd>Ctrl Shift + H J K L</kbd> resize.
         </p>
-        <FocusGrid renderPane={(pane) => <TextPane {...pane} />} />
+        <FocusGrid keymap={createPlaygroundKeymap(controller)} renderPane={(pane) => <TextPane {...pane} />} />
       </main>
     </FocusgridController.Provider>
   );
