@@ -4,7 +4,6 @@ export type {
   FocusGridDomFocusManagement,
 } from "./controller";
 
-export { normalizeKeyboardEvent } from "@andrewcyuan/shortcut-engine";
 
 export { PointerResizeController } from "./pointer-resize";
 export { RootResizeObserver } from "./resize-observer";
@@ -17,4 +16,3 @@ export {
   shouldFocusPaneShellForPointer,
 } from "./interactivity";
 
-export { mountShortcutListener } from "./shortcut-listener";

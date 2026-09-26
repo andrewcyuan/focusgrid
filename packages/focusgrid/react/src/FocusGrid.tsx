@@ -1,12 +1,10 @@
 import {
   useEffect,
-  useContext,
-  useId,
   useRef,
   type ReactNode,
   type RefObject,
 } from "react";
-import type { FocusGridController, ShortcutBinding } from "@andrewcyuan/focusgrid/core";
+import type { FocusGridController } from "@andrewcyuan/focusgrid/core";
 import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useControllerLayout } from "./hooks";
 import {
@@ -14,7 +12,9 @@ import {
   type PaneCloseEvent,
   type PaneLayoutChangeEvent,
 } from "./lifecycle";
-import { ShortcutScopeContext, useShortcutEngine } from "./shortcuts";
+import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react";
+import type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
+import { createDefaultPaneKeymap } from "./default-pane-keymap";
 import { PaneView } from "./PaneView";
 import { ResizeHandle } from "./ResizeHandle";
 import type { Pane } from "./PaneView";
@@ -43,9 +43,6 @@ export function FocusGrid({
   onPaneClose,
   focusManagement,
 }: FocusGridProps) {
-  const engine = useShortcutEngine();
-  const parentScopeId = useContext(ShortcutScopeContext);
-  const scopeId = useId();
   const domControllerRef = useRef<FocusGridDomController | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const layout = useControllerLayout(controller);
@@ -61,9 +58,6 @@ export function FocusGrid({
     const scope = focusManagementScopeRef?.current ?? null;
 
     const domController = new FocusGridDomController(controller, root, {
-      engine,
-      scopeId,
-      parentScopeId,
       focusManagement: focusManagementMode === "application"
         ? { mode: "application", scope }
         : undefined,
@@ -75,10 +69,7 @@ export function FocusGrid({
       domController.destroy();
       domControllerRef.current = null;
     };
-  }, [controller, engine, scopeId, parentScopeId, focusManagementMode, focusManagementScopeRef]);
-  useEffect(() => {
-    domControllerRef.current?.setKeymap(keymap ?? []);
-  });
+  }, [controller, focusManagementMode, focusManagementScopeRef]);
 
   usePaneLifecycleEvents(
     controller,
@@ -92,8 +83,8 @@ export function FocusGrid({
     : "FocusgridFocusGrid";
 
   return (
-    <ShortcutScopeContext.Provider value={scopeId}>
-      <div ref={rootRef} className={rootClassName}>
+    <ShortcutScope ref={rootRef} className={rootClassName}>
+        <GridShortcuts bindings={keymap ?? createDefaultPaneKeymap(controller)} />
         {layout.panes.map((pane) => (
           <PaneView
             key={pane.paneId}
@@ -110,7 +101,11 @@ export function FocusGrid({
             handle={handle}
           />
         ))}
-      </div>
-    </ShortcutScopeContext.Provider>
+    </ShortcutScope>
   );
+}
+
+function GridShortcuts({ bindings }: { bindings: readonly ShortcutBinding[] }) {
+  useShortcuts(bindings);
+  return null;
 }

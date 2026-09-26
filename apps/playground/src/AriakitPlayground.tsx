@@ -1,27 +1,11 @@
+import { useShortcuts, ShortcutScope } from "@andrewcyuan/shortcut-engine/react";
 import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
-import {
-  Composite,
-  CompositeItem,
-  useCompositeStore,
-} from "@ariakit/react";
-import {
-  FocusGrid,
-  useFocusGridController,
-  type Pane,
-  createCompositeNavigationKeymap,
-  useShortcuts,
-  ShortcutScope,
-  type CompositeNavigationDirection,
-} from "@andrewcyuan/focusgrid/react";
-import {
-  type FocusGridControllerState,
-} from "@andrewcyuan/focusgrid/core";
+import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
+import { FocusGrid, useFocusGridController, type Pane, createCompositeNavigationKeymap, type CompositeNavigationDirection } from "@andrewcyuan/focusgrid/react";
+import { type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
 import { useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";
-import {
-  createDemoPaneKeymap,
-  paneNavigationShortcuts,
-} from "./pane-navigation";
+import { createDemoPaneKeymap, paneNavigationShortcuts } from "./pane-navigation";
 
 
 const rows = [

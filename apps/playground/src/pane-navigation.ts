@@ -1,4 +1,5 @@
-import { createDefaultPaneKeymap, findPaneForFocusCommand, type FocusGridController } from "@andrewcyuan/focusgrid/core";
+import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/react";
+import { findPaneForFocusCommand, type FocusGridController } from "@andrewcyuan/focusgrid/core";
 
 export const paneNavigationShortcuts = ["Ctrl-H panes", "Ctrl-J panes", "Ctrl-K panes", "Ctrl-L panes"] as const;
 

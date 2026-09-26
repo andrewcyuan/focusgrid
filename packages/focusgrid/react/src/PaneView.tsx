@@ -1,4 +1,4 @@
-import { ShortcutScope } from "./shortcuts";
+import { ShortcutScope } from "@andrewcyuan/shortcut-engine/react";
 import type {
   CSSProperties,
   PointerEvent,

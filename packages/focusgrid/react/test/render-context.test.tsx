@@ -1,19 +1,9 @@
+import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import { createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import {
-  FocusGridController,
-  type ShortcutBinding,
-  type FocusGridControllerState,
-} from "@andrewcyuan/focusgrid/core";
-import {
-  FocusGrid,
-  ShortcutProvider,
-  useControllerState,
-  useFocusGridController,
-  type Pane,
-  type FocusGridFocusManagement,
-} from "../src/index";
+import { FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
+import { FocusGrid, useControllerState, useFocusGridController, type Pane, type FocusGridFocusManagement } from "../src/index";
 import type { FocusGridDomFocusManagement } from "../../dom/src";
 
 function state(): FocusGridControllerState {
@@ -50,7 +40,7 @@ describe("pane render context", () => {
     const contexts: Pane[] = [];
 
     renderToStaticMarkup(
-      <ShortcutProvider>
+      <>
         <FocusGrid
         controller={controller}
         renderPane={(ctx) => {
@@ -58,7 +48,7 @@ describe("pane render context", () => {
           return <span>{ctx.paneId}</span>;
         }}
       />
-      </ShortcutProvider>,
+      </>,
     );
 
     expect(contexts).toEqual([
@@ -86,12 +76,12 @@ describe("pane render context", () => {
       controllerFromHook = controller;
 
       return (
-        <ShortcutProvider>
+        <>
         <FocusGrid
           controller={controller}
           renderPane={(ctx) => <span>{ctx.paneId}</span>}
         />
-      </ShortcutProvider>
+      </>
       );
     }
 
@@ -143,13 +133,13 @@ describe("pane render context", () => {
     ];
 
     const markup = renderToStaticMarkup(
-      <ShortcutProvider>
+      <>
         <FocusGrid
         controller={controller}
         keymap={keymap}
         renderPane={(ctx) => <span>{ctx.paneId}</span>}
       />
-      </ShortcutProvider>,
+      </>,
     );
 
     expect(markup).toContain("<span>left</span>");
@@ -167,13 +157,13 @@ describe("pane render context", () => {
       undefined;
 
     const markup = renderToStaticMarkup(
-      <ShortcutProvider>
+      <>
         <FocusGrid
         controller={controller}
         focusManagement={focusManagement}
         renderPane={(ctx) => <span>{ctx.paneId}</span>}
       />
-      </ShortcutProvider>,
+      </>,
     );
 
     expect(domFocusManagement).toBeUndefined();

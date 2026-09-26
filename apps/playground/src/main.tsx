@@ -1,4 +1,3 @@
-import { ShortcutProvider } from "@andrewcyuan/focusgrid/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
@@ -14,6 +13,6 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <ShortcutProvider><App /></ShortcutProvider>
+    <><App /></>
   </StrictMode>,
 );

@@ -19,5 +19,5 @@ export {
 
 export * from "./composite-shortcuts";
 
-export { ShortcutProvider, ShortcutScope, useShortcuts, useShortcutEngine } from "./shortcuts";
-export type { ShortcutProviderProps, ShortcutScopeProps } from "./shortcuts";
+export { createDefaultPaneKeymap, createDefaultPaneShortcuts, defaultPaneShortcutActions } from "./default-pane-keymap";
+export type { PaneShortcutId, PaneShortcutValues } from "./default-pane-keymap";

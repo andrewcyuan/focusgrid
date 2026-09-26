@@ -1,30 +1,8 @@
+import { defaultPaneShortcutActions, type PaneShortcutId, type PaneShortcutValues } from "@andrewcyuan/focusgrid/react";
 import { normalizeShortcut } from "@andrewcyuan/shortcut-engine";
-import {
-  defaultPaneShortcutActions,
-  cardinalDirections,
-  findPaneNode,
-  collectPaneIds,
-  PaneCommandCapability,
-  type PaneShortcutId,
-  type PaneShortcutValues,
-  type FocusGridController,
-  type FocusGridControllerState,
-} from "@andrewcyuan/focusgrid/core";
-import {
-  FocusGrid,
-  useControllerState,
-  useFocusGridController,
-  type Pane,
-} from "@andrewcyuan/focusgrid/react";
-import {
-  type ComponentType,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from "react";
+import { cardinalDirections, findPaneNode, collectPaneIds, PaneCommandCapability, type FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
+import { FocusGrid, useControllerState, useFocusGridController, type Pane } from "@andrewcyuan/focusgrid/react";
+import { type ComponentType, useEffect, useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
 import { demoHubPath } from "./demo-routes";
 

@@ -1,10 +1,10 @@
+import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/react";
+import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react";
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
-import {
-  ShortcutProvider, ShortcutScope, useShortcuts, FocusGrid, useFocusGridController,
-} from "@andrewcyuan/focusgrid/react";
-import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/core";
+import { FocusGrid, useFocusGridController } from "@andrewcyuan/focusgrid/react";
+
 import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import "@andrewcyuan/focusgrid/react/styles.css";
 
@@ -71,4 +71,4 @@ function App() {
   </>;
 }
 
-createRoot(document.getElementById("root")!).render(<StrictMode><ShortcutProvider><App /></ShortcutProvider></StrictMode>);
+createRoot(document.getElementById("root")!).render(<StrictMode><><App /></></StrictMode>);

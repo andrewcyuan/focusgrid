@@ -1,5 +1,5 @@
 import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
-import type { FocusGridController } from "../controller";
+import type { FocusGridController } from "@andrewcyuan/focusgrid/core";
 
 export const defaultPaneShortcutActions = [
   {

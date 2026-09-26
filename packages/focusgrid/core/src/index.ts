@@ -36,11 +36,3 @@ export type {
   FocusGridStateValidationError,
   FocusGridStateValidationResult,
 } from "./validation";
-
-export type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
-export {
-  createDefaultPaneKeymap,
-  createDefaultPaneShortcuts,
-  defaultPaneShortcutActions,
-} from "./keyboard/default-pane-keymap";
-export type { PaneShortcutId, PaneShortcutValues } from "./keyboard/default-pane-keymap";
