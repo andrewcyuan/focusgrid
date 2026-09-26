@@ -17,7 +17,7 @@ export type Pane = {
   controller: FocusGridController;
 };
 
-export type PaneViewProps = {
+type PaneViewProps = {
   controller: FocusGridController;
   pane: ComputedPane;
   renderPane: (ctx: Pane) => ReactNode;

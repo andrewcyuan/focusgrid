@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ComputedHandle } from "@andrewcyuan/focusgrid/core";
 
-export type ResizeHandleProps = {
+type ResizeHandleProps = {
   handle: ComputedHandle;
 };
 

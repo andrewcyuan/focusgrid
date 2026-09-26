@@ -1,16 +1,8 @@
 import { createController, observedState } from "./observe-controller";
 import { describe, expect, it } from "vitest";
-import {
-  collectPaneIds,
-  FocusGridController,
-  findPaneNode,
-  findSplitNode,
-  PaneCommandCapability,
-  validateFocusGridControllerState,
-  type FocusGridControllerState,
-} from "../src";
+import { FocusGridController, PaneCommandCapability, validateFocusGridControllerState, type FocusGridControllerState } from "../src";
 import { computeLayout, getMinimumSize } from "../src/layout/geometry";
-import { transformLayout, updatePane } from "../src/layout/tree";
+import { collectPaneIds, findPaneNode, findSplitNode, transformLayout, updatePane } from "../src/layout/tree";
 
 function state(): FocusGridControllerState {
   return {

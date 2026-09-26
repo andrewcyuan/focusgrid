@@ -1,13 +1,3 @@
 export { FocusGridDomController } from "./controller";
-export { PointerResizeController } from "./pointer-resize";
-export { observeRootSize } from "./resize-observer";
-export {
-  isEditableTarget,
-  hasInteractiveOwner,
-  isInteractiveElement,
-  isTabbableElement,
-  isUnavailableElement,
-  shouldFocusPaneShellForPointer,
-} from "./interactivity";
-
 export { mountFocusGrid } from "./mount";
+export { isEditableTarget } from "./interactivity";

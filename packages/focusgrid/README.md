@@ -46,7 +46,7 @@ API overview:
 
 - Import `ShortcutScope` and `useShortcuts` from `@andrewcyuan/shortcut-engine/react`. No provider is required. Deeper complete matches take priority.
 - `FocusGrid` creates a grid scope and child pane scopes, registers default shortcuts, renders panes and resize handles, and tracks container size. Give its parent a height. Pass `controller`, the same `domController` injected into core, and `renderPane`; optional props include `keymap`, `onPaneLayoutChange`, and `onPaneClose`. A supplied keymap replaces the defaults, including an empty array.
-- `useFocusGridController(createProps, domController)` creates a stable controller. `PaneView` and `ResizeHandle` support custom rendering.
+- `useFocusGridController(createProps, domController)` creates a stable controller.
 - `createCompositeNavigationKeymap(move)` creates arrow/Home/End callback bindings that ignore editable targets; register them with `useShortcuts` inside a control's scope.
 - From `@andrewcyuan/focusgrid/core`, `new FocusGridController(props, domController)` creates a controller without React. Props contain `root`, `activePaneId`, `container`, and optional `minWidth`, `minHeight`, capability `paneDefaults`, and `directionalFocusOverflow`.
 - The controller provides direct methods: `split`, `remove`, `swap`, `resize`, `resizeHandle`, `focus`, `updatePane`, and `setContainerSize`; `subscribe` reports committed changes. Controller state is private; shortcut actions use `splitActive`, `removeActive`, `focusAdjacent`, `swapAdjacent`, and `resizeActive`.
@@ -79,6 +79,6 @@ controller.split("editor-node", { side: "right", newPaneId: "terminal" });
 controller.updatePane("terminal", { canRemove: false });
 ```
 
-Core uses one `CardinalDirection` type and `cardinalDirections` list for pane commands. `computeLayout(state)` returns panes, handles, and `rectByNodeId`; controller methods own all state transitions and notifications.
+Core uses one `CardinalDirection` type and `cardinalDirections` list for pane commands. `controller.getLayout()` returns panes, handles, and `rectByNodeId`; controller methods own all state transitions and notifications.
 
 Pane minimum sizes are controller-wide settings, default to zero, and are not stored in serialized pane state. Use `PaneCommandCapability` enum members when selecting capability keys (for example, `controller.updatePane(id, { [PaneCommandCapability.Remove]: false })`).

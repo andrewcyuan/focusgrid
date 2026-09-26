@@ -1,7 +1,9 @@
+import { findPaneNode } from "../src/layout/tree";
+import { computeLayout } from "../src/layout/geometry";
 import { createDefaultPaneKeymap, createDefaultPaneShortcuts, defaultPaneShortcutActions } from "@andrewcyuan/focusgrid/react";
 import { createController, observedState } from "./observe-controller";
 import { describe, expect, it } from "vitest";
-import { computeLayout, findPaneNode, FocusGridController, FocusGridStateValidationException, validateFocusGridControllerState, type PaneCommandCapabilityInput, type CardinalDirection, type FocusGridControllerState } from "../src";
+import { FocusGridController, FocusGridStateValidationException, validateFocusGridControllerState, type PaneCommandCapabilityInput, type CardinalDirection, type FocusGridControllerState } from "../src";
 
 import { findPaneInDirection } from "../src/layout/navigation";
 

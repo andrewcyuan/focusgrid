@@ -3,8 +3,6 @@ export type {
   ComputedLayout,
   ComputedPane,
   CardinalDirection,
-  Orientation as Direction,
-  LayoutIndex,
   LayoutNode,
   NodeId,
   PaneCommandCapabilityInput,
@@ -29,9 +27,6 @@ export type {
 } from "./controller";
 
 export { cardinalDirections, PaneCommandCapability } from "./layout/types";
-export { findPaneForFocusCommand } from "./layout/navigation";
-export { computeLayout } from "./layout/geometry";
-export { collectPaneIds, findPaneNode, findSplitNode } from "./layout/tree";
 export {
   FocusGridStateValidationException,
   validateFocusGridControllerState,

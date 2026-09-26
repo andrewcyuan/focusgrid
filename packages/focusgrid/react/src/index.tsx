@@ -1,14 +1,7 @@
 export { FocusGrid } from "./FocusGrid";
 export type { FocusGridProps } from "./FocusGrid";
 
-export { PaneView } from "./PaneView";
-export type {
-  Pane,
-  PaneViewProps,
-} from "./PaneView";
-
-export { ResizeHandle } from "./ResizeHandle";
-export type { ResizeHandleProps } from "./ResizeHandle";
+export type { Pane } from "./PaneView";
 
 export {
   useControllerLayout,

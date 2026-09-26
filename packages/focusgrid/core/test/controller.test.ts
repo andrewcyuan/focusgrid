@@ -1,6 +1,7 @@
+import { findPaneNode } from "../src/layout/tree";
 import { createController, observedState } from "./observe-controller";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FocusGridController, findPaneNode, validateFocusGridControllerState, type FocusGridControllerProps } from "../src";
+import { FocusGridController, validateFocusGridControllerState, type FocusGridControllerProps } from "../src";
 import * as geometry from "../src/layout/geometry";
 import * as ids from "../src/utils/ids";
 
