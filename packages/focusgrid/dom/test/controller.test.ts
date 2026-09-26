@@ -15,7 +15,7 @@ function controllerState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.5, 0.5],
       children: [
         {

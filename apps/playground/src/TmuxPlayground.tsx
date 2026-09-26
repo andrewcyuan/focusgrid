@@ -4,7 +4,7 @@ import {
   cardinalDirections,
   findPaneNode,
   collectPaneIds,
-  type PaneCommandCapabilityInput,
+  PaneCommandCapability,
   type PaneShortcutId,
   type PaneShortcutValues,
   type FocusGridController,
@@ -33,22 +33,18 @@ function createInitialState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root-split",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.55, 0.45],
       children: [
         {
           kind: "pane",
           id: "pane-node-alpha",
           paneId: "alpha",
-          minWidth: 180,
-          minHeight: 120,
         },
         {
           kind: "pane",
           id: "pane-node-beta",
           paneId: "beta",
-          minWidth: 180,
-          minHeight: 120,
         },
       ],
     },
@@ -66,7 +62,7 @@ const paneComponents: Record<string, ComponentType<Pane>> = {
 };
 
 export function TmuxPlayground() {
-  const controller = useFocusGridController(createInitialState);
+  const controller = useFocusGridController(() => ({ ...createInitialState(), minWidth: 180, minHeight: 120 }));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
@@ -180,7 +176,7 @@ function Toolbar({
   }, [swapTargetId, swapTargets]);
 
   const toggleActivePaneCapability = useCallback(
-    (key: PaneCommandCapabilityKey) => {
+    (key: PaneCommandCapability) => {
       const activePaneId = state.activePaneId;
 
       if (!activePaneId || !activePane) {
@@ -212,10 +208,6 @@ function Toolbar({
                   onClick={() => {
                     controller.split(activePane!.id, {
                       side,
-                      minWidth:
-                        side === "left" || side === "right" ? 180 : undefined,
-                      minHeight:
-                        side === "up" || side === "down" ? 120 : undefined,
                       preserveActivePane: true,
                     });
                   }}
@@ -287,17 +279,15 @@ function Toolbar({
   );
 }
 
-type PaneCommandCapabilityKey = keyof PaneCommandCapabilityInput;
-
-const paneCapabilityToggles: { key: PaneCommandCapabilityKey; label: string }[] = [
-  { key: "canResizeX", label: "Can resize X" },
-  { key: "canResizeY", label: "Can resize Y" },
-  { key: "canRemove", label: "Can remove" },
-  { key: "canSplitHorizontal", label: "Can split right" },
-  { key: "canSplitVertical", label: "Can split down" },
-  { key: "canSwapX", label: "Can swap X" },
-  { key: "canSwapY", label: "Can swap Y" },
-  { key: "canFocus", label: "Can focus" },
+const paneCapabilityToggles: { key: PaneCommandCapability; label: string }[] = [
+  { key: PaneCommandCapability.ResizeX, label: "Can resize X" },
+  { key: PaneCommandCapability.ResizeY, label: "Can resize Y" },
+  { key: PaneCommandCapability.Remove, label: "Can remove" },
+  { key: PaneCommandCapability.SplitHorizontal, label: "Can split right" },
+  { key: PaneCommandCapability.SplitVertical, label: "Can split down" },
+  { key: PaneCommandCapability.SwapX, label: "Can swap X" },
+  { key: PaneCommandCapability.SwapY, label: "Can swap Y" },
+  { key: PaneCommandCapability.Focus, label: "Can focus" },
 ];
 
 function PaneSlot({ ctx }: { ctx: Pane }) {

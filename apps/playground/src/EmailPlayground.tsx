@@ -35,23 +35,19 @@ function createEmailState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "email-root-split",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.25, 0.75],
       children: [
         {
           kind: "pane",
           id: "email-sidebar-node",
           paneId: "email-sidebar",
-          minWidth: 180,
-          minHeight: 280,
           canRemove: false,
         },
         {
           kind: "pane",
           id: "email-inbox-node",
           paneId: "email-inbox",
-          minWidth: 300,
-          minHeight: 280,
           canRemove: false,
         },
       ],
@@ -62,7 +58,7 @@ function createEmailState(): FocusGridControllerState {
 }
 
 export function EmailPlayground() {
-  const controller = useFocusGridController(createEmailState);
+  const controller = useFocusGridController(() => ({ ...createEmailState(), minWidth: 300, minHeight: 280 }));
   const emailPaneKeymap = createDemoPaneKeymap(controller);
   const applicationRef = useRef<HTMLDivElement>(null);
   const [mailboxId, setMailboxId] =
@@ -109,8 +105,6 @@ export function EmailPlayground() {
       controller.split(findPaneNode(controller.state.root, "email-inbox")!.id, {
         side: "right",
         newPaneId: "email-reader",
-        minWidth: 300,
-        minHeight: 280,
         canRemove: true,
       });
     },

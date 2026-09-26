@@ -13,6 +13,29 @@ function props(): FocusGridControllerProps {
 afterEach(() => vi.restoreAllMocks());
 
 describe("public controller methods", () => {
+  it("keeps minimum sizes on the controller and out of pane state", () => {
+    const controller = new FocusGridController({ ...props(), minWidth: 120, minHeight: 90 });
+    controller.split("editor-node", { side: "right", newPaneId: "terminal" });
+    expect(controller.minWidth).toBe(120);
+    expect(controller.minHeight).toBe(90);
+    for (const id of ["editor", "terminal"]) {
+      const pane = findPaneNode(controller.state.root, id);
+      expect(pane).not.toHaveProperty("minWidth");
+      expect(pane).not.toHaveProperty("minHeight");
+    }
+    expect(validateFocusGridControllerState(controller.state).ok).toBe(true);
+    expect(new FocusGridController(props()).minWidth).toBe(0);
+    expect(new FocusGridController(props()).minHeight).toBe(0);
+  });
+
+  it("rejects invalid controller minimums", () => {
+    for (const key of ["minWidth", "minHeight"]) {
+      for (const value of [-1, NaN, Infinity]) {
+        expect(() => new FocusGridController({ ...props(), [key]: value })).toThrow(RangeError);
+      }
+    }
+  });
+
   it("preserves supplied IDs without generating replacements", () => {
     const createId = vi.spyOn(ids, "createId");
     const controller = new FocusGridController(props());
@@ -61,14 +84,14 @@ describe("public controller methods", () => {
 
   it("applies defaults on construction and pane creation while preserving explicit values", () => {
     const initial = props();
-    initial.root = { ...initial.root, minWidth: 80, canRemove: true };
+    initial.root = { ...initial.root, canRemove: true };
     const controller = new FocusGridController({
-      ...initial, paneDefaults: { minWidth: 120, minHeight: 90, canRemove: false, canFocus: false },
+      ...initial, paneDefaults: { canRemove: false, canFocus: false },
     });
-    expect(findPaneNode(controller.state.root, "editor")).toMatchObject({ minWidth: 80, minHeight: 90, canRemove: true, canFocus: false });
-    expect(initial.root).not.toHaveProperty("minHeight");
-    controller.split("editor-node", { side: "right", newPaneId: "terminal", minHeight: 150, canFocus: true });
-    expect(findPaneNode(controller.state.root, "terminal")).toMatchObject({ minWidth: 120, minHeight: 150, canRemove: false, canFocus: true });
+    expect(findPaneNode(controller.state.root, "editor")).toMatchObject({ canRemove: true, canFocus: false });
+    expect(initial.root).not.toHaveProperty("canFocus");
+    controller.split("editor-node", { side: "right", newPaneId: "terminal", canFocus: true });
+    expect(findPaneNode(controller.state.root, "terminal")).toMatchObject({ canRemove: false, canFocus: true });
   });
 
   it("patches pane fields together while preserving identity and omitted fields", () => {
@@ -78,51 +101,48 @@ describe("public controller methods", () => {
     const previous = controller.state;
     const listener = vi.fn();
     controller.subscribe(listener);
-    const data = { title: "Editor" };
-    expect(controller.updatePane("editor", { data, minWidth: 140, minHeight: 100, canRemove: false })).toBe(true);
-    expect(findPaneNode(controller.state.root, "editor")).toEqual({ kind: "pane", id: "editor-node", paneId: "editor", data, minWidth: 140, minHeight: 100, canRemove: false });
+    expect(controller.updatePane("editor", { canRemove: false })).toBe(true);
+    expect(findPaneNode(controller.state.root, "editor")).toEqual({ kind: "pane", id: "editor-node", paneId: "editor", canRemove: false });
     expect(findPaneNode(controller.state.root, "terminal")).toBe(sibling);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledWith(controller.state, previous);
-    expect(controller.updatePane("editor", { minWidth: 160 })).toBe(true);
-    expect(findPaneNode(controller.state.root, "editor")?.data).toBe(data);
+    expect(controller.updatePane("editor", { canResizeX: false })).toBe(true);
     expect(findPaneNode(controller.state.root, "editor")?.canRemove).toBe(false);
   });
 
   it("preserves state and notifications for unchanged patches and unsubscribes", () => {
     const controller = new FocusGridController(props());
-    const data = { value: 1 };
-    controller.updatePane("editor", { data, minWidth: 120, canFocus: false });
+    controller.updatePane("editor", { canFocus: false });
     const before = controller.state;
     const listener = vi.fn();
     const unsubscribe = controller.subscribe(listener);
-    for (const patch of [{}, { data }, { minWidth: 120, canFocus: false }, { minHeight: undefined }]) {
+    for (const patch of [{}, { canFocus: false }, { canRemove: undefined }]) {
       expect(controller.updatePane("editor", patch)).toBe(false);
       expect(controller.state).toBe(before);
     }
-    expect(controller.updatePane("missing", { data })).toBe(false);
+    expect(controller.updatePane("missing", { canRemove: false })).toBe(false);
     expect(listener).not.toHaveBeenCalled();
     expect(controller.updatePane("editor", { canFocus: undefined })).toBe(true);
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
-    controller.updatePane("editor", { data: undefined });
-    expect(findPaneNode(controller.state.root, "editor")?.data).toBeUndefined();
-    controller.updatePane("editor", { minWidth: undefined });
-    expect(findPaneNode(controller.state.root, "editor")).not.toHaveProperty("minWidth");
+    controller.updatePane("editor", { canRemove: false });
+    expect(findPaneNode(controller.state.root, "editor")?.canRemove).toBe(false);
+    controller.updatePane("editor", { canRemove: undefined });
+    expect(findPaneNode(controller.state.root, "editor")).not.toHaveProperty("canRemove");
     expect(validateFocusGridControllerState(controller.state).ok).toBe(true);
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it("uses pane defaults when creation props are omitted or undefined", () => {
     const controller = new FocusGridController({
-      ...props(), paneDefaults: { minWidth: 120, canFocus: false },
+      ...props(), paneDefaults: { canFocus: false },
     });
     controller.split("editor-node", {
-      side: "right", newPaneId: "terminal", minWidth: undefined, minHeight: undefined,
-      canFocus: undefined, data: undefined,
+      side: "right", newPaneId: "terminal",
+      canFocus: undefined,
     });
-    expect(findPaneNode(controller.state.root, "terminal")).toMatchObject({ minWidth: 120, canFocus: false });
-    expect(findPaneNode(controller.state.root, "terminal")).not.toHaveProperty("minHeight");
+    expect(findPaneNode(controller.state.root, "terminal")).toMatchObject({ canFocus: false });
+    expect(findPaneNode(controller.state.root, "terminal")).not.toHaveProperty("canRemove");
     expect(validateFocusGridControllerState(controller.state).ok).toBe(true);
   });
 

@@ -8,6 +8,8 @@ export function resizeSplit(
   index: number,
   deltaPx: number,
   snapshotSizes?: number[],
+  minWidth = 0,
+  minHeight = 0,
 ): SplitNode {
   if (totalPx <= 0 || index < 0 || index >= split.children.length - 1) return split;
   const baseSizes = normalizeSplitSizes(
@@ -20,7 +22,7 @@ export function resizeSplit(
   nextSizes[index + 1] -= deltaRatio;
 
   const minSizes = split.children.map((child) =>
-    getMinimumSize(child, split.orientation) / totalPx
+    getMinimumSize(child, split.orientation, minWidth, minHeight) / totalPx
   );
   const currentSizes = normalizeSplitSizes(split.sizes, split.children.length);
   const clamped = clampAdjacentPair(nextSizes, minSizes, index);
@@ -30,7 +32,7 @@ export function resizeSplit(
       sizes: clamped,
     },
     split.orientation,
-    totalPx
+    totalPx, minWidth, minHeight
   );
 
   if (fitted.kind !== "split" || sizesEqual(fitted.sizes, currentSizes)) {
@@ -51,7 +53,9 @@ function sizesEqual(a: number[], b: number[]): boolean {
 function fitNodeToAxisSize(
   node: LayoutNode,
   direction: Orientation,
-  axisSize: number
+  axisSize: number,
+  minWidth: number,
+  minHeight: number
 ): LayoutNode {
   if (node.kind === "pane") {
     return node;
@@ -60,7 +64,7 @@ function fitNodeToAxisSize(
   if (node.orientation !== direction) {
     let changed = false;
     const children = node.children.map((child) => {
-      const nextChild = fitNodeToAxisSize(child, direction, axisSize);
+      const nextChild = fitNodeToAxisSize(child, direction, axisSize, minWidth, minHeight);
       changed ||= nextChild !== child;
       return nextChild;
     });
@@ -72,14 +76,14 @@ function fitNodeToAxisSize(
   const handleTotal = Math.max(0, node.children.length - 1) * HANDLE_SIZE;
   const contentSize = Math.max(0, axisSize - handleTotal);
   const minSizes = node.children.map((child) =>
-    getMinimumSize(child, direction)
+    getMinimumSize(child, direction, minWidth, minHeight)
   );
   const fittedSizes = fitSizesToMinimums(sizes, minSizes, contentSize);
   let changed = !sizesEqual(fittedSizes, sizes);
 
   const children = node.children.map((child, index) => {
     const childAxisSize = contentSize * (fittedSizes[index] ?? 0);
-    const nextChild = fitNodeToAxisSize(child, direction, childAxisSize);
+    const nextChild = fitNodeToAxisSize(child, direction, childAxisSize, minWidth, minHeight);
     changed ||= nextChild !== child;
     return nextChild;
   });

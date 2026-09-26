@@ -5,28 +5,23 @@ export type Orientation = "horizontal" | "vertical";
 export const cardinalDirections = ["left", "right", "up", "down"] as const;
 
 export type CardinalDirection = (typeof cardinalDirections)[number];
-export const paneCommandCapabilityKeys = [
-  "canResizeX",
-  "canResizeY",
-  "canRemove",
-  "canSplitHorizontal",
-  "canSplitVertical",
-  "canSwapX",
-  "canSwapY",
-  "canFocus",
-] as const;
+export enum PaneCommandCapability {
+  ResizeX = "canResizeX",
+  ResizeY = "canResizeY",
+  Remove = "canRemove",
+  SplitHorizontal = "canSplitHorizontal",
+  SplitVertical = "canSplitVertical",
+  SwapX = "canSwapX",
+  SwapY = "canSwapY",
+  Focus = "canFocus",
+}
 
-export type PaneCommandCapabilityKey =
-  (typeof paneCommandCapabilityKeys)[number];
-export type PaneCommandCapabilityInput = Partial<Record<PaneCommandCapabilityKey, boolean>>;
+export type PaneCommandCapabilityInput = Partial<Record<PaneCommandCapability, boolean>>;
 
 export type PaneNode = {
   kind: "pane";
   id: NodeId;
   paneId: PaneId;
-  minWidth?: number;
-  minHeight?: number;
-  data?: unknown;
 } & PaneCommandCapabilityInput;
 
 export type SplitNode = {

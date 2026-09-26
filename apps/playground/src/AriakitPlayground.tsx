@@ -46,22 +46,18 @@ function createAriakitState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "ariakit-root-split",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.5, 0.5],
       children: [
         {
           kind: "pane",
           id: "pane-node-ariakit-alpha",
           paneId: "ariakit-alpha",
-          minWidth: 320,
-          minHeight: 320,
         },
         {
           kind: "pane",
           id: "pane-node-ariakit-beta",
           paneId: "ariakit-beta",
-          minWidth: 320,
-          minHeight: 320,
         },
       ],
     },
@@ -74,7 +70,7 @@ function createAriakitState(): FocusGridControllerState {
 }
 
 export function AriakitPlayground() {
-  const controller = useFocusGridController(createAriakitState);
+  const controller = useFocusGridController(() => ({ ...createAriakitState(), minWidth: 320, minHeight: 320 }));
   const paneKeymap = createDemoPaneKeymap(controller);
   const applicationRef = useRef<HTMLDivElement>(null);
 

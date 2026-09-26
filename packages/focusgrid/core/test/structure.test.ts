@@ -4,7 +4,7 @@ import {
   FocusGridController,
   findPaneNode,
   findSplitNode,
-  paneCommandCapabilityKeys,
+  PaneCommandCapability,
   validateFocusGridControllerState,
   type FocusGridControllerState,
 } from "../src";
@@ -16,11 +16,11 @@ function state(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [1, 1],
       children: [
-        { kind: "pane", id: "left-node", paneId: "left", minWidth: 120 },
-        { kind: "pane", id: "right-node", paneId: "right", minWidth: 80 },
+        { kind: "pane", id: "left-node", paneId: "left" },
+        { kind: "pane", id: "right-node", paneId: "right" },
       ],
     },
     activePaneId: "left",
@@ -53,21 +53,21 @@ describe("shared layout structure", () => {
       height: 200,
     });
     expect(geometry.panes.map((pane) => pane.rect.width)).toEqual([200, 200]);
-    expect(getMinimumSize(current.root, "horizontal")).toBe(203);
+    expect(getMinimumSize(current.root, "horizontal", 100, 0)).toBe(203);
   });
 });
 
 describe("canonical pane capabilities", () => {
   it("applies and validates every capability from the shared key set", () => {
     const paneDefaults = Object.fromEntries(
-      paneCommandCapabilityKeys.map((key) => [key, false]),
+      Object.values(PaneCommandCapability).map((key) => [key, false]),
     );
     const controller = new FocusGridController({ ...state(), paneDefaults });
     const firstPane = controller.state.root;
     expect(firstPane.kind).toBe("split");
     if (firstPane.kind !== "split") return;
 
-    for (const key of paneCommandCapabilityKeys) {
+    for (const key of Object.values(PaneCommandCapability)) {
       expect(firstPane.children[0]?.kind === "pane" && firstPane.children[0][key]).toBe(false);
     }
 
@@ -86,7 +86,7 @@ describe("canonical pane capabilities", () => {
   });
 
   it("updates and constructs panes with every capability from the shared key set", () => {
-    for (const key of paneCommandCapabilityKeys) {
+    for (const key of Object.values(PaneCommandCapability)) {
       const updateController = new FocusGridController(state());
       expect(updateController.updatePane("left", { [key]: false })).toBe(true);
       expect(findPaneNode(updateController.state.root, "left")?.[key]).toBe(false);

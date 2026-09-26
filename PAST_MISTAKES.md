@@ -94,3 +94,7 @@ Pane creation wrote undefined minimum sizes, which the state validator rejected.
 ## State Operations Duplicated Controller Ownership
 
 Separate layout operations rebuilt full controller snapshots while the controller only forwarded and committed them. Keep transitions and notifications in the controller; helpers should operate on tree nodes or geometry, and tests should exercise controller commands rather than obsolete state wrappers.
+
+## Split Orientation Renames Must Include Validation and Fixtures
+
+Renaming the split orientation field only in source left validators and fixtures using the old field. For structural field renames, check serialization, validation, sample layouts, and tests together.

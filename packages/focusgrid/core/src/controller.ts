@@ -13,7 +13,7 @@ import {
   findPaneNode,
 } from "./layout/tree";
 import {
-  paneCommandCapabilityKeys,
+  type PaneCommandCapabilityInput,
   type NodeId,
   type PaneId,
   type PaneNode,
@@ -23,9 +23,11 @@ import {
 import { assertValidFocusGridControllerState } from "./validation";
 
 export type Listener = (next: FocusGridControllerState, previous: FocusGridControllerState) => void;
-export type PaneDefaults = Omit<PaneNode, "kind" | "id" | "paneId" | "data">;
+export type PaneDefaults = PaneCommandCapabilityInput;
 export type FocusGridControllerProps = FocusGridControllerState & {
   paneDefaults?: PaneDefaults;
+  minWidth?: number;
+  minHeight?: number;
   directionalFocusOverflow?: boolean;
 };
 export type SplitPaneOptions = Partial<Omit<PaneNode, "kind" | "id" | "paneId">> & {
@@ -39,13 +41,20 @@ export type ResizePaneOptions = { direction: CardinalDirection; deltaPx: number 
 export type ResizeHandleOptions = { index: number; deltaPx: number; snapshotSizes?: number[] };
 
 export class FocusGridController {
+  readonly minWidth: number;
+  readonly minHeight: number;
   readonly directionalFocusOverflow: boolean;
   private currentState: FocusGridControllerState;
   private readonly paneDefaults: PaneDefaults;
   private readonly listeners = new Set<Listener>();
 
-  constructor({ paneDefaults = {}, directionalFocusOverflow = false, ...state }: FocusGridControllerProps) {
+  constructor({ paneDefaults = {}, minWidth = 0, minHeight = 0, directionalFocusOverflow = false, ...state }: FocusGridControllerProps) {
     assertValidFocusGridControllerState(state);
+    if (![minWidth, minHeight].every(value => Number.isFinite(value) && value >= 0)) {
+      throw new RangeError("Minimum pane dimensions must be finite, non-negative numbers.");
+    }
+    this.minWidth = minWidth;
+    this.minHeight = minHeight;
     this.paneDefaults = paneDefaults;
     this.directionalFocusOverflow = directionalFocusOverflow;
     const root = transformLayout(state.root, (node) =>
@@ -64,11 +73,7 @@ export class FocusGridController {
     const splitId = props.splitId ?? createId("split");
     if (index.paneNodeByPaneId.has(paneId) || index.nodeById.has(id) || index.nodeById.has(splitId) || id === splitId) return null;
     const { side, newPaneId, newPaneNodeId, splitId: suppliedSplitId, preserveActivePane, ...paneProps } = props;
-    const pane = withPaneDefaults({ kind: "pane", id, paneId, ...paneProps }, {
-      ...this.paneDefaults,
-      minWidth: this.paneDefaults.minWidth ?? target.minWidth,
-      minHeight: this.paneDefaults.minHeight ?? target.minHeight,
-    });
+    const pane = withPaneDefaults({ kind: "pane", id, paneId, ...paneProps }, this.paneDefaults);
     const root = updatePane(state.root, target.paneId, () => ({
       kind: "split", id: splitId,
       orientation: isHorizontalDirection(side) ? "horizontal" : "vertical",
@@ -119,7 +124,7 @@ export class FocusGridController {
     const rect = computeLayout(state).rectByNodeId.get(splitId);
     if (!rect) return false;
     const root = transformLayout(state.root, (node) => node.kind === "split" && node.id === splitId
-      ? resizeSplit(node, node.orientation === "horizontal" ? rect.width : rect.height, props.index, props.deltaPx, props.snapshotSizes)
+      ? resizeSplit(node, node.orientation === "horizontal" ? rect.width : rect.height, props.index, props.deltaPx, props.snapshotSizes, this.minWidth, this.minHeight)
       : node,
     );
     return this.commit({ root });
@@ -180,18 +185,10 @@ export class FocusGridController {
   }
 }
 
-const paneDefaultKeys = ["minWidth", "minHeight", ...paneCommandCapabilityKeys] as const;
-
 function withPaneDefaults(pane: PaneNode, defaults: PaneDefaults): PaneNode {
-  let next = pane;
-  for (const key of paneDefaultKeys) {
-    if (pane[key] === undefined && defaults[key] !== undefined) {
-      next = { ...next, [key]: defaults[key] };
-    }
-  }
-  // An omitted optional field stays absent, including when a creation prop is undefined.
-  if (Object.values(next).some((value) => value === undefined)) {
-    next = Object.fromEntries(Object.entries(next).filter(([, value]) => value !== undefined)) as PaneNode;
-  }
-  return next;
+  const definedPane = Object.fromEntries(Object.entries(pane).filter(([, value]) => value !== undefined)) as PaneNode;
+  const next = Object.fromEntries(Object.entries({ ...defaults, ...definedPane }).filter(([, value]) => value !== undefined)) as PaneNode;
+  return Object.keys(next).length === Object.keys(pane).length &&
+    Object.entries(next).every(([key, value]) => Object.is(pane[key as keyof PaneNode], value))
+    ? pane : next;
 }

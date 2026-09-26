@@ -32,7 +32,7 @@ function Module() {
   const [child, setChild] = useState(true);
   const [grid, setGrid] = useState(true);
   const controller = useFocusGridController(() => ({
-    root: { kind: "split", id: "split", direction: "horizontal", sizes: [1, 1], children: [
+    root: { kind: "split", id: "split", orientation: "horizontal", sizes: [1, 1], children: [
       { kind: "pane", id: "node-a", paneId: "pane-a" },
       { kind: "pane", id: "node-b", paneId: "pane-b" },
     ] },

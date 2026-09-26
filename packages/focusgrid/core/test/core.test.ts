@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   computeLayout,
   findPaneNode,
-  splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane, resizeActivePane,
   createDefaultPaneKeymap,
   createDefaultPaneShortcuts,
   FocusGridController,
@@ -23,8 +22,6 @@ function initialState(): FocusGridControllerState {
       kind: "pane",
       id: "node-1",
       paneId: "editor",
-      minWidth: 120,
-      minHeight: 80,
     },
     activePaneId: "editor",
     container: {
@@ -83,7 +80,7 @@ describe("state validation", () => {
       root: {
         kind: "split",
         id: "root",
-        direction: "horizontal",
+        orientation: "horizontal",
         sizes: [1 / 3, 1 / 3, 1 / 3],
         children: [
           { kind: "pane", id: "pane-node", paneId: "same" },
@@ -119,7 +116,7 @@ describe("state validation", () => {
       root: {
         kind: "split",
         id: "root",
-        direction: "sideways",
+        orientation: "sideways",
         sizes: [Number.NaN, -1],
         children: [
           {
@@ -151,7 +148,7 @@ describe("state validation", () => {
         expect.objectContaining({ code: "invalid-direction" }),
         expect.objectContaining({ code: "invalid-size", path: "$.root.sizes[0]" }),
         expect.objectContaining({ code: "invalid-size", path: "$.root.sizes[1]" }),
-        expect.objectContaining({ code: "invalid-number", path: "$.root.children[0].minWidth" }),
+        expect.objectContaining({ code: "unknown-field", path: "$.root.children[0].minWidth" }),
         expect.objectContaining({ code: "invalid-capability", paneId: "left" }),
         expect.objectContaining({ code: "unknown-field", path: "$.root.children[0].noFocus", paneId: "left" }),
         expect.objectContaining({ code: "invalid-last-focused-child" }),
@@ -225,7 +222,7 @@ describe("controller", () => {
     expect(right.state.activePaneId).toBe("terminal");
     expect(right.state.root).toMatchObject({
       kind: "split",
-      direction: "horizontal",
+      orientation: "horizontal",
       children: [{ paneId: "editor" }, { paneId: "terminal" }],
     });
 
@@ -235,7 +232,7 @@ describe("controller", () => {
     );
     expect(left.state.root).toMatchObject({
       kind: "split",
-      direction: "horizontal",
+      orientation: "horizontal",
       children: [{ paneId: "nav" }, { paneId: "editor" }],
     });
 
@@ -245,7 +242,7 @@ describe("controller", () => {
     ).toBe("console");
     expect(down.state.root).toMatchObject({
       kind: "split",
-      direction: "vertical",
+      orientation: "vertical",
       children: [{ paneId: "editor" }, { paneId: "console" }],
     });
 
@@ -255,7 +252,7 @@ describe("controller", () => {
     );
     expect(up.state.root).toMatchObject({
       kind: "split",
-      direction: "vertical",
+      orientation: "vertical",
       children: [{ paneId: "search" }, { paneId: "editor" }],
     });
   });
@@ -281,29 +278,13 @@ describe("controller", () => {
     expect(preserved.state.activePaneId).toBe("editor");
   });
 
-  it("reads and updates pane data through controller APIs", () => {
-    const controller = new FocusGridController({
-      ...initialState(),
-      root: {
-        kind: "pane",
-        id: "node-1",
-        paneId: "editor",
-        data: { title: "Editor" },
-      },
-    });
-
-    expect(findPaneNode(controller.state.root, "editor")?.data).toEqual({
-      title: "Editor",
-    });
-    expect(findPaneNode(controller.state.root, "missing")?.data).toBeUndefined();
-    expect(controller.updatePane("missing", { data: { title: "Missing" } })).toBe(
-      false,
-    );
-
-    const data = { title: "Updated" };
-    expect(controller.updatePane("editor", { data })).toBe(true);
-    expect(findPaneNode(controller.state.root, "editor")?.data).toBe(data);
-    expect(controller.updatePane("editor", { data })).toBe(false);
+  it("rejects removed pane data and minimum fields", () => {
+    for (const field of ["data", "minWidth", "minHeight"]) {
+      const state = initialState();
+      const result = validateFocusGridControllerState({ ...state, root: { ...state.root, [field]: 1 } });
+      expect(result.ok).toBe(false);
+      expect(result.ok ? [] : result.errors).toContainEqual(expect.objectContaining({ code: "unknown-field", path: `$.root.${field}` }));
+    }
   });
 
   it("applies configured default minimum pane dimensions", () => {
@@ -317,17 +298,16 @@ describe("controller", () => {
       container: {
         width: 1000,
         height: 600,
-      }, paneDefaults: {
-        minWidth: 300,
-        minHeight: 200,
-      }
+      },
+      minWidth: 300,
+      minHeight: 200,
     });
 
+    expect(controller.minWidth).toBe(300);
+    expect(controller.minHeight).toBe(200);
     expect(controller.state.root).toMatchObject({
       kind: "pane",
       paneId: "editor",
-      minWidth: 300,
-      minHeight: 200,
     });
 
     expect(
@@ -339,8 +319,8 @@ describe("controller", () => {
     expect(controller.state.root).toMatchObject({
       kind: "split",
       children: [
-        { paneId: "editor", minWidth: 300, minHeight: 200 },
-        { paneId: "terminal", minWidth: 300, minHeight: 200 },
+        { paneId: "editor" },
+        { paneId: "terminal" },
       ],
     });
 
@@ -366,7 +346,7 @@ describe("controller", () => {
       root: {
         kind: "split",
         id: "root",
-        direction: "horizontal",
+        orientation: "horizontal",
         sizes: [0.5, 0.5],
         children: [
           {
@@ -475,7 +455,7 @@ describe("controller", () => {
     expect(controller.state.activePaneId).toBeNull();
     expect(controller.state.root).toMatchObject({
       kind: "split",
-      direction: "horizontal",
+      orientation: "horizontal",
       children: [{ paneId: "editor" }, { paneId: "terminal" }],
     });
   });
@@ -494,7 +474,7 @@ describe("controller", () => {
     expect(split.activePaneId).toBe("editor");
     expect(split.root).toMatchObject({
       kind: "split",
-      direction: "horizontal",
+      orientation: "horizontal",
       children: [{ paneId: "nav" }, { paneId: "editor" }],
     });
 
@@ -559,22 +539,18 @@ describe("controller", () => {
       root: {
         kind: "split",
         id: "root",
-        direction: "horizontal",
+        orientation: "horizontal",
         sizes: [0.25, 0.75],
         children: [
           {
             kind: "pane",
             id: "left-node",
             paneId: "left",
-            minWidth: 100,
-            data: { title: "Left" },
           },
           {
             kind: "pane",
             id: "right-node",
             paneId: "right",
-            minHeight: 200,
-            data: { title: "Right" },
           },
         ],
       },
@@ -598,14 +574,10 @@ describe("controller", () => {
     expect(firstSlot).toMatchObject({
       id: "left-node",
       paneId: "right",
-      minHeight: 200,
-      data: { title: "Right" },
     });
     expect(secondSlot).toMatchObject({
       id: "right-node",
       paneId: "left",
-      minWidth: 100,
-      data: { title: "Left" },
     });
 
     const layout = computeLayout(controller.state);
@@ -665,7 +637,7 @@ describe("controller", () => {
 
   it("swaps panes with the direct horizontal and vertical directional neighbors", () => {
     const horizontalController = new FocusGridController(horizontalSplitState());
-    expect(swapAdjacentPane(horizontalController, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-right")!.action(horizontalController)).toBe(true);
     const horizontal = horizontalController.state;
 
     expect(horizontal.activePaneId).toBe("left");
@@ -680,7 +652,7 @@ describe("controller", () => {
     });
 
     const verticalController = new FocusGridController(verticalSplitState());
-    expect(swapAdjacentPane(verticalController, "up")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-up")!.action(verticalController)).toBe(true);
     const vertical = verticalController.state;
 
     expect(vertical.activePaneId).toBe("bottom");
@@ -699,7 +671,7 @@ describe("controller", () => {
     const controller = new FocusGridController(verticalMiddleTrifoldState());
     controller.focus("left");
     expect(findPaneInDirection(controller.state, "left", "right")).toBe("middle-bottom");
-    expect(swapAdjacentPane(controller, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-right")!.action(controller)).toBe(true);
     const swapped = controller.state;
 
     expect(swapped.activePaneId).toBe("left");
@@ -727,13 +699,13 @@ describe("controller", () => {
   it("directional swap preserves split structure and sizes", () => {
     const controller = new FocusGridController(nestedDirectionalFocusState());
     controller.focus("left");
-    expect(swapAdjacentPane(controller, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-right")!.action(controller)).toBe(true);
     const next = controller.state;
 
     expect(next.root.kind).toBe("split");
     expect(next.root).toMatchObject({
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.5, 0.5],
     });
 
@@ -741,7 +713,7 @@ describe("controller", () => {
     expect(rightSplit.kind).toBe("split");
     expect(rightSplit).toMatchObject({
       id: "right-split",
-      direction: "vertical",
+      orientation: "vertical",
       sizes: [0.25, 0.75],
     });
   });
@@ -969,23 +941,22 @@ describe("controller", () => {
   it("clamps pane resize to adjacent minimum sizes", () => {
     const controller = new FocusGridController({
       ...horizontalSplitState(),
+      minWidth: 400,
       root: {
         kind: "split",
         id: "root",
-        direction: "horizontal",
+        orientation: "horizontal",
         sizes: [0.5, 0.5],
         children: [
           {
             kind: "pane",
             id: "left-node",
             paneId: "left",
-            minWidth: 0,
           },
           {
             kind: "pane",
             id: "right-node",
             paneId: "right",
-            minWidth: 400,
           },
         ],
       },
@@ -1021,7 +992,7 @@ describe("controller", () => {
   });
 
   it("refits nested split sizes when resizing a parent handle", () => {
-    const controller = new FocusGridController(nestedHandleWithPinnedChildState());
+    const controller = new FocusGridController({ ...nestedHandleWithPinnedChildState(), minWidth: 180 });
     const before = computeLayout(controller.state).panes;
     const beforeOne = before.find((pane) => pane.paneId === "one")!;
     const beforeTwo = before.find((pane) => pane.paneId === "two")!;
@@ -1060,7 +1031,7 @@ describe("controller", () => {
     const controller = new FocusGridController(horizontalSplitState());
 
     expect(
-      resizeActivePane(controller, "right", 48),
+      defaultPaneShortcutActions.find(action => action.id === "resize-right")!.action(controller),
     ).toBe(true);
 
     const root = controller.state.root;
@@ -1081,7 +1052,7 @@ describe("controller", () => {
       },
     });
     const beforeSplitRight = splitRight.state;
-    expect(splitActivePane(splitRight, "right")).toBeNull();
+    expect(defaultPaneShortcutActions.find(action => action.id === "split-right")!.action(splitRight)).toBeNull();
     expect(splitRight.state).toBe(beforeSplitRight);
 
     const splitDown = new FocusGridController({
@@ -1095,7 +1066,7 @@ describe("controller", () => {
       },
     });
     const beforeSplitDown = splitDown.state;
-    expect(splitActivePane(splitDown, "down")).toBeNull();
+    expect(defaultPaneShortcutActions.find(action => action.id === "split-down")!.action(splitDown)).toBeNull();
     expect(splitDown.state).toBe(beforeSplitDown);
 
     const remove = new FocusGridController({
@@ -1109,7 +1080,7 @@ describe("controller", () => {
       },
     });
     const beforeRemove = remove.state;
-    expect(closeActivePane(remove)).toBe(false);
+    expect(defaultPaneShortcutActions.find(action => action.id === "close")!.action(remove)).toBe(false);
     expect(remove.state).toBe(beforeRemove);
 
     const resize = new FocusGridController({
@@ -1124,7 +1095,7 @@ describe("controller", () => {
     });
     const beforeResize = resize.state;
     expect(
-      resizeActivePane(resize, "right", 48),
+      defaultPaneShortcutActions.find(action => action.id === "resize-right")!.action(resize),
     ).toBe(false);
     expect(resize.state).toBe(beforeResize);
   });
@@ -1258,7 +1229,7 @@ describe("controller", () => {
     const controller = new FocusGridController(horizontalSplitState());
 
     expect("focusDirection" in controller).toBe(false);
-    expect(focusAdjacentPane(controller, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(controller)).toBe(true);
     expect(controller.state.activePaneId).toBe("right");
   });
 
@@ -1385,7 +1356,7 @@ describe("controller", () => {
   it("runs default pane directional focus commands against the active pane", () => {
     const controller = new FocusGridController(horizontalSplitState());
 
-    expect(focusAdjacentPane(controller, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(controller)).toBe(true);
 
     expect(controller.state.activePaneId).toBe("right");
   });
@@ -1394,14 +1365,14 @@ describe("controller", () => {
     const controller = new FocusGridController(threePaneHorizontalState("left", {
       middle: { canFocus: false },
     }));
-    expect(focusAdjacentPane(controller, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(controller)).toBe(true);
     expect(controller.state.activePaneId).toBe("right");
 
     const allBlocked = new FocusGridController(threePaneHorizontalState("left", {
       middle: { canFocus: false },
       right: { canFocus: false },
     }));
-    expect(focusAdjacentPane(allBlocked, "right")).toBe(false);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(allBlocked)).toBe(false);
     expect(allBlocked.state.activePaneId).toBe("left");
   });
 
@@ -1418,7 +1389,7 @@ describe("controller", () => {
       },
     });
     expect(
-      resizeActivePane(resize, "down", 48),
+      defaultPaneShortcutActions.find(action => action.id === "resize-down")!.action(resize),
     ).toBe(true);
     const resizeRoot = resize.state.root;
     expect(resizeRoot.kind).toBe("split");
@@ -1435,7 +1406,7 @@ describe("controller", () => {
         ],
       },
     });
-    expect(swapAdjacentPane(swap, "down")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-down")!.action(swap)).toBe(true);
     expect(swap.state.root).toMatchObject({
       kind: "split",
       children: [{ paneId: "bottom" }, { paneId: "top" }],
@@ -1444,11 +1415,11 @@ describe("controller", () => {
 
   it("wraps directional focus only when overflow is enabled", () => {
     const blocked = new FocusGridController(threePaneHorizontalState("right"));
-    expect(focusAdjacentPane(blocked, "right")).toBe(false);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(blocked)).toBe(false);
     expect(blocked.state.activePaneId).toBe("right");
 
     const wrapping = new FocusGridController({ ...threePaneHorizontalState("right"), directionalFocusOverflow: true });
-    expect(focusAdjacentPane(wrapping, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(wrapping)).toBe(true);
     expect(wrapping.state.activePaneId).toBe("left");
   });
 
@@ -1459,7 +1430,7 @@ describe("controller", () => {
       }), directionalFocusOverflow: true
     });
 
-    expect(focusAdjacentPane(controller, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(controller)).toBe(true);
     expect(controller.state.activePaneId).toBe("middle");
 
     const allBlocked = new FocusGridController({
@@ -1469,14 +1440,14 @@ describe("controller", () => {
       }), directionalFocusOverflow: true
     });
 
-    expect(focusAdjacentPane(allBlocked, "right")).toBe(false);
+    expect(defaultPaneShortcutActions.find(action => action.id === "focus-right")!.action(allBlocked)).toBe(false);
     expect(allBlocked.state.activePaneId).toBe("right");
   });
 
   it("runs default pane directional swap commands against the active pane", () => {
     const controller = new FocusGridController(horizontalSplitState());
 
-    expect(swapAdjacentPane(controller, "right")).toBe(true);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-right")!.action(controller)).toBe(true);
 
     const state = controller.state;
     expect(state.activePaneId).toBe("left");
@@ -1489,7 +1460,7 @@ describe("controller", () => {
     const activeBlocked = new FocusGridController(threePaneHorizontalState("left", {
       left: { canSwapX: false },
     }));
-    expect(swapAdjacentPane(activeBlocked, "right")).toBe(false);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-right")!.action(activeBlocked)).toBe(false);
     expect(activeBlocked.state.root).toMatchObject({
       kind: "split",
       children: [
@@ -1504,7 +1475,7 @@ describe("controller", () => {
     const targetBlocked = new FocusGridController(threePaneHorizontalState("left", {
       middle: { canSwapX: false },
     }));
-    expect(swapAdjacentPane(targetBlocked, "right")).toBe(false);
+    expect(defaultPaneShortcutActions.find(action => action.id === "swap-right")!.action(targetBlocked)).toBe(false);
     expect(targetBlocked.state.root).toMatchObject({
       kind: "split",
       children: [
@@ -1523,7 +1494,7 @@ function horizontalSplitState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.5, 0.5],
       children: [
         {
@@ -1551,7 +1522,7 @@ function verticalSplitState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "vertical",
+      orientation: "vertical",
       sizes: [0.5, 0.5],
       children: [
         {
@@ -1584,7 +1555,7 @@ function threePaneHorizontalState(
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [1 / 3, 2 / 3],
       children: [
         {
@@ -1596,7 +1567,7 @@ function threePaneHorizontalState(
         {
           kind: "split",
           id: "right-branch",
-          direction: "horizontal",
+          orientation: "horizontal",
           sizes: [0.5, 0.5],
           children: [
             {
@@ -1628,13 +1599,13 @@ function leftNestedTrifoldState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.5, 0.5],
       children: [
         {
           kind: "split",
           id: "nested",
-          direction: "horizontal",
+          orientation: "horizontal",
           sizes: [0.5, 0.5],
           children: [
             {
@@ -1669,7 +1640,7 @@ function nestedHorizontalState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.5, 0.5],
       children: [
         {
@@ -1680,7 +1651,7 @@ function nestedHorizontalState(): FocusGridControllerState {
         {
           kind: "split",
           id: "nested",
-          direction: "horizontal",
+          orientation: "horizontal",
           sizes: [0.5, 0.5],
           children: [
             {
@@ -1710,13 +1681,13 @@ function nestedHandleState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.25, 0.75],
       children: [
         {
           kind: "split",
           id: "inner",
-          direction: "horizontal",
+          orientation: "horizontal",
           sizes: [0.5, 0.5],
           children: [
             {
@@ -1751,26 +1722,24 @@ function nestedHandleWithPinnedChildState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.75, 0.25],
       children: [
         {
           kind: "split",
           id: "inner",
-          direction: "horizontal",
+          orientation: "horizontal",
           sizes: [0.8, 0.2],
           children: [
             {
               kind: "pane",
               id: "one-node",
               paneId: "one",
-              minWidth: 180,
             },
             {
               kind: "pane",
               id: "two-node",
               paneId: "two",
-              minWidth: 180,
             },
           ],
         },
@@ -1778,7 +1747,6 @@ function nestedHandleWithPinnedChildState(): FocusGridControllerState {
           kind: "pane",
           id: "three-node",
           paneId: "three",
-          minWidth: 180,
         },
       ],
     },
@@ -1795,7 +1763,7 @@ function nestedDirectionalFocusState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.5, 0.5],
       children: [
         {
@@ -1806,7 +1774,7 @@ function nestedDirectionalFocusState(): FocusGridControllerState {
         {
           kind: "split",
           id: "right-split",
-          direction: "vertical",
+          orientation: "vertical",
           sizes: [0.25, 0.75],
           children: [
             {
@@ -1836,13 +1804,13 @@ function verticalMiddleTrifoldState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.75, 0.25],
       children: [
         {
           kind: "split",
           id: "left-branch",
-          direction: "horizontal",
+          orientation: "horizontal",
           sizes: [1 / 3, 2 / 3],
           children: [
             {
@@ -1853,7 +1821,7 @@ function verticalMiddleTrifoldState(): FocusGridControllerState {
             {
               kind: "split",
               id: "middle-split",
-              direction: "vertical",
+              orientation: "vertical",
               sizes: [0.25, 0.75],
               children: [
                 {
@@ -1890,7 +1858,7 @@ function horizontalTargetWithStaleMemoryState(): FocusGridControllerState {
     root: {
       kind: "split",
       id: "root",
-      direction: "horizontal",
+      orientation: "horizontal",
       sizes: [0.3, 0.7],
       children: [
         {
@@ -1901,7 +1869,7 @@ function horizontalTargetWithStaleMemoryState(): FocusGridControllerState {
         {
           kind: "split",
           id: "right-split",
-          direction: "horizontal",
+          orientation: "horizontal",
           sizes: [0.5, 0.5],
           lastFocusedChildId: "far-node",
           children: [

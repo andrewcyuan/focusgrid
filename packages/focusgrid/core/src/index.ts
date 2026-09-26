@@ -7,7 +7,6 @@ export type {
   LayoutIndex,
   LayoutNode,
   NodeId,
-  PaneCommandCapabilityKey,
   PaneCommandCapabilityInput,
   PaneId,
   PaneNode,
@@ -25,16 +24,8 @@ export type {
   SplitPaneOptions,
 } from "./controller";
 
-export {
-  splitActivePane,
-  closeActivePane,
-  focusAdjacentPane,
-  swapAdjacentPane,
-  resizeActivePane,
-  DEFAULT_PANE_RESIZE_DELTA_PX,
-} from "./commands/pane-commands";
-
-export { cardinalDirections, paneCommandCapabilityKeys } from "./layout/types";
+export { cardinalDirections, PaneCommandCapability } from "./layout/types";
+export { findPaneForFocusCommand } from "./layout/navigation";
 export { computeLayout } from "./layout/geometry";
 export { collectPaneIds, findPaneNode, findSplitNode } from "./layout/tree";
 export {

@@ -47,21 +47,23 @@ export function normalizeSplitSizes(
 export function getMinimumSize(
   node: LayoutNode,
   direction: Orientation,
+  minWidth = 0,
+  minHeight = 0,
 ): number {
   if (node.kind === "pane") {
-    return direction === "horizontal" ? node.minWidth ?? 0 : node.minHeight ?? 0;
+    return direction === "horizontal" ? minWidth : minHeight;
   }
 
   if (node.orientation === direction) {
     return (
       node.children.reduce(
-        (sum, child) => sum + getMinimumSize(child, direction),
+        (sum, child) => sum + getMinimumSize(child, direction, minWidth, minHeight),
         0,
       ) + Math.max(0, node.children.length - 1) * HANDLE_SIZE
     );
   }
 
-  return Math.max(0, ...node.children.map((child) => getMinimumSize(child, direction)));
+  return Math.max(0, ...node.children.map((child) => getMinimumSize(child, direction, minWidth, minHeight)));
 }
 
 function computeNode(

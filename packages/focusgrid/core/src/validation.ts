@@ -1,4 +1,4 @@
-import { paneCommandCapabilityKeys, type FocusGridControllerState, type NodeId, type PaneId } from "./layout/types";
+import { PaneCommandCapability, type FocusGridControllerState, type NodeId, type PaneId } from "./layout/types";
 
 export type FocusGridStateValidationError = {
   code: string;
@@ -75,18 +75,15 @@ export function validateFocusGridControllerState(input: unknown): FocusGridState
     id(value.id, nodeIds, "node", `${path}.id`, meta);
     if (value.kind === "pane") {
       id(value.paneId, paneIds, "pane", `${path}.paneId`, meta);
-      for (const key of ["minWidth", "minHeight"] as const) {
-        if (key in value) size(value[key], `${path}.${key}`, key, meta);
-      }
-      for (const key of paneCommandCapabilityKeys) {
+      for (const key of Object.values(PaneCommandCapability)) {
         if (key in value && typeof value[key] !== "boolean") {
           add("invalid-capability", `${path}.${key}`, `${key} must be a boolean when provided.`, meta);
         }
       }
       return;
     }
-    if (value.direction !== "horizontal" && value.direction !== "vertical") {
-      add("invalid-direction", `${path}.direction`, 'Split direction must be "horizontal" or "vertical".', meta);
+    if (value.orientation !== "horizontal" && value.orientation !== "vertical") {
+      add("invalid-direction", `${path}.orientation`, 'Split orientation must be "horizontal" or "vertical".', meta);
     }
     if (!Array.isArray(value.children)) {
       add("invalid-children", `${path}.children`, "Split children must be an array.", meta);
@@ -151,5 +148,5 @@ function isSize(input: unknown): input is number {
 
 const STATE_FIELDS = new Set(["root", "activePaneId", "container"]);
 const CONTAINER_FIELDS = new Set(["width", "height"]);
-const PANE_FIELDS = new Set(["kind", "id", "paneId", "minWidth", "minHeight", "data", ...paneCommandCapabilityKeys]);
-const SPLIT_FIELDS = new Set(["kind", "id", "direction", "children", "sizes", "lastFocusedChildId"]);
+const PANE_FIELDS = new Set(["kind", "id", "paneId", ...Object.values(PaneCommandCapability)]);
+const SPLIT_FIELDS = new Set(["kind", "id", "orientation", "children", "sizes", "lastFocusedChildId"]);

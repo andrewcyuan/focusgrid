@@ -1,3 +1,4 @@
+import { PaneCommandCapability } from "./types";
 import { computeLayout } from "./geometry";
 import { buildLayoutIndex, collectPaneIds } from "./tree";
 import {
@@ -58,7 +59,7 @@ export function findPaneForFocusCommand(
 
   const index = buildLayoutIndex(state.root);
   const candidates = layout.panes.filter((pane) =>
-    pane.paneId !== paneId && index.paneNodeByPaneId.get(pane.paneId)?.canFocus !== false,
+    pane.paneId !== paneId && index.paneNodeByPaneId.get(pane.paneId)?.[PaneCommandCapability.Focus] !== false,
   );
   const target = sortFocusCandidates(
     candidates.filter((pane) => isRectInDirection(pane.rect, activePane.rect, direction)),
