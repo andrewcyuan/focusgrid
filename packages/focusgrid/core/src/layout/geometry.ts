@@ -1,23 +1,16 @@
 import { HANDLE_SIZE } from "./constants";
 import type {
-  ComputedHandle,
   ComputedLayout,
   Direction,
   FocusGridControllerState,
   LayoutNode,
-  NodeId,
   Rect,
-  SplitNode,
 } from "./types";
 
-export type LayoutGeometry = ComputedLayout & {
-  rectByNodeId: Map<NodeId, Rect>;
-};
-
-export function computeLayoutGeometry(
+export function computeLayout(
   state: FocusGridControllerState,
-): LayoutGeometry {
-  const geometry: LayoutGeometry = {
+): ComputedLayout {
+  const geometry: ComputedLayout = {
     panes: [],
     handles: [],
     rectByNodeId: new Map(),
@@ -74,7 +67,7 @@ export function getMinimumSize(
 function computeNode(
   node: LayoutNode,
   rect: Rect,
-  geometry: LayoutGeometry,
+  geometry: ComputedLayout,
   activePaneId: string | null,
 ): void {
   geometry.rectByNodeId.set(node.id, rect);
@@ -89,25 +82,18 @@ function computeNode(
     return;
   }
 
-  computeSplit(node, rect, geometry, activePaneId);
-}
-
-function computeSplit(
-  node: SplitNode,
-  rect: Rect,
-  geometry: LayoutGeometry,
-  activePaneId: string | null,
-): void {
   const sizes = normalizeSplitSizes(node.sizes, node.children.length);
-  const axisSize = node.direction === "horizontal" ? rect.width : rect.height;
+  const horizontal = node.direction === "horizontal";
+  const axisSize = horizontal ? rect.width : rect.height;
+  const axisStart = horizontal ? rect.x : rect.y;
   const handleTotal = Math.max(0, node.children.length - 1) * HANDLE_SIZE;
   const contentSize = Math.max(0, axisSize - handleTotal);
-  let cursor = node.direction === "horizontal" ? rect.x : rect.y;
+  let cursor = axisStart;
 
   node.children.forEach((child, index) => {
     const isLast = index === node.children.length - 1;
     const childSize = isLast
-      ? axisEnd(rect, node.direction) - cursor
+      ? axisStart + axisSize - cursor
       : Math.floor(contentSize * (sizes[index] ?? 0));
     const childRect = createChildRect(node.direction, rect, cursor, childSize);
 
@@ -115,7 +101,10 @@ function computeSplit(
     cursor += childSize;
 
     if (!isLast) {
-      geometry.handles.push(createHandle(node, index, getHandleRect(node.direction, rect, cursor)));
+      geometry.handles.push({
+        id: `${node.id}:${index}`, splitId: node.id, index, direction: node.direction,
+        rect: createChildRect(node.direction, rect, cursor, HANDLE_SIZE),
+      });
       cursor += HANDLE_SIZE;
     }
   });
@@ -130,24 +119,4 @@ function createChildRect(
   return direction === "horizontal"
     ? { x: cursor, y: rect.y, width: Math.max(0, size), height: rect.height }
     : { x: rect.x, y: cursor, width: rect.width, height: Math.max(0, size) };
-}
-
-function createHandle(split: SplitNode, index: number, rect: Rect): ComputedHandle {
-  return {
-    id: `${split.id}:${index}`,
-    splitId: split.id,
-    index,
-    rect,
-    direction: split.direction,
-  };
-}
-
-function getHandleRect(direction: Direction, rect: Rect, cursor: number): Rect {
-  return direction === "horizontal"
-    ? { x: cursor, y: rect.y, width: HANDLE_SIZE, height: rect.height }
-    : { x: rect.x, y: cursor, width: rect.width, height: HANDLE_SIZE };
-}
-
-function axisEnd(rect: Rect, direction: Direction): number {
-  return direction === "horizontal" ? rect.x + rect.width : rect.y + rect.height;
 }

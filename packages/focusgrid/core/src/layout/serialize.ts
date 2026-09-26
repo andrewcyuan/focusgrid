@@ -1,14 +1,8 @@
 import type { FocusGridControllerState } from "./types";
 import {
   assertValidFocusGridControllerState,
-  createInvalidJsonStateValidationException,
+  FocusGridStateValidationException,
 } from "../validation";
-
-export function serializeFocusGridControllerState(
-  state: FocusGridControllerState,
-): string {
-  return JSON.stringify(state);
-}
 
 export function deserializeFocusGridControllerState(
   serialized: string,
@@ -18,9 +12,10 @@ export function deserializeFocusGridControllerState(
   try {
     parsed = JSON.parse(serialized);
   } catch (error) {
-    throw createInvalidJsonStateValidationException(
-      error instanceof Error ? error.message : "Serialized state must be valid JSON.",
-    );
+    throw new FocusGridStateValidationException([{
+      code: "invalid-json", path: "$",
+      message: error instanceof Error ? error.message : "Serialized state must be valid JSON.",
+    }]);
   }
 
   assertValidFocusGridControllerState(parsed);

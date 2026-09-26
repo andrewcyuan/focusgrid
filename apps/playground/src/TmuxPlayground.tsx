@@ -1,7 +1,7 @@
 import { normalizeShortcut } from "@andrewcyuan/shortcut-engine";
 import {
   defaultPaneShortcutActions,
-  paneSplitSides,
+  cardinalDirections,
   findPaneNode,
   collectPaneIds,
   type PaneCommandCapabilityInput,
@@ -164,7 +164,7 @@ function Toolbar({
 }) {
   const state = useControllerState(controller);
   const paneIds = useMemo(() => collectPaneIds(state.root), [state.root]);
-  const activePane = findPaneNode(state, state.activePaneId);
+  const activePane = findPaneNode(state.root, state.activePaneId);
   const swapTargets = useMemo(
     () => paneIds.filter((paneId) => paneId !== state.activePaneId),
     [paneIds, state.activePaneId]
@@ -204,7 +204,7 @@ function Toolbar({
               {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
             </button>
             <div className="ToolbarButtonGroup" aria-label="Split active pane">
-              {paneSplitSides.map((side) => (
+              {cardinalDirections.map((side) => (
                 <button
                   disabled={!activePane}
                   key={side}

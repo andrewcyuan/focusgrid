@@ -8,12 +8,9 @@ export type {
   LayoutNode,
   NodeId,
   PaneCommandCapabilityKey,
-  PaneFocusDirection,
+  PaneCommandCapabilityInput,
   PaneId,
   PaneNode,
-  PaneResizeDirection,
-  PaneSplitSide,
-  PaneSwapDirection,
   Rect,
   SplitNode,
   FocusGridControllerState,
@@ -24,42 +21,24 @@ export type {
   Listener,
   PaneDefaults,
   ResizeHandleOptions,
+  ResizePaneOptions,
+  SplitPaneOptions,
 } from "./controller";
 
 export {
-  splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane,
-  resizeActivePane, DEFAULT_PANE_RESIZE_DELTA_PX,
+  splitActivePane,
+  closeActivePane,
+  focusAdjacentPane,
+  swapAdjacentPane,
+  resizeActivePane,
+  DEFAULT_PANE_RESIZE_DELTA_PX,
 } from "./commands/pane-commands";
-export {
-  findPaneNode,
-  getPaneCommandCapabilities,
-  paneAllowsFocus,
-  paneAllowsResize,
-  paneAllowsSplit,
-  paneAllowsSwap,
-} from "./pane-guards";
-export type {
-  PaneCommandCapabilities,
-  PaneCommandCapabilityInput,
-} from "./pane-guards";
 
-export {
-  cardinalDirections,
-  paneFocusDirections,
-  paneResizeDirections,
-  paneSplitSides,
-  paneSwapDirections,
-  paneCommandCapabilityKeys,
-} from "./layout/types";
-export { computeLayout } from "./layout/solver";
-export { collectPaneIds, findSplitNode } from "./layout/tree";
-export type {
-  ResizePaneOptions,
-  SplitPaneOptions,
-} from "./layout/operations";
+export { cardinalDirections, paneCommandCapabilityKeys } from "./layout/types";
+export { computeLayout } from "./layout/geometry";
+export { collectPaneIds, findPaneNode, findSplitNode } from "./layout/tree";
 export {
   deserializeFocusGridControllerState,
-  serializeFocusGridControllerState,
 } from "./layout/serialize";
 export {
   FocusGridStateValidationException,

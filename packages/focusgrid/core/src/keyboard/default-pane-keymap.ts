@@ -1,6 +1,12 @@
 import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import type { FocusGridController } from "../controller";
-import { splitActivePane, closeActivePane, focusAdjacentPane, swapAdjacentPane, resizeActivePane } from "../commands/pane-commands";
+import {
+  splitActivePane,
+  closeActivePane,
+  focusAdjacentPane,
+  swapAdjacentPane,
+  resizeActivePane,
+} from "../commands/pane-commands";
 
 export const defaultPaneShortcutActions = [
   {

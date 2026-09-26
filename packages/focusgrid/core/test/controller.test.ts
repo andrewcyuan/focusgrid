@@ -65,28 +65,28 @@ describe("public controller methods", () => {
     const controller = new FocusGridController({
       ...initial, paneDefaults: { minWidth: 120, minHeight: 90, canRemove: false, canFocus: false },
     });
-    expect(findPaneNode(controller.state, "editor")).toMatchObject({ minWidth: 80, minHeight: 90, canRemove: true, canFocus: false });
+    expect(findPaneNode(controller.state.root, "editor")).toMatchObject({ minWidth: 80, minHeight: 90, canRemove: true, canFocus: false });
     expect(initial.root).not.toHaveProperty("minHeight");
     controller.split("editor-node", { side: "right", newPaneId: "terminal", minHeight: 150, canFocus: true });
-    expect(findPaneNode(controller.state, "terminal")).toMatchObject({ minWidth: 120, minHeight: 150, canRemove: false, canFocus: true });
+    expect(findPaneNode(controller.state.root, "terminal")).toMatchObject({ minWidth: 120, minHeight: 150, canRemove: false, canFocus: true });
   });
 
   it("patches pane fields together while preserving identity and omitted fields", () => {
     const controller = new FocusGridController(props());
     controller.split("editor-node", { side: "right", newPaneId: "terminal" });
-    const sibling = findPaneNode(controller.state, "terminal");
+    const sibling = findPaneNode(controller.state.root, "terminal");
     const previous = controller.state;
     const listener = vi.fn();
     controller.subscribe(listener);
     const data = { title: "Editor" };
     expect(controller.updatePane("editor", { data, minWidth: 140, minHeight: 100, canRemove: false })).toBe(true);
-    expect(findPaneNode(controller.state, "editor")).toEqual({ kind: "pane", id: "editor-node", paneId: "editor", data, minWidth: 140, minHeight: 100, canRemove: false });
-    expect(findPaneNode(controller.state, "terminal")).toBe(sibling);
+    expect(findPaneNode(controller.state.root, "editor")).toEqual({ kind: "pane", id: "editor-node", paneId: "editor", data, minWidth: 140, minHeight: 100, canRemove: false });
+    expect(findPaneNode(controller.state.root, "terminal")).toBe(sibling);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledWith(controller.state, previous);
     expect(controller.updatePane("editor", { minWidth: 160 })).toBe(true);
-    expect(findPaneNode(controller.state, "editor")?.data).toBe(data);
-    expect(findPaneNode(controller.state, "editor")?.canRemove).toBe(false);
+    expect(findPaneNode(controller.state.root, "editor")?.data).toBe(data);
+    expect(findPaneNode(controller.state.root, "editor")?.canRemove).toBe(false);
   });
 
   it("preserves state and notifications for unchanged patches and unsubscribes", () => {
@@ -106,10 +106,41 @@ describe("public controller methods", () => {
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
     controller.updatePane("editor", { data: undefined });
-    expect(findPaneNode(controller.state, "editor")?.data).toBeUndefined();
+    expect(findPaneNode(controller.state.root, "editor")?.data).toBeUndefined();
     controller.updatePane("editor", { minWidth: undefined });
-    expect(findPaneNode(controller.state, "editor")).not.toHaveProperty("minWidth");
+    expect(findPaneNode(controller.state.root, "editor")).not.toHaveProperty("minWidth");
     expect(validateFocusGridControllerState(controller.state).ok).toBe(true);
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it("uses pane defaults when creation props are omitted or undefined", () => {
+    const controller = new FocusGridController({
+      ...props(), paneDefaults: { minWidth: 120, canFocus: false },
+    });
+    controller.split("editor-node", {
+      side: "right", newPaneId: "terminal", minWidth: undefined, minHeight: undefined,
+      canFocus: undefined, data: undefined,
+    });
+    expect(findPaneNode(controller.state.root, "terminal")).toMatchObject({ minWidth: 120, canFocus: false });
+    expect(findPaneNode(controller.state.root, "terminal")).not.toHaveProperty("minHeight");
+    expect(validateFocusGridControllerState(controller.state).ok).toBe(true);
+  });
+
+  it("preserves one snapshot and emits no notifications across unchanged controller operations", () => {
+    const controller = new FocusGridController(props());
+    controller.split("editor-node", { side: "right", newPaneId: "terminal", splitId: "workspace" });
+    const before = controller.state;
+    const listener = vi.fn();
+    controller.subscribe(listener);
+    expect(controller.focus("terminal")).toBe(false);
+    expect(controller.resize("editor", { direction: "right", deltaPx: 0 })).toBe(false);
+    expect(controller.resizeHandle("workspace", { index: 0, deltaPx: 0 })).toBe(false);
+    expect(controller.remove("missing")).toBe(false);
+    expect(controller.swap("editor", "editor")).toBe(false);
+    expect(controller.updatePane("editor", {})).toBe(false);
+    expect(controller.setContainerSize(1000, 600)).toBe(false);
+    expect(controller.state).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
 });

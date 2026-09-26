@@ -5,16 +5,6 @@ export type Direction = "horizontal" | "vertical";
 export const cardinalDirections = ["left", "right", "up", "down"] as const;
 
 export type CardinalDirection = (typeof cardinalDirections)[number];
-export type PaneSplitSide = CardinalDirection;
-export type PaneFocusDirection = CardinalDirection;
-export type PaneResizeDirection = CardinalDirection;
-export type PaneSwapDirection = CardinalDirection;
-
-export const paneSplitSides = cardinalDirections;
-export const paneFocusDirections = cardinalDirections;
-export const paneResizeDirections = cardinalDirections;
-export const paneSwapDirections = cardinalDirections;
-
 export const paneCommandCapabilityKeys = [
   "canResizeX",
   "canResizeY",
@@ -28,8 +18,7 @@ export const paneCommandCapabilityKeys = [
 
 export type PaneCommandCapabilityKey =
   (typeof paneCommandCapabilityKeys)[number];
-export type PaneCommandCapabilities = Record<PaneCommandCapabilityKey, boolean>;
-export type PaneCommandCapabilityInput = Partial<PaneCommandCapabilities>;
+export type PaneCommandCapabilityInput = Partial<Record<PaneCommandCapabilityKey, boolean>>;
 
 export type PaneNode = {
   kind: "pane";
@@ -74,6 +63,7 @@ export type ComputedHandle = {
 };
 
 export type ComputedLayout = {
+  rectByNodeId: Map<NodeId, Rect>;
   panes: ComputedPane[];
   handles: ComputedHandle[];
 };

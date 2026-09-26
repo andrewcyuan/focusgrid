@@ -90,3 +90,7 @@ Moving FocusGrid DOM setup into a layout effect read the application's ancestor 
 ## Optional Pane Fields Must Be Absent When Cleared
 
 Pane creation wrote undefined minimum sizes, which the state validator rejected. When creating defaults or clearing partial pane fields, omit undefined optional fields and validate the resulting state in a regression test.
+
+## State Operations Duplicated Controller Ownership
+
+Separate layout operations rebuilt full controller snapshots while the controller only forwarded and committed them. Keep transitions and notifications in the controller; helpers should operate on tree nodes or geometry, and tests should exercise controller commands rather than obsolete state wrappers.

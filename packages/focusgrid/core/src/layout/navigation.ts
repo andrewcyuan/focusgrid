@@ -1,7 +1,7 @@
-import { findPaneNode, paneAllowsFocus } from "../pane-guards";
-import { computeLayout } from "./solver";
+import { computeLayout } from "./geometry";
 import { buildLayoutIndex, collectPaneIds } from "./tree";
 import {
+  isHorizontalDirection,
   compareEnteringEdge,
   getCenterDistance,
   getEnteringEdge,
@@ -10,9 +10,10 @@ import {
   isRectInDirection,
 } from "./spatial";
 import type {
+  LayoutIndex,
+  CardinalDirection,
   ComputedPane,
   FocusGridControllerState,
-  PaneFocusDirection,
   PaneId,
   LayoutNode,
   NodeId,
@@ -22,7 +23,7 @@ import type {
 export function findPaneInDirection(
   state: FocusGridControllerState,
   paneId: PaneId,
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): PaneId | null {
   const index = buildLayoutIndex(state.root);
   const paneNode = index.paneNodeByPaneId.get(paneId);
@@ -48,47 +49,30 @@ export function findPaneInDirection(
 export function findPaneForFocusCommand(
   state: FocusGridControllerState,
   paneId: PaneId,
-  direction: PaneFocusDirection,
-  options: { overflow: boolean },
+  direction: CardinalDirection,
+  overflow: boolean,
 ): PaneId | null {
   const layout = computeLayout(state);
   const activePane = layout.panes.find((pane) => pane.paneId === paneId);
   if (!activePane) return null;
 
-  const candidates = sortFocusCandidates(
-    layout.panes.filter(
-      (pane) =>
-        pane.paneId !== paneId &&
-        isRectInDirection(pane.rect, activePane.rect, direction),
-    ),
+  const index = buildLayoutIndex(state.root);
+  const candidates = layout.panes.filter((pane) =>
+    pane.paneId !== paneId && index.paneNodeByPaneId.get(pane.paneId)?.canFocus !== false,
+  );
+  const target = sortFocusCandidates(
+    candidates.filter((pane) => isRectInDirection(pane.rect, activePane.rect, direction)),
     activePane,
     direction,
-  );
-  const target = selectFocusablePane(state, candidates);
-  if (target || !options.overflow) return target;
-
-  return selectFocusablePane(
-    state,
-    sortOverflowCandidates(
-      layout.panes.filter((pane) => pane.paneId !== paneId),
-      direction,
-    ),
-  );
-}
-
-function selectFocusablePane(
-  state: FocusGridControllerState,
-  candidates: ComputedPane[],
-): PaneId | null {
-  return candidates.find((candidate) =>
-    paneAllowsFocus(findPaneNode(state, candidate.paneId)),
-  )?.paneId ?? null;
+  )[0]?.paneId ?? null;
+  if (target || !overflow) return target;
+  return sortOverflowCandidates(candidates, direction)[0]?.paneId ?? null;
 }
 
 function sortFocusCandidates(
   candidates: ComputedPane[],
   activePane: ComputedPane,
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): ComputedPane[] {
   const activeCenter = getRectCenter(activePane.rect);
   return [...candidates].sort((first, second) => {
@@ -101,11 +85,11 @@ function sortFocusCandidates(
 
     const firstPerpendicular = Math.abs(
       getPerpendicularCenter(first.rect, direction) -
-        getPerpendicularCenter(activePane.rect, direction),
+      getPerpendicularCenter(activePane.rect, direction),
     );
     const secondPerpendicular = Math.abs(
       getPerpendicularCenter(second.rect, direction) -
-        getPerpendicularCenter(activePane.rect, direction),
+      getPerpendicularCenter(activePane.rect, direction),
     );
     if (firstPerpendicular !== secondPerpendicular) {
       return firstPerpendicular - secondPerpendicular;
@@ -120,7 +104,7 @@ function sortFocusCandidates(
 
 function sortOverflowCandidates(
   candidates: ComputedPane[],
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): ComputedPane[] {
   return [...candidates].sort((first, second) => {
     if (direction === "right") return first.rect.x - second.rect.x;
@@ -135,7 +119,7 @@ function sortOverflowCandidates(
 function findDirectionalSibling(
   parent: SplitNode,
   childId: NodeId,
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): LayoutNode | null {
   const childIndex = parent.children.findIndex((child) => child.id === childId);
   if (childIndex === -1) return null;
@@ -156,7 +140,7 @@ function findTargetPaneInSubtree(
   subtree: LayoutNode,
   panes: ComputedPane[],
   activePane: ComputedPane,
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): PaneId | null {
   const subtreePaneIds = new Set(collectPaneIds(subtree));
   const candidates = panes.filter((pane) => subtreePaneIds.has(pane.paneId));
@@ -169,7 +153,7 @@ function findTargetPaneInSubtree(
       edge: getEnteringEdge(pane.rect, direction),
       perpendicularDistance: Math.abs(
         getPerpendicularCenter(pane.rect, direction) -
-          getPerpendicularCenter(activePane.rect, direction),
+        getPerpendicularCenter(activePane.rect, direction),
       ),
       focusMemoryRank: getFocusMemoryRank(subtree, pane.paneId),
       centerDistance: getCenterDistance(pane.rect, activeCenter),
@@ -195,4 +179,45 @@ function getFocusMemoryRank(subtree: LayoutNode, paneId: PaneId): number {
 
   const nestedRank = getFocusMemoryRank(rememberedChild, paneId);
   return Number.isFinite(nestedRank) ? nestedRank : 1;
+}
+
+export function resolvePaneResizeBoundary(
+  index: LayoutIndex,
+  nodeId: NodeId,
+  direction: CardinalDirection
+): { splitId: NodeId; index: number; deltaPxSign: 1 | -1 } | null {
+  let currentId = nodeId;
+  let parent = index.parentByNodeId.get(currentId) ?? null;
+
+  while (parent) {
+    const childIndex = parent.children.findIndex(
+      (child) => child.id === currentId
+    );
+
+    if (childIndex === -1) {
+      return null;
+    }
+
+    if (isHorizontalDirection(direction) === (parent.direction === "horizontal")) {
+      const boundaryIndex =
+        childIndex > 0
+          ? childIndex - 1
+          : childIndex < parent.children.length - 1
+            ? childIndex
+            : null;
+
+      if (boundaryIndex !== null) {
+        return {
+          splitId: parent.id,
+          index: boundaryIndex,
+          deltaPxSign: (direction === "right" || direction === "down") ? 1 : -1,
+        };
+      }
+    }
+
+    currentId = parent.id;
+    parent = index.parentByNodeId.get(currentId) ?? null;
+  }
+
+  return null;
 }

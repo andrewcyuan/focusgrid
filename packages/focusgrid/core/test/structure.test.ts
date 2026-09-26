@@ -8,7 +8,7 @@ import {
   validateFocusGridControllerState,
   type FocusGridControllerState,
 } from "../src";
-import { computeLayoutGeometry, getMinimumSize } from "../src/layout/geometry";
+import { computeLayout, getMinimumSize } from "../src/layout/geometry";
 import { transformLayout, updatePane } from "../src/layout/tree";
 
 function state(): FocusGridControllerState {
@@ -45,7 +45,7 @@ describe("shared layout structure", () => {
 
   it("uses the rendered split rectangle for minimum-size resize math", () => {
     const current = state();
-    const geometry = computeLayoutGeometry(current);
+    const geometry = computeLayout(current);
     expect(geometry.rectByNodeId.get("root")).toEqual({
       x: 0,
       y: 0,
@@ -89,16 +89,16 @@ describe("canonical pane capabilities", () => {
     for (const key of paneCommandCapabilityKeys) {
       const updateController = new FocusGridController(state());
       expect(updateController.updatePane("left", { [key]: false })).toBe(true);
-      expect(findPaneNode(updateController.state, "left")?.[key]).toBe(false);
+      expect(findPaneNode(updateController.state.root, "left")?.[key]).toBe(false);
 
       const splitController = new FocusGridController(state());
-      const paneId = splitController.split(findPaneNode(splitController.state, "left")!.id, {
+      const paneId = splitController.split(findPaneNode(splitController.state.root, "left")!.id, {
         side: "right",
         newPaneId: `new-${key}`,
         [key]: false,
       });
       expect(paneId).toBe(`new-${key}`);
-      expect(findPaneNode(splitController.state, paneId)?.[key]).toBe(false);
+      expect(findPaneNode(splitController.state.root, paneId)?.[key]).toBe(false);
     }
   });
 });

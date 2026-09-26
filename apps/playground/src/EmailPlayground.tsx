@@ -101,12 +101,12 @@ export function EmailPlayground() {
       setActiveThreadId(threadId);
       setReaderThreadId(threadId);
 
-      if (findPaneNode(controller.state, "email-reader")) {
+      if (findPaneNode(controller.state.root, "email-reader")) {
         controller.focus("email-reader");
         return;
       }
 
-      controller.split(findPaneNode(controller.state, "email-inbox")!.id, {
+      controller.split(findPaneNode(controller.state.root, "email-inbox")!.id, {
         side: "right",
         newPaneId: "email-reader",
         minWidth: 300,

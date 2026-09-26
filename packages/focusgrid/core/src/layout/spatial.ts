@@ -1,13 +1,13 @@
-import type { PaneFocusDirection, Rect } from "./types";
+import type { CardinalDirection, Rect } from "./types";
 
-export function isHorizontalDirection(direction: PaneFocusDirection): boolean {
+export function isHorizontalDirection(direction: CardinalDirection): boolean {
   return direction === "left" || direction === "right";
 }
 
 export function isRectInDirection(
   rect: Rect,
   activeRect: Rect,
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): boolean {
   const epsilon = 0.001;
   if (direction === "right") return rect.x >= activeRect.x + activeRect.width - epsilon;
@@ -16,7 +16,7 @@ export function isRectInDirection(
   return rect.y + rect.height <= activeRect.y + epsilon;
 }
 
-export function getEnteringEdge(rect: Rect, direction: PaneFocusDirection): number {
+export function getEnteringEdge(rect: Rect, direction: CardinalDirection): number {
   if (direction === "right") return rect.x;
   if (direction === "left") return rect.x + rect.width;
   if (direction === "down") return rect.y;
@@ -26,7 +26,7 @@ export function getEnteringEdge(rect: Rect, direction: PaneFocusDirection): numb
 export function compareEnteringEdge(
   first: number,
   second: number,
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): number {
   return direction === "left" || direction === "up"
     ? second - first
@@ -35,7 +35,7 @@ export function compareEnteringEdge(
 
 export function getPerpendicularCenter(
   rect: Rect,
-  direction: PaneFocusDirection,
+  direction: CardinalDirection,
 ): number {
   const center = getRectCenter(rect);
   return isHorizontalDirection(direction) ? center.y : center.x;

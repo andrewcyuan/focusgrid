@@ -46,9 +46,9 @@ API overview:
 - `useFocusGridController(createProps)` creates a stable controller; `useControllerState` and `useControllerLayout` subscribe to it. `PaneView` and `ResizeHandle` support custom rendering.
 - `createCompositeNavigationKeymap(move)` creates arrow/Home/End callback bindings that ignore editable targets; register them with `useShortcuts` inside a control's scope.
 - From `@andrewcyuan/focusgrid/core`, `new FocusGridController(props)` creates a controller without React. Props contain `root`, `activePaneId`, `container`, and optional `paneDefaults` and `directionalFocusOverflow`.
-- The controller provides direct methods: `split`, `remove`, `swap`, `resize`, `resizeHandle`, `focus`, `updatePane`, and `setContainerSize`; the read-only `state` property exposes the current snapshot, and `subscribe` reports changes. Use `computeLayout(state)` for geometry and `findPaneNode(state, paneId)?.data` for pane data.
+- The controller provides direct methods: `split`, `remove`, `swap`, `resize`, `resizeHandle`, `focus`, `updatePane`, and `setContainerSize`; the read-only `state` property exposes the current snapshot, and `subscribe` reports changes. Use `computeLayout(state)` for geometry and `findPaneNode(state.root, paneId)?.data` for pane data.
 - `splitActivePane`, `closeActivePane`, `focusAdjacentPane`, `swapAdjacentPane`, and `resizeActivePane` are direct command functions that respect pane capabilities. `createDefaultPaneKeymap(controller)` connects them to default shortcuts; supply your own bindings to change the keys.
-- `validateFocusGridControllerState`, `serializeFocusGridControllerState`, and `deserializeFocusGridControllerState` validate, save, and restore layouts.
+- `validateFocusGridControllerState` and `deserializeFocusGridControllerState` validate state and restore layouts; save with `JSON.stringify(state)`.
 - From `@andrewcyuan/focusgrid/dom`, `FocusGridDomController(controller, root, { engine, scopeId, parentScopeId, keymap })` registers the grid with a shared engine through `mount()` and `destroy()`; `setKeymap` updates its bindings. Native callers use `mountShortcutListener(engine, document)` for focus tracking and one capture listener, and mark nested scope elements with `data-shortcut-scope`.
 
 Split an individual pane by its node ID; other pane methods take its pane ID.
@@ -67,3 +67,5 @@ const controller = new FocusGridController({
 controller.split("editor-node", { side: "right", newPaneId: "terminal" });
 controller.updatePane("terminal", { data: { title: "Terminal" }, canRemove: false });
 ```
+
+Core uses one `CardinalDirection` type and `cardinalDirections` list for pane commands. `computeLayout(state)` returns panes, handles, and `rectByNodeId`; controller methods own all state transitions and notifications.
