@@ -49,4 +49,3 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
     </ShortcutScope>
   );
 }
-

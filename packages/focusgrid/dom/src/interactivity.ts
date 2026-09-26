@@ -30,7 +30,7 @@ const INTERACTIVE_ROLES = new Set([
   "treeitem",
 ]);
 
-export function hasInteractiveOwner(
+function hasInteractiveOwner(
   target: Element,
   boundary: HTMLElement,
 ): boolean {
@@ -51,7 +51,7 @@ export function shouldFocusPaneShellForPointer(
   return target === paneShell || !hasInteractiveOwner(target, paneShell);
 }
 
-export function isInteractiveElement(element: HTMLElement): boolean {
+function isInteractiveElement(element: HTMLElement): boolean {
   if (isUnavailableElement(element)) return false;
 
   const tagName = element.tagName.toLowerCase();
@@ -70,27 +70,7 @@ export function isInteractiveElement(element: HTMLElement): boolean {
   );
 }
 
-export function isTabbableElement(element: HTMLElement): boolean {
-  if (isUnavailableElement(element)) return false;
-
-  const tagName = element.tagName.toLowerCase();
-  if (tagName === "a" && !element.hasAttribute("href")) return false;
-
-  if (
-    tagName === "button" ||
-    tagName === "input" ||
-    tagName === "select" ||
-    tagName === "textarea" ||
-    (tagName === "a" && element.hasAttribute("href")) ||
-    element.isContentEditable
-  ) {
-    return element.tabIndex >= 0;
-  }
-
-  return element.hasAttribute("tabindex") && element.tabIndex >= 0;
-}
-
-export function isUnavailableElement(element: HTMLElement): boolean {
+function isUnavailableElement(element: HTMLElement): boolean {
   let current: HTMLElement | null = element;
 
   while (current) {
