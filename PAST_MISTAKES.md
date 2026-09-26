@@ -1,5 +1,9 @@
 # Past Mistakes
 
+## Do Not Restore Removed Public State Access
+
+Restored `controller.state` to satisfy existing consumers despite the intended removal of public state access. Treat those consumers as migration work; do not restore a prohibited API to make checks pass.
+
 ## Package Scopes Must Match The Intended Publisher
 
 The package names used the project name as an npm scope, which required an unintended organization. Use the owner's npm username for personal packages and verify scope ownership before documenting release prerequisites.

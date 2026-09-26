@@ -156,10 +156,6 @@ export class FocusGridController {
     return this.commit({ container: { width, height } });
   }
 
-  get state(): FocusGridControllerState {
-    return this.currentState;
-  }
-
   private commit(patch: Partial<FocusGridControllerState>): boolean {
     const previous = this.currentState;
     if (Object.entries(patch).every(([key, value]) => Object.is(previous[key as keyof FocusGridControllerState], value))) {
