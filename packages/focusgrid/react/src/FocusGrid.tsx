@@ -4,7 +4,7 @@ import {
   type ReactNode,
 } from "react";
 import type { FocusGridController, PaneLayoutChangeEvent, PaneCloseEvent } from "@andrewcyuan/focusgrid/core";
-import { RootResizeObserver, type FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
+import { mountFocusGrid, type FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useControllerLayout } from "./hooks";
 import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react";
 import type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
@@ -37,13 +37,7 @@ export function FocusGrid({
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    domController.setRoot(root);
-    const observer = new RootResizeObserver(controller, root);
-    observer.mount();
-    return () => {
-      observer.destroy();
-      domController.setRoot(null);
-    };
+    return mountFocusGrid(root, controller, domController);
   }, [controller, domController]);
 
   useEffect(() => controller.subscribePaneEvents({ onPaneLayoutChange, onPaneClose }),
@@ -54,12 +48,7 @@ export function FocusGrid({
     : "FocusgridFocusGrid";
 
   return (
-    <ShortcutScope ref={rootRef} className={rootClassName} onFocus={event => {
-      const target = event.target;
-      if (target.closest(".FocusgridFocusGrid") !== event.currentTarget) return;
-      const paneId = target.closest<HTMLElement>("[data-pane-id]")?.dataset.paneId;
-      if (paneId) controller.focus(paneId);
-    }}>
+    <ShortcutScope ref={rootRef} className={rootClassName}>
         <GridShortcuts bindings={keymap ?? createDefaultPaneKeymap(controller)} />
         {layout.panes.map((pane) => (
           <PaneView
@@ -73,7 +62,6 @@ export function FocusGrid({
         {layout.handles.map((handle) => (
           <ResizeHandle
             key={handle.id}
-            controller={controller}
             handle={handle}
           />
         ))}

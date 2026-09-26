@@ -1,7 +1,6 @@
 import { ShortcutScope } from "@andrewcyuan/shortcut-engine/react";
 import type {
   CSSProperties,
-  PointerEvent,
   ReactNode,
 } from "react";
 import type {
@@ -10,7 +9,6 @@ import type {
   PaneId,
   Rect,
 } from "@andrewcyuan/focusgrid/core";
-import { shouldFocusPaneShellForPointer } from "@andrewcyuan/focusgrid/dom";
 
 export type Pane = {
   paneId: PaneId;
@@ -40,12 +38,7 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
       data-pane-id={pane.paneId}
       tabIndex={-1}
       style={style}
-      onPointerDown={(event) => {
-        if (event.target instanceof Element &&
-          event.target.closest(".FocusgridFocusGrid") !== event.currentTarget.closest(".FocusgridFocusGrid")) return;
-        controller.focus(pane.paneId);
-        focusPaneShellForNonInteractivePointer(event);
-      }}
+
     >
       {renderPane({
         paneId: pane.paneId,
@@ -57,15 +50,3 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
   );
 }
 
-function focusPaneShellForNonInteractivePointer(
-  event: PointerEvent<HTMLDivElement>,
-): void {
-  if (
-    event.target instanceof Element &&
-    !shouldFocusPaneShellForPointer(event.target, event.currentTarget)
-  ) {
-    return;
-  }
-
-  event.currentTarget.focus({ preventScroll: true });
-}

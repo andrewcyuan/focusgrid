@@ -10,3 +10,4 @@ export {
   shouldFocusPaneShellForPointer,
 } from "./interactivity";
 
+export { mountFocusGrid } from "./mount";
