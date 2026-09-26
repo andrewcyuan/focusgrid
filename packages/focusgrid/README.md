@@ -46,9 +46,9 @@ API overview:
 - `useFocusGridController(createProps)` creates a stable controller; `useControllerState` and `useControllerLayout` subscribe to it. `PaneView` and `ResizeHandle` support custom rendering.
 - `createCompositeNavigationKeymap(move)` creates arrow/Home/End callback bindings that ignore editable targets; register them with `useShortcuts` inside a control's scope.
 - From `@andrewcyuan/focusgrid/core`, `new FocusGridController(props)` creates a controller without React. Props contain `root`, `activePaneId`, `container`, and optional `minWidth`, `minHeight`, capability `paneDefaults`, and `directionalFocusOverflow`.
-- The controller provides direct methods: `split`, `remove`, `swap`, `resize`, `resizeHandle`, `focus`, `updatePane`, and `setContainerSize`; the read-only `state` property exposes the current snapshot, and `subscribe` reports changes. Use `computeLayout(state)` for geometry and `findPaneNode(state.root, paneId)` for pane state.
+- The controller provides direct methods: `split`, `remove`, `swap`, `resize`, `resizeHandle`, `focus`, `updatePane`, and `setContainerSize`; `subscribe` reports committed changes. Controller state is private; shortcut actions use `splitActive`, `removeActive`, `focusAdjacent`, `swapAdjacent`, and `resizeActive`.
 - `createDefaultPaneKeymap(controller)` connects public controller methods to default shortcuts that respect pane capabilities; supply your own bindings to change the keys.
-- `validateFocusGridControllerState` and `deserializeFocusGridControllerState` validate state and restore layouts; save with `JSON.stringify(state)`.
+- `validateFocusGridControllerState` validates initial controller input.
 - From `@andrewcyuan/focusgrid/dom`, `FocusGridDomController(controller, root, { engine, scopeId, parentScopeId, keymap })` registers the grid with a shared engine through `mount()` and `destroy()`; `setKeymap` updates its bindings. Native callers use `mountShortcutListener(engine, document)` for focus tracking and one capture listener, and mark nested scope elements with `data-shortcut-scope`.
 
 Split an individual pane by its node ID; other pane methods take its pane ID.

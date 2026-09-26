@@ -29,9 +29,6 @@ export { findPaneForFocusCommand } from "./layout/navigation";
 export { computeLayout } from "./layout/geometry";
 export { collectPaneIds, findPaneNode, findSplitNode } from "./layout/tree";
 export {
-  deserializeFocusGridControllerState,
-} from "./layout/serialize";
-export {
   FocusGridStateValidationException,
   validateFocusGridControllerState,
 } from "./validation";

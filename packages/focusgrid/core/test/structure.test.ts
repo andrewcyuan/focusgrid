@@ -1,3 +1,4 @@
+import { createController, observedState } from "./observe-controller";
 import { describe, expect, it } from "vitest";
 import {
   collectPaneIds,
@@ -62,8 +63,9 @@ describe("canonical pane capabilities", () => {
     const paneDefaults = Object.fromEntries(
       Object.values(PaneCommandCapability).map((key) => [key, false]),
     );
-    const controller = new FocusGridController({ ...state(), paneDefaults });
-    const firstPane = controller.state.root;
+    const controller = createController({ ...state(), paneDefaults });
+    controller.focus("right");
+    const firstPane = observedState(controller).root;
     expect(firstPane.kind).toBe("split");
     if (firstPane.kind !== "split") return;
 
@@ -76,7 +78,7 @@ describe("canonical pane capabilities", () => {
       canFocus: "yes",
     };
     const result = validateFocusGridControllerState({
-      ...controller.state,
+      ...observedState(controller),
       root: { ...firstPane, children: [invalidPane, firstPane.children[1]] },
     });
     expect(result.ok).toBe(false);
@@ -87,18 +89,18 @@ describe("canonical pane capabilities", () => {
 
   it("updates and constructs panes with every capability from the shared key set", () => {
     for (const key of Object.values(PaneCommandCapability)) {
-      const updateController = new FocusGridController(state());
+      const updateController = createController(state());
       expect(updateController.updatePane("left", { [key]: false })).toBe(true);
-      expect(findPaneNode(updateController.state.root, "left")?.[key]).toBe(false);
+      expect(findPaneNode(observedState(updateController).root, "left")?.[key]).toBe(false);
 
-      const splitController = new FocusGridController(state());
-      const paneId = splitController.split(findPaneNode(splitController.state.root, "left")!.id, {
+      const splitController = createController(state());
+      const paneId = splitController.split(findPaneNode(observedState(splitController).root, "left")!.id, {
         side: "right",
         newPaneId: `new-${key}`,
         [key]: false,
       });
       expect(paneId).toBe(`new-${key}`);
-      expect(findPaneNode(splitController.state.root, paneId)?.[key]).toBe(false);
+      expect(findPaneNode(observedState(splitController).root, paneId)?.[key]).toBe(false);
     }
   });
 });

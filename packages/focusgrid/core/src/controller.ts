@@ -1,7 +1,7 @@
 import { createId } from "./utils/ids";
 import { computeLayout } from "./layout/geometry";
 import { resizeSplit } from "./layout/resize";
-import { resolvePaneResizeBoundary } from "./layout/navigation";
+import { findPaneForFocusCommand, findPaneInDirection, resolvePaneResizeBoundary } from "./layout/navigation";
 import { isHorizontalDirection } from "./layout/spatial";
 import {
   buildLayoutIndex,
@@ -13,6 +13,7 @@ import {
   findPaneNode,
 } from "./layout/tree";
 import {
+  PaneCommandCapability,
   type PaneCommandCapabilityInput,
   type NodeId,
   type PaneId,
@@ -61,6 +62,41 @@ export class FocusGridController {
       node.kind === "pane" ? withPaneDefaults(node, paneDefaults) : node,
     );
     this.currentState = root === state.root ? state : { ...state, root };
+  }
+
+  splitActive(side: CardinalDirection): PaneId | null {
+    const pane = findPaneNode(this.currentState.root, this.currentState.activePaneId);
+    const capability = isHorizontalDirection(side) ? PaneCommandCapability.SplitHorizontal : PaneCommandCapability.SplitVertical;
+    return pane && pane[capability] !== false ? this.split(pane.id, { side }) : null;
+  }
+
+  removeActive(): boolean {
+    const pane = findPaneNode(this.currentState.root, this.currentState.activePaneId);
+    return pane && pane[PaneCommandCapability.Remove] !== false ? this.remove(pane.paneId) : false;
+  }
+
+  focusAdjacent(direction: CardinalDirection): boolean {
+    const state = this.currentState;
+    if (!state.activePaneId) return false;
+    const target = findPaneForFocusCommand(state, state.activePaneId, direction, this.directionalFocusOverflow);
+    return target ? this.focus(target) : false;
+  }
+
+  swapAdjacent(direction: CardinalDirection): boolean {
+    const state = this.currentState;
+    const active = findPaneNode(state.root, state.activePaneId);
+    if (!active) return false;
+    const targetId = findPaneInDirection(state, active.paneId, direction);
+    const target = findPaneNode(state.root, targetId);
+    const capability = isHorizontalDirection(direction) ? PaneCommandCapability.SwapX : PaneCommandCapability.SwapY;
+    return target && active[capability] !== false && target[capability] !== false
+      ? this.swap(active.paneId, target.paneId) : false;
+  }
+
+  resizeActive(direction: CardinalDirection, deltaPx: number): boolean {
+    const pane = findPaneNode(this.currentState.root, this.currentState.activePaneId);
+    const capability = isHorizontalDirection(direction) ? PaneCommandCapability.ResizeX : PaneCommandCapability.ResizeY;
+    return pane && pane[capability] !== false ? this.resize(pane.paneId, { direction, deltaPx }) : false;
   }
 
   split(paneNodeId: NodeId, props: SplitPaneOptions): PaneId | null {
