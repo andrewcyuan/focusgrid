@@ -1,37 +1,16 @@
 import type { FocusGridController } from "@andrewcyuan/focusgrid/core";
 
-export class RootResizeObserver {
-  private resizeObserver?: ResizeObserver;
-
-  constructor(
-    private readonly controller: FocusGridController,
-    private readonly rootEl: HTMLElement,
-  ) {}
-
-  mount(): void {
-    if (typeof ResizeObserver === "undefined") {
-      const rect = this.rootEl.getBoundingClientRect();
-      this.dispatchSize(rect.width, rect.height);
-      return;
-    }
-
-    this.resizeObserver = new ResizeObserver(([entry]) => {
-      if (!entry) {
-        return;
-      }
-
-      this.dispatchSize(entry.contentRect.width, entry.contentRect.height);
-    });
-
-    this.resizeObserver.observe(this.rootEl);
+export function observeRootSize(root: HTMLElement, controller: FocusGridController): () => void {
+  const updateSize = ({ width, height }: { width: number; height: number }) => {
+    controller.setContainerSize(Math.floor(width), Math.floor(height));
+  };
+  if (typeof ResizeObserver === "undefined") {
+    updateSize(root.getBoundingClientRect());
+    return () => {};
   }
-
-  destroy(): void {
-    this.resizeObserver?.disconnect();
-    this.resizeObserver = undefined;
-  }
-
-  private dispatchSize(width: number, height: number): void {
-    this.controller.setContainerSize(Math.floor(width), Math.floor(height));
-  }
+  const observer = new ResizeObserver(([entry]) => {
+    if (entry) updateSize(entry.contentRect);
+  });
+  observer.observe(root);
+  return () => observer.disconnect();
 }

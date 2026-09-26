@@ -1,14 +1,13 @@
 import type { FocusGridController } from "@andrewcyuan/focusgrid/core";
 import type { FocusGridDomController } from "./controller";
 import { PointerResizeController } from "./pointer-resize";
-import { RootResizeObserver } from "./resize-observer";
+import { observeRootSize } from "./resize-observer";
 import { shouldFocusPaneShellForPointer } from "./interactivity";
 
 /** Own native grid interactions; React only attaches and detaches the root. */
 export function mountFocusGrid(root: HTMLElement, controller: FocusGridController, dom: FocusGridDomController): () => void {
   dom.setRoot(root);
   const resize = new PointerResizeController(controller);
-  const observer = new RootResizeObserver(controller, root);
   const ownedTarget = (event: Event) => {
     const target = event.target;
     return target instanceof Element && target.closest(".FocusgridFocusGrid") === root ? target : null;
@@ -33,12 +32,12 @@ export function mountFocusGrid(root: HTMLElement, controller: FocusGridControlle
   };
   root.addEventListener("focusin", onFocus, true);
   root.addEventListener("pointerdown", onPointerDown);
-  observer.mount();
+  const stopObserving = observeRootSize(root, controller);
   return () => {
     root.removeEventListener("focusin", onFocus, true);
     root.removeEventListener("pointerdown", onPointerDown);
     resize.destroy();
-    observer.destroy();
+    stopObserving();
     dom.setRoot(null);
   };
 }
