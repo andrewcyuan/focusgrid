@@ -1,6 +1,8 @@
 import { HANDLE_SIZE } from "./constants";
 import type {
   ComputedLayout,
+  ComputedNode,
+  ComputedHandle,
   Orientation,
   FocusGridControllerState,
   LayoutNode,
@@ -10,13 +12,13 @@ import type {
 export function computeLayout(
   state: FocusGridControllerState,
 ): ComputedLayout {
-  const geometry: ComputedLayout = {
+  const geometry: Omit<ComputedLayout, "root"> = {
     panes: [],
     handles: [],
     rectByNodeId: new Map(),
   };
 
-  computeNode(
+  const root = computeNode(
     state.root,
     {
       x: 0,
@@ -27,7 +29,7 @@ export function computeLayout(
     geometry,
     state.activePaneId,
   );
-  return geometry;
+  return { ...geometry, root };
 }
 
 export function normalizeSplitSizes(
@@ -69,19 +71,20 @@ export function getMinimumSize(
 function computeNode(
   node: LayoutNode,
   rect: Rect,
-  geometry: ComputedLayout,
+  geometry: Omit<ComputedLayout, "root">,
   activePaneId: string | null,
-): void {
+): ComputedNode {
   geometry.rectByNodeId.set(node.id, rect);
 
   if (node.kind === "pane") {
-    geometry.panes.push({
+    const pane = {
       paneId: node.paneId,
       nodeId: node.id,
       rect,
       active: node.paneId === activePaneId,
-    });
-    return;
+    };
+    geometry.panes.push(pane);
+    return { kind: "pane", pane };
   }
 
   const sizes = normalizeSplitSizes(node.sizes, node.children.length);
@@ -92,24 +95,29 @@ function computeNode(
   const contentSize = Math.max(0, axisSize - handleTotal);
   let cursor = axisStart;
 
-  node.children.forEach((child, index) => {
+  const handles: ComputedHandle[] = [];
+  const children = node.children.map((child, index) => {
     const isLast = index === node.children.length - 1;
     const childSize = isLast
       ? axisStart + axisSize - cursor
       : Math.floor(contentSize * (sizes[index] ?? 0));
     const childRect = createChildRect(node.orientation, rect, cursor, childSize);
 
-    computeNode(child, childRect, geometry, activePaneId);
+    const computedChild = computeNode(child, childRect, geometry, activePaneId);
     cursor += childSize;
 
     if (!isLast) {
-      geometry.handles.push({
+      const handle = {
         id: `${node.id}:${index}`, splitId: node.id, index, direction: node.orientation,
         rect: createChildRect(node.orientation, rect, cursor, HANDLE_SIZE),
-      });
+      };
+      handles.push(handle);
+      geometry.handles.push(handle);
       cursor += HANDLE_SIZE;
     }
+    return computedChild;
   });
+  return { kind: "split", orientation: node.orientation, children, handles };
 }
 
 function createChildRect(

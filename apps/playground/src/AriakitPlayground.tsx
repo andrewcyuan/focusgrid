@@ -2,7 +2,7 @@ import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useShortcuts, ShortcutScope } from "@andrewcyuan/shortcut-engine/react";
 import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
-import { FocusGrid, useFocusGridController, type Pane, createCompositeNavigationKeymap, type CompositeNavigationDirection } from "@andrewcyuan/focusgrid/react";
+import { FocusgridController, FocusGrid, useFocusGridController, type Pane, createCompositeNavigationKeymap, type CompositeNavigationDirection } from "@andrewcyuan/focusgrid/react";
 import { type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
 import { useState } from "react";
 import { DemoHeader } from "./DemoHeader";
@@ -60,24 +60,24 @@ export function AriakitPlayground() {
   const paneKeymap = createDemoPaneKeymap(controller);
 
   return (
-    <div className="AriakitPage">
-      <DemoHeader
-        title="Ariakit composite"
-        description="Pane shortcuts and Ariakit collection navigation."
-        shortcutSummary={shortcutSummary}
-      >
-        <p className="DemoHeaderDetail">
-          Pane navigation focuses the destination pane shell. Click a row to enter its collection.
-        </p>
-      </DemoHeader>
-      <FocusGrid
-        domController={domController}
-        controller={controller}
-        keymap={paneKeymap}
-        className="AriakitFocusGrid"
-        renderPane={(context) => <AriakitPane {...context} />}
-      />
-    </div>
+    <FocusgridController.Provider value={{ controller, domController }}>
+      <div className="AriakitPage">
+        <DemoHeader
+          title="Ariakit composite"
+          description="Pane shortcuts and Ariakit collection navigation."
+          shortcutSummary={shortcutSummary}
+        >
+          <p className="DemoHeaderDetail">
+            Pane navigation focuses the destination pane shell. Click a row to enter its collection.
+          </p>
+        </DemoHeader>
+        <FocusGrid
+          keymap={paneKeymap}
+          className="AriakitFocusGrid"
+          renderPane={(context) => <AriakitPane {...context} />}
+        />
+      </div>
+    </FocusgridController.Provider>
   );
 }
 

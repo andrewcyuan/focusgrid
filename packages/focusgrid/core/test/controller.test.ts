@@ -192,7 +192,8 @@ describe("controller read methods", () => {
     expect(listener).toHaveBeenCalledOnce();
     expect(controller.getLayout()).toBe(controller.getLayout());
     expect(initial.panes[0].rect.width).toBe(1000);
-    expect(controller.getLayout()).not.toHaveProperty("root");
+    expect(controller.getLayout().root).toEqual({ kind: "pane", pane: controller.getLayout().panes[0] });
+    expect(controller.getLayout().root).not.toHaveProperty("sizes");
   });
 
   it("invalidates render data for capability changes so subscribed controls update", () => {

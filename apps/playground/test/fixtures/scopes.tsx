@@ -4,7 +4,7 @@ import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react"
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
-import { FocusGrid } from "@andrewcyuan/focusgrid/react";
+import { FocusGrid, FocusgridController } from "@andrewcyuan/focusgrid/react";
 import { FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
 
 import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
@@ -35,7 +35,7 @@ function Module() {
   const [grid, setGrid] = useState(true);
   const [domController] = useState(() => new FocusGridDomController());
   const [initial] = useState<FocusGridControllerState>(() => ({
-root: { kind: "split", id: "split", orientation: "horizontal", sizes: [1, 1], children: [
+    root: { kind: "split", id: "split", orientation: "horizontal", sizes: [1, 1], children: [
       { kind: "pane", id: "node-a", paneId: "pane-a" },
       { kind: "pane", id: "node-b", paneId: "pane-b" },
     ] },
@@ -47,7 +47,7 @@ root: { kind: "split", id: "split", orientation: "horizontal", sizes: [1, 1], ch
     bind("G B", () => setResult(`parent-b:${version}`)),
     bind("F3", () => setResult("parent-f3")),
   ]);
-  return <>
+  return <FocusgridController.Provider value={{ controller, domController }}>
     <output aria-label="result">{result}</output>
     <button onClick={() => setVersion(v => v + 1)}>Rerender</button>
     <button onClick={() => setLatest(v => !v)}>Toggle contributor</button>
@@ -57,13 +57,13 @@ root: { kind: "split", id: "split", orientation: "horizontal", sizes: [1, 1], ch
     {latest && <Contributor value={`latest:${version}`} report={setResult} />}
     <ShortcutScope id="sibling"><Child name="sibling" report={setResult} /></ShortcutScope>
     {grid && <div style={{ height: 300, width: 800 }}>
-      <FocusGrid domController={domController} controller={controller} keymap={createDefaultPaneKeymap(controller)} renderPane={({ paneId }) => <>
+      <FocusGrid keymap={createDefaultPaneKeymap(controller)} renderPane={({ paneId }) => <>
         <textarea aria-label={`${paneId}-plain`} defaultValue="abcdef" />
         {child && <ShortcutScope id={`${paneId}-child`}><Child name={paneId} report={setResult} /></ShortcutScope>}
       </>} />
     </div>}
     {createPortal(<ShortcutScope id="portal-scope"><Child name="portal" report={setResult} /></ShortcutScope>, document.getElementById("portal")!)}
-  </>;
+  </FocusgridController.Provider>;
 }
 
 function App() {

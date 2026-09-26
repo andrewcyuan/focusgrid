@@ -1,6 +1,7 @@
 export type {
   ComputedHandle,
   ComputedLayout,
+  ComputedNode,
   ComputedPane,
   CardinalDirection,
   LayoutNode,

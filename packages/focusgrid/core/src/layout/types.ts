@@ -57,7 +57,12 @@ export type ComputedHandle = {
   direction: Orientation;
 };
 
+export type ComputedNode =
+  | { kind: "pane"; pane: ComputedPane }
+  | { kind: "split"; orientation: Orientation; children: ComputedNode[]; handles: ComputedHandle[] };
+
 export type ComputedLayout = {
+  root: ComputedNode;
   rectByNodeId: Map<NodeId, Rect>;
   panes: ComputedPane[];
   handles: ComputedHandle[];

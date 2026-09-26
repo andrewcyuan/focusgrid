@@ -1,3 +1,4 @@
+export { FocusgridController } from "./FocusgridController";
 export { FocusGrid } from "./FocusGrid";
 export type { FocusGridProps } from "./FocusGrid";
 

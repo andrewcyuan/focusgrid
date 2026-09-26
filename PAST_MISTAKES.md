@@ -110,3 +110,7 @@ Returning the same cleanup function to every listener consumer lets one unmount 
 ## Removing State Access Must Include Its Callers
 
 Removing `controller.state` left rendering, pointer resizing, and playground commands broken. Trace each read to the data or action it needs, replace it with a narrow controller method, and run full typechecks and browser tests rather than bypassing the real renderer.
+
+## Recursive Rendering Must Preserve Pane Identity
+
+Changing React parent boundaries when a split is added or removed can remount editors and lose their uncontrolled values and focus. Keep recursive traversal separate from stable keyed pane siblings, and test the original DOM element, selection, text, and focus through split, swap, and collapse.

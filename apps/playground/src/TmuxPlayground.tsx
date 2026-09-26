@@ -1,9 +1,9 @@
 import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { defaultPaneShortcutActions, type PaneShortcutId, type PaneShortcutValues } from "@andrewcyuan/focusgrid/react";
 import { normalizeShortcut } from "@andrewcyuan/shortcut-engine";
-import { cardinalDirections, PaneCommandCapability, type FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
-import { FocusGrid, useControllerLayout, useFocusGridController, type Pane } from "@andrewcyuan/focusgrid/react";
-import { type ComponentType, useEffect, useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { cardinalDirections, PaneCommandCapability, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
+import { FocusgridController, FocusGrid, useControllerLayout, useFocusGridController, type Pane } from "@andrewcyuan/focusgrid/react";
+import { type ComponentType, useEffect, useContext, useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
 import { demoHubPath } from "./demo-routes";
 
@@ -65,36 +65,35 @@ export function TmuxPlayground() {
   }, [shortcuts]);
 
   return (
-    <div className="AppShell" data-sidebar-open={sidebarOpen}>
-      {sidebarOpen ? (
-        <Sidebar
-          shortcuts={shortcuts}
-          onShortcutChange={(id, sequence) => {
-            setShortcuts((current) => ({
-              ...current,
-              [id]: sequence,
-            }));
-          }}
-        />
-      ) : null}
+    <FocusgridController.Provider value={{ controller, domController }}>
+      <div className="AppShell" data-sidebar-open={sidebarOpen}>
+        {sidebarOpen ? (
+          <Sidebar
+            shortcuts={shortcuts}
+            onShortcutChange={(id, sequence) => {
+              setShortcuts((current) => ({
+                ...current,
+                [id]: sequence,
+              }));
+            }}
+          />
+        ) : null}
 
-      <main className="ControllerShell">
-        <Toolbar
-          sidebarOpen={sidebarOpen}
-          controller={controller}
-          onToggleSidebar={() => setSidebarOpen((open) => !open)}
-        />
-        <FocusGrid
-        domController={domController}
-          controller={controller}
-          keymap={keymap}
-          className="PlaygroundFocusGrid"
-          renderPane={(ctx) => {
-            return <PaneSlot ctx={ctx} />;
-          }}
-        />
-      </main>
-    </div>
+        <main className="ControllerShell">
+          <Toolbar
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={() => setSidebarOpen((open) => !open)}
+          />
+          <FocusGrid
+            keymap={keymap}
+            className="PlaygroundFocusGrid"
+            renderPane={(ctx) => {
+              return <PaneSlot ctx={ctx} />;
+            }}
+          />
+        </main>
+      </div>
+    </FocusgridController.Provider>
   );
 }
 
@@ -132,13 +131,12 @@ function Sidebar({
 
 function Toolbar({
   sidebarOpen,
-  controller,
   onToggleSidebar,
 }: {
   sidebarOpen: boolean;
-  controller: FocusGridController;
   onToggleSidebar: () => void;
 }) {
+  const { controller } = useContext(FocusgridController)!;
   const layout = useControllerLayout(controller);
   const paneIds = useMemo(() => layout.panes.map(pane => pane.paneId), [layout]);
   const activePaneId = layout.panes.find(pane => pane.active)?.paneId;

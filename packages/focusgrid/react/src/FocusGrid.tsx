@@ -1,75 +1,38 @@
-import {
-  useEffect,
-  useRef,
-  type ReactNode,
-} from "react";
-import type { FocusGridController, PaneLayoutChangeEvent, PaneCloseEvent } from "@andrewcyuan/focusgrid/core";
-import { mountFocusGrid, type FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
-import { useControllerLayout } from "./hooks";
+import { useEffect, useRef, type ReactNode } from "react";
+import type { PaneEventHandlers } from "@andrewcyuan/focusgrid/core";
+import { mountFocusGrid } from "@andrewcyuan/focusgrid/dom";
 import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react";
 import type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import { createDefaultPaneKeymap } from "./default-pane-keymap";
-import { PaneView } from "./PaneView";
-import { ResizeHandle } from "./ResizeHandle";
-import type { Pane } from "./PaneView";
+import { useGridControllers } from "./FocusgridController";
+import { useControllerLayout } from "./hooks";
+import { PaneView, type Pane } from "./PaneView";
 
-export type FocusGridProps = {
-  controller: FocusGridController;
-  domController: FocusGridDomController;
+export type FocusGridProps = PaneEventHandlers & {
   keymap?: readonly ShortcutBinding[];
   renderPane: (ctx: Pane) => ReactNode;
   className?: string;
-  onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
-  onPaneClose?: (event: PaneCloseEvent) => void;
 };
 
-export function FocusGrid({
-  controller,
-  keymap,
-  renderPane,
-  className,
-  onPaneLayoutChange,
-  onPaneClose,
-  domController,
-}: FocusGridProps) {
+export function FocusGrid({ className, onPaneLayoutChange, onPaneClose, ...content }: FocusGridProps) {
+  const { controller, domController } = useGridControllers();
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const layout = useControllerLayout(controller);
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
-    return mountFocusGrid(root, controller, domController);
+    if (root) return mountFocusGrid(root, controller, domController);
   }, [controller, domController]);
-
   useEffect(() => controller.subscribePaneEvents({ onPaneLayoutChange, onPaneClose }),
     [controller, onPaneLayoutChange, onPaneClose]);
-
-  const rootClassName = className
-    ? `FocusgridFocusGrid ${className}`
-    : "FocusgridFocusGrid";
-
   return (
-    <ShortcutScope ref={rootRef} className={rootClassName}>
-        <GridShortcuts bindings={keymap ?? createDefaultPaneKeymap(controller)} />
-        {layout.panes.map((pane) => (
-          <PaneView
-            key={pane.paneId}
-            controller={controller}
-            pane={pane}
-            renderPane={renderPane}
-          />
-        ))}
-
-        {layout.handles.map((handle) => (
-          <ResizeHandle
-            key={handle.id}
-            handle={handle}
-          />
-        ))}
+    <ShortcutScope ref={rootRef} className={className ? `FocusgridFocusGrid ${className}` : "FocusgridFocusGrid"}>
+      <GridContent {...content} />
     </ShortcutScope>
   );
 }
 
-function GridShortcuts({ bindings }: { bindings: readonly ShortcutBinding[] }) {
-  useShortcuts(bindings);
-  return null;
+function GridContent({ keymap, renderPane }: Pick<FocusGridProps, "keymap" | "renderPane">) {
+  const { controller } = useGridControllers();
+  const layout = useControllerLayout(controller);
+  useShortcuts(keymap ?? createDefaultPaneKeymap(controller));
+  return <PaneView node={layout.root} renderPane={renderPane} />;
 }

@@ -1,153 +1,91 @@
-import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
+import type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
-import { FocusGrid, useControllerLayout, useFocusGridController, type Pane } from "../src/index";
+import { FocusgridController, FocusGrid, useControllerLayout, useFocusGridController, type Pane } from "../src/index";
 
 function state(): FocusGridControllerState {
   return {
-    root: {
-      kind: "split",
-      id: "root",
-      orientation: "horizontal",
-      sizes: [1, 1],
-      children: [
-        {
-          kind: "pane",
-          id: "left-node",
-          paneId: "left",
-        },
-        {
-          kind: "pane",
-          id: "right-node",
-          paneId: "right",
-        },
-      ],
-    },
-    activePaneId: "right",
-    container: {
-      width: 800,
-      height: 600,
-    },
+    root: { kind: "split", id: "root", orientation: "horizontal", sizes: [1, 1], children: [
+      { kind: "pane", id: "left-node", paneId: "left" },
+      { kind: "pane", id: "right-node", paneId: "right" },
+    ] },
+    activePaneId: "right", container: { width: 800, height: 600 },
   };
 }
 
+function controllers() {
+  const domController = new FocusGridDomController();
+  return { controller: new FocusGridController(state(), domController), domController };
+}
+
 describe("pane render context", () => {
-  it("passes computed pane context to renderPane", () => {
-    const domController = new FocusGridDomController();
-    const controller = new FocusGridController(state(), domController);
-    const contexts: Pane[] = [];
-
+  it("passes computed pane geometry and the context controller to renderPane", () => {
+    const value = controllers();
+    const panes: Pane[] = [];
     renderToStaticMarkup(
-      <>
-        <FocusGrid domController={domController}
-        controller={controller}
-        renderPane={(ctx) => {
-          contexts.push(ctx);
-          return <span>{ctx.paneId}</span>;
-        }}
-      />
-      </>,
+      <FocusgridController.Provider value={value}>
+        <FocusGrid renderPane={pane => { panes.push(pane); return <span>{pane.paneId}</span>; }} />
+      </FocusgridController.Provider>,
     );
-
-    expect(contexts).toEqual([
-      {
-        paneId: "left",
-        rect: { x: 0, y: 0, width: 398, height: 600 },
-        active: false,
-        controller,
-      },
-      {
-        paneId: "right",
-        rect: { x: 401, y: 0, width: 399, height: 600 },
-        active: true,
-        controller,
-      },
+    expect(panes).toEqual([
+      { paneId: "left", rect: { x: 0, y: 0, width: 398, height: 600 }, active: false, controller: value.controller },
+      { paneId: "right", rect: { x: 401, y: 0, width: 399, height: 600 }, active: true, controller: value.controller },
     ]);
   });
 
-  it("creates a stable controller with useFocusGridController", () => {
-    let controllerFromHook: FocusGridController | null =
-      null;
+  it("creates the controller in the app and supplies it through context", () => {
     const domController = new FocusGridDomController();
-
-    function TestApp() {
+    function App() {
       const controller = useFocusGridController(state, domController);
-      controllerFromHook = controller;
-
-      return (
-        <>
-        <FocusGrid domController={domController}
-          controller={controller}
-          renderPane={(ctx) => <span>{ctx.paneId}</span>}
-        />
-      </>
-      );
+      return <FocusgridController.Provider value={{ controller, domController }}>
+        <FocusGrid renderPane={({ paneId }) => <span>{paneId}</span>} />
+      </FocusgridController.Provider>;
     }
-
-    const markup = renderToStaticMarkup(<TestApp />);
-
+    const markup = renderToStaticMarkup(<App />);
     expect(markup).toContain("<span>left</span>");
     expect(markup).toContain("<span>right</span>");
-    expect(controllerFromHook?.getLayout().panes.find(pane => pane.active)?.paneId).toBe("right");
   });
 
   it("reads computed layout from the supplied controller hook", () => {
-    const domController = new FocusGridDomController();
-    const controller = new FocusGridController(state(), domController);
-    let activePaneId: string | null | undefined;
-
-    function TestApp() {
+    const { controller } = controllers();
+    let activePaneId: string | undefined;
+    function App() {
       activePaneId = useControllerLayout(controller).panes.find(pane => pane.active)?.paneId;
       return null;
     }
-
-    renderToStaticMarkup(<TestApp />);
-
+    renderToStaticMarkup(<App />);
     expect(activePaneId).toBe("right");
   });
 
-  it("notifies subscribers after controller api mutations", () => {
-    const domController = new FocusGridDomController();
-    const controller = new FocusGridController(state(), domController);
-    const listenerCalls: Array<string | null> = [];
-    const transitions: Array<[string | null, string | null]> = [];
-    const unsubscribe = controller.subscribe((nextState, previousState) => {
-      listenerCalls.push(nextState.activePaneId);
-      transitions.push([previousState.activePaneId, nextState.activePaneId]);
-    });
-
-    controller.focus("left");
-    unsubscribe();
-    controller.focus("right");
-
-    expect(listenerCalls).toEqual(["left"]);
-    expect(transitions).toEqual([["right", "left"]]);
-  });
-
-  it("accepts a callback keymap", () => {
-    const domController = new FocusGridDomController();
-    const controller = new FocusGridController(state(), domController);
-    const keymap: ShortcutBinding[] = [
-      {
-        sequence: "Ctrl-K",
-        action: () => {},
-      },
-    ];
-
+  it("renders mixed recursive splits and their separators", () => {
+    const value = controllers();
+    value.controller.split("left-node", { side: "down", newPaneId: "bottom" });
     const markup = renderToStaticMarkup(
-      <>
-        <FocusGrid domController={domController}
-        controller={controller}
-        keymap={keymap}
-        renderPane={(ctx) => <span>{ctx.paneId}</span>}
-      />
-      </>,
+      <FocusgridController.Provider value={value}>
+        <FocusGrid renderPane={({ paneId }) => <span>{paneId}</span>} />
+      </FocusgridController.Provider>,
     );
-
-    expect(markup).toContain("<span>left</span>");
-    expect(markup).toContain("<span>right</span>");
+    expect(markup.match(/data-pane-id=/g)).toHaveLength(3);
+    expect(markup.match(/role="separator"/g)).toHaveLength(2);
+    expect(markup).toContain('data-direction="horizontal"');
+    expect(markup).toContain('data-direction="vertical"');
+    expect(markup.indexOf("<span>left</span>")).toBeLessThan(markup.indexOf("<span>bottom</span>"));
+    expect(markup.indexOf("<span>bottom</span>")).toBeLessThan(markup.indexOf("<span>right</span>"));
   });
 
+  it("accepts a custom keymap without browser effects during server rendering", () => {
+    const keymap: ShortcutBinding[] = [{ sequence: "Ctrl-K", action: () => {} }];
+    const markup = renderToStaticMarkup(
+      <FocusgridController.Provider value={controllers()}>
+        <FocusGrid keymap={keymap} renderPane={({ paneId }) => <span>{paneId}</span>} />
+      </FocusgridController.Provider>,
+    );
+    expect(markup).toContain("<span>left</span>");
+  });
+
+  it("requires an explicit provider instead of constructing a hidden controller", () => {
+    expect(() => renderToStaticMarkup(<FocusGrid renderPane={() => null} />)).toThrow("FocusgridController provider");
+  });
 });

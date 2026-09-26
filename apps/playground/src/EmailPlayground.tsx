@@ -2,7 +2,7 @@ import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useShortcuts, ShortcutScope } from "@andrewcyuan/shortcut-engine/react";
 import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
-import { FocusGrid, useFocusGridController, type Pane, createCompositeNavigationKeymap, type CompositeNavigationDirection } from "@andrewcyuan/focusgrid/react";
+import { FocusgridController, FocusGrid, useFocusGridController, type Pane, createCompositeNavigationKeymap, type CompositeNavigationDirection } from "@andrewcyuan/focusgrid/react";
 import { type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";
@@ -101,56 +101,56 @@ export function EmailPlayground() {
   }, [controller]);
 
   return (
-    <div className="EmailPage">
-      <DemoHeader
-        title="Email workspace"
-        description="A mocked inbox for testing focus across changing pane topology."
-        shortcutSummary={[...collectionShortcuts, ...paneNavigationShortcuts]}
-      />
-      <EmailTopBar mailboxId={mailboxId} />
-      <FocusGrid
-        domController={domController}
-        controller={controller}
-        keymap={emailPaneKeymap}
-        className="EmailFocusGrid"
-        renderPane={(context) => {
-          switch (context.paneId) {
-            case "email-sidebar":
-              return (
-                <MailboxSidebar
-                  {...context}
-                  mailboxId={mailboxId}
-                  onSelectMailbox={selectMailbox}
-                />
-              );
-            case "email-inbox":
-              return (
-                <ThreadList
-                  {...context}
-                  activeThreadId={activeThreadId}
-                  mailbox={mockMailboxes.find((mailbox) => mailbox.id === mailboxId)!}
-                  threads={threads}
-                  onActiveThreadChange={setActiveThreadId}
-                  onOpenThread={openThread}
-                />
-              );
-            case "email-reader":
-              return readerThread && readerMessage ? (
-                <Reader
-                  {...context}
-                  message={readerMessage}
-                  thread={readerThread}
-                  onBack={closeReader}
-                />
-              ) : (
-                <section className="EmailPane EmailReader" />
-              );
-            default:
-              return null;
-          }
-        }}
-      />
-    </div>
+    <FocusgridController.Provider value={{ controller, domController }}>
+      <div className="EmailPage">
+        <DemoHeader
+          title="Email workspace"
+          description="A mocked inbox for testing focus across changing pane topology."
+          shortcutSummary={[...collectionShortcuts, ...paneNavigationShortcuts]}
+        />
+        <EmailTopBar mailboxId={mailboxId} />
+        <FocusGrid
+          keymap={emailPaneKeymap}
+          className="EmailFocusGrid"
+          renderPane={(context) => {
+            switch (context.paneId) {
+              case "email-sidebar":
+                return (
+                  <MailboxSidebar
+                    {...context}
+                    mailboxId={mailboxId}
+                    onSelectMailbox={selectMailbox}
+                  />
+                );
+              case "email-inbox":
+                return (
+                  <ThreadList
+                    {...context}
+                    activeThreadId={activeThreadId}
+                    mailbox={mockMailboxes.find((mailbox) => mailbox.id === mailboxId)!}
+                    threads={threads}
+                    onActiveThreadChange={setActiveThreadId}
+                    onOpenThread={openThread}
+                  />
+                );
+              case "email-reader":
+                return readerThread && readerMessage ? (
+                  <Reader
+                    {...context}
+                    message={readerMessage}
+                    thread={readerThread}
+                    onBack={closeReader}
+                  />
+                ) : (
+                  <section className="EmailPane EmailReader" />
+                );
+              default:
+                return null;
+            }
+          }}
+        />
+      </div>
+    </FocusgridController.Provider>
   );
 }
 
