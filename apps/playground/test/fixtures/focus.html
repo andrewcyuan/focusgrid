@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>DOM focus regression fixture</title></head>
+<body>
+<div id="outer" class="FocusgridFocusGrid">
+  <div data-pane-id="a" tabindex="-1">
+    <textarea aria-label="editor-a">abcdef</textarea>
+    <div id="inner" class="FocusgridFocusGrid">
+      <div data-pane-id="b" tabindex="-1"><textarea aria-label="nested-b">nested</textarea></div>
+      <div data-pane-id="inner-only" tabindex="-1"></div>
+    </div>
+  </div>
+  <div data-pane-id="b" tabindex="-1"><textarea aria-label="editor-b">uvwxyz</textarea></div>
+  <div data-pane-id="inert" tabindex="-1" inert></div>
+</div>
+<button id="focus-a">Focus a</button><button id="focus-b">Focus b</button>
+<button id="focus-inner-only">Focus nested-only ID</button><button id="focus-inert">Focus inert pane</button>
+<button id="detach">Detach</button><button id="adjacent">Adjacent</button>
+<output aria-label="result"></output><output aria-label="active">a</output>
+<script type="module" src="/test/fixtures/focus.ts"></script>
+</body></html>

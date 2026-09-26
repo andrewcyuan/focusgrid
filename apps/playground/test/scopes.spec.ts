@@ -106,3 +106,39 @@ test("removing the focused element cannot leave an ancestor shortcut active on t
   await page.keyboard.press("F3");
   await expect(page.getByLabel("result")).toHaveText("none");
 });
+
+
+test("default root bindings execute once and survive nested consumer cleanup", async ({ page }) => {
+  await focusEditor(page);
+  await page.keyboard.press("F8");
+  await expect(page.getByLabel("root-count")).toHaveText("1");
+  await clickWithoutMovingFocus(page, "Toggle module");
+  await page.getByRole("textbox", { name: "outside", exact: true }).focus();
+  await page.keyboard.press("F8");
+  await expect(page.getByLabel("root-count")).toHaveText("2");
+  await clickWithoutMovingFocus(page, "Toggle module");
+  await focusEditor(page);
+  await page.keyboard.press("F8");
+  await expect(page.getByLabel("root-count")).toHaveText("3");
+});
+
+test("capture shortcuts run before an editable target can swallow the event", async ({ page }) => {
+  const editor = await focusEditor(page);
+  await editor.evaluate(element => element.addEventListener("keydown", event => event.stopPropagation()));
+  await page.keyboard.press("Control+b");
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-pane-id="pane-b"]')).toBeFocused();
+  await expect(editor).toHaveValue("abcdef");
+});
+
+
+test("binding updates replace the registered sequence", async ({ page }) => {
+  const editor = await focusEditor(page);
+  await clickWithoutMovingFocus(page, "Change root binding");
+  await page.keyboard.press("F8");
+  await expect(page.getByLabel("root-count")).toHaveText("0");
+  await page.keyboard.press("F9");
+  await expect(page.getByLabel("root-count")).toHaveText("1");
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveValue("abcdef");
+});

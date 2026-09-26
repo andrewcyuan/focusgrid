@@ -63,11 +63,11 @@ export function AriakitPlayground() {
     <div className="AriakitPage">
       <DemoHeader
         title="Ariakit composite"
-        description="Application-managed pane focus meets Ariakit collection navigation."
+        description="Pane shortcuts and Ariakit collection navigation."
         shortcutSummary={shortcutSummary}
       >
         <p className="DemoHeaderDetail">
-          Static header clicks restore the active row; header links keep focus.
+          Pane navigation focuses the destination pane shell. Click a row to enter its collection.
         </p>
       </DemoHeader>
       <FocusGrid

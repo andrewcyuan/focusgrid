@@ -102,3 +102,7 @@ Separate layout operations rebuilt full controller snapshots while the controlle
 ## Split Orientation Renames Must Include Validation and Fixtures
 
 Renaming the split orientation field only in source left validators and fixtures using the old field. For structural field renames, check serialization, validation, sample layouts, and tests together.
+
+## Shared Listeners Need Per-Consumer Cleanup
+
+Returning the same cleanup function to every listener consumer lets one unmount disable shortcuts for the others. Count consumers and give each an idempotent release function; test partial cleanup and StrictMode remounts.

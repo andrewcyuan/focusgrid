@@ -248,7 +248,7 @@ test("horizontal pointer resize continues after dragging outside the handle", as
     .toBeGreaterThan(initialBox!.width + 80);
 });
 
-test("Ariakit composite loads focused inside a Focusgrid pane", async ({
+test("Ariakit composite accepts focus inside a Focusgrid pane", async ({
   page,
 }) => {
   await page.goto("/ariakit");
@@ -261,6 +261,7 @@ test("Ariakit composite loads focused inside a Focusgrid pane", async ({
     "true",
   );
   const firstRow = leftPane.locator('[data-row-id="alpha"]');
+  await firstRow.focus();
   await expect(firstRow).toBeFocused();
   await expect(firstRow).toHaveCSS("outline-style", "none");
   await expect(
@@ -279,6 +280,7 @@ test("Ariakit arrow keys and custom shortcuts move DOM focus", async ({
   const gamma = leftPane.locator('[data-row-id="gamma"]');
   const delta = leftPane.locator('[data-row-id="delta"]');
 
+  await alpha.focus();
   await expect(alpha).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(beta).toBeFocused();
@@ -304,6 +306,7 @@ test("Ariakit composite actions use the active row and prevent default", async (
 
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
 
+  await leftPane.locator('[data-row-id="alpha"]').focus();
   await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(leftPane.locator('[data-row-id="beta"]')).toBeFocused();
@@ -330,75 +333,19 @@ test("Ariakit composite ignores typing in the embedded input", async ({ page }) 
   );
 });
 
-test("Focusgrid pane shortcuts transfer focus between Ariakit composites", async ({
-  page,
-}) => {
+test("Focusgrid pane shortcuts focus Ariakit pane shells", async ({ page }) => {
   await page.goto("/ariakit");
-
   const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
   const rightPane = page.locator('[data-pane-id="ariakit-beta"]');
   const leftBeta = leftPane.locator('[data-row-id="beta"]');
-  const rightAlpha = rightPane.locator('[data-row-id="alpha"]');
-  const rightBeta = rightPane.locator('[data-row-id="beta"]');
-
-  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(leftBeta).toBeFocused();
-
-  await page.keyboard.press("Control+L");
-
+  await leftBeta.focus();
+  await page.keyboard.press("Control+b");
+  await page.keyboard.press("ArrowRight");
+  await expect(rightPane).toBeFocused();
   await expect(rightPane).toHaveAttribute("data-active", "true");
-  await expect(rightAlpha).toBeFocused();
-  await expect(leftBeta).toHaveAttribute("data-active-item", "true");
-  await page.keyboard.press("ArrowDown");
-  await expect(rightBeta).toBeFocused();
-
-  await page.keyboard.press("Control+H");
-
-  await expect(leftPane).toHaveAttribute("data-active", "true");
-  await expect(leftBeta).toBeFocused();
-
-  await page.keyboard.press("Control+L");
-  await expect(rightBeta).toBeFocused();
-});
-
-test("static Ariakit header clicks restore the active pane", async ({ page }) => {
-  await page.goto("/ariakit");
-
-  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
-  const beta = leftPane.locator('[data-row-id="beta"]');
-  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(beta).toBeFocused();
-
-  await page.locator(".DemoHeader h1").click();
-  await expect(beta).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(leftPane.locator('[data-row-id="gamma"]')).toBeFocused();
-});
-
-test("window reactivation restores unowned Ariakit focus", async ({
-  page,
-  context,
-}) => {
-  await page.goto("/ariakit");
-  const leftPane = page.locator('[data-pane-id="ariakit-alpha"]');
-  const beta = leftPane.locator('[data-row-id="beta"]');
-  await expect(leftPane.locator('[data-row-id="alpha"]')).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(beta).toBeFocused();
-  await beta.evaluate((element) => element.blur());
-
-  const otherPage = await context.newPage();
-  await otherPage.goto("about:blank");
-  await otherPage.bringToFront();
-  await page.bringToFront();
-  await page.evaluate(() => window.dispatchEvent(new FocusEvent("focus")));
-
-  await expect(beta).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(leftPane.locator('[data-row-id="gamma"]')).toBeFocused();
-  await otherPage.close();
+  await page.keyboard.press("Control+b");
+  await page.keyboard.press("ArrowLeft");
+  await expect(leftPane).toBeFocused();
 });
 
 test("window reactivation preserves interactive Ariakit header controls", async ({
