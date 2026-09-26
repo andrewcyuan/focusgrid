@@ -1,3 +1,4 @@
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useShortcuts, ShortcutScope } from "@andrewcyuan/shortcut-engine/react";
 import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
@@ -38,9 +39,9 @@ function createEmailState(): FocusGridControllerState {
 }
 
 export function EmailPlayground() {
-  const controller = useFocusGridController(() => ({ ...createEmailState(), minWidth: 300, minHeight: 280 }));
+  const [domController] = useState(() => new FocusGridDomController());
+  const controller = useFocusGridController(() => ({ ...createEmailState(), minWidth: 300, minHeight: 280 }), domController);
   const emailPaneKeymap = createDemoPaneKeymap(controller);
-  const applicationRef = useRef<HTMLDivElement>(null);
   const [mailboxId, setMailboxId] =
     useState<MockMailbox["id"]>("inbox");
   const [activeThreadId, setActiveThreadId] = useState("field-notes");
@@ -98,7 +99,7 @@ export function EmailPlayground() {
   }, [controller]);
 
   return (
-    <div ref={applicationRef} className="EmailPage">
+    <div className="EmailPage">
       <DemoHeader
         title="Email workspace"
         description="A mocked inbox for testing focus across changing pane topology."
@@ -106,9 +107,9 @@ export function EmailPlayground() {
       />
       <EmailTopBar mailboxId={mailboxId} />
       <FocusGrid
+        domController={domController}
         controller={controller}
         keymap={emailPaneKeymap}
-        focusManagement={{ mode: "application", scopeRef: applicationRef }}
         className="EmailFocusGrid"
         renderPane={(context) => {
           switch (context.paneId) {

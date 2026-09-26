@@ -23,6 +23,10 @@ import {
 } from "./layout/types";
 import { assertValidFocusGridControllerState } from "./validation";
 
+export interface DomController {
+  focus(paneId: PaneId): boolean;
+}
+
 export type Listener = (next: FocusGridControllerState, previous: FocusGridControllerState) => void;
 export type PaneDefaults = PaneCommandCapabilityInput;
 export type FocusGridControllerProps = FocusGridControllerState & {
@@ -49,7 +53,7 @@ export class FocusGridController {
   private readonly paneDefaults: PaneDefaults;
   private readonly listeners = new Set<Listener>();
 
-  constructor({ paneDefaults = {}, minWidth = 0, minHeight = 0, directionalFocusOverflow = false, ...state }: FocusGridControllerProps) {
+  constructor({ paneDefaults = {}, minWidth = 0, minHeight = 0, directionalFocusOverflow = false, ...state }: FocusGridControllerProps, private readonly domController: DomController) {
     assertValidFocusGridControllerState(state);
     if (![minWidth, minHeight].every(value => Number.isFinite(value) && value >= 0)) {
       throw new RangeError("Minimum pane dimensions must be finite, non-negative numbers.");
@@ -79,7 +83,9 @@ export class FocusGridController {
     const state = this.currentState;
     if (!state.activePaneId) return false;
     const target = findPaneForFocusCommand(state, state.activePaneId, direction, this.directionalFocusOverflow);
-    return target ? this.focus(target) : false;
+    if (!target || !this.domController.focus(target)) return false;
+    this.focus(target);
+    return true;
   }
 
   swapAdjacent(direction: CardinalDirection): boolean {

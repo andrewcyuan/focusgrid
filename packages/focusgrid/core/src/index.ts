@@ -16,6 +16,7 @@ export type {
 } from "./layout/types";
 export { FocusGridController } from "./controller";
 export type {
+  DomController,
   FocusGridControllerProps,
   Listener,
   PaneDefaults,

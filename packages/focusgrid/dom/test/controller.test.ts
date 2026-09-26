@@ -4,10 +4,6 @@ import {
   type ComputedHandle,
   type FocusGridControllerState,
 } from "@andrewcyuan/focusgrid/core";
-import {
-  createShortcutEngine,
-} from "@andrewcyuan/shortcut-engine";
-import { FocusGridDomController } from "../src/controller";
 import { PointerResizeController } from "../src/pointer-resize";
 
 function controllerState(): FocusGridControllerState {
@@ -107,110 +103,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("FocusGridDomController lifecycle", () => {
-  it("mounts and destroys keyboard and resize observers idempotently", () => {
-    const observe = vi.fn();
-    const disconnect = vi.fn();
-    const ResizeObserverMock = vi.fn().mockImplementation(function () {
-      return { observe, disconnect };
-    }) as unknown as typeof ResizeObserver;
-    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
-
-    const controller = new FocusGridController(controllerState());
-    const root = {
-      tabIndex: -1,
-      getAttribute: () => null,
-      setAttribute: vi.fn(),
-      removeAttribute: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      getBoundingClientRect: vi.fn(() => ({
-        width: 1000,
-        height: 600,
-      })),
-    } as unknown as HTMLElement;
-    const domController = new FocusGridDomController(controller, root, {
-      keymap: [],
-      engine: createShortcutEngine(),
-      scopeId: "grid",
-      parentScopeId: null,
-    });
-
-    domController.mount();
-    domController.mount();
-
-    expect(root.tabIndex).toBe(0);
-    expect(root.addEventListener).toHaveBeenCalledTimes(1);
-    expect(observe).toHaveBeenCalledTimes(1);
-    expect(observe).toHaveBeenCalledWith(root);
-
-    domController.destroy();
-    domController.destroy();
-
-    expect(root.removeEventListener).toHaveBeenCalledTimes(1);
-    expect(disconnect).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("shared engine grid boundaries", () => {
-  function root() {
-    return {
-      tabIndex: -1,
-      getAttribute: () => null,
-      setAttribute: vi.fn(),
-      removeAttribute: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      getBoundingClientRect: () => ({ width: 1000, height: 600 }),
-    } as unknown as HTMLElement;
-  }
-
-  it("does not reset another grid's pending sequence when inactive pane state changes", () => {
-    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
-    const engine = createShortcutEngine();
-    const active = new FocusGridController(controllerState());
-    const inactive = new FocusGridController(controllerState());
-    const action = vi.fn();
-    const first = new FocusGridDomController(active, root(), {
-      engine, scopeId: "active", parentScopeId: null,
-      keymap: [{ sequence: "G G", action }],
-    });
-    const second = new FocusGridDomController(inactive, root(), {
-      engine, scopeId: "inactive", parentScopeId: null,
-    });
-    first.mount(); second.mount();
-    engine.setActiveScope("active");
-    const key = () => ({ key: "g", preventDefault() {}, stopPropagation() {} }) as KeyboardEvent;
-    engine.handle(key());
-    inactive.focus("right");
-    engine.handle(key());
-    expect(action).toHaveBeenCalledOnce();
-    engine.handle(key());
-    active.focus("right");
-    expect(engine.handle(key())).toBe("pending");
-    expect(action).toHaveBeenCalledOnce();
-    first.destroy(); second.destroy();
-  });
-
-  it("keeps updated bindings across native mount cycles", () => {
-    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
-    const engine = createShortcutEngine(), action = vi.fn();
-    const dom = new FocusGridDomController(new FocusGridController(controllerState()), root(), {
-      engine, scopeId: "grid", parentScopeId: null,
-    });
-    dom.mount();
-    dom.setKeymap([{ sequence: "K", action }]);
-    dom.destroy(); dom.mount();
-    engine.setActiveScope("grid");
-    engine.handle({ key: "k", preventDefault() {}, stopPropagation() {} } as KeyboardEvent);
-    expect(action).toHaveBeenCalledOnce();
-    dom.destroy();
-  });
-});
-
 describe("PointerResizeController batching", () => {
   it("does not enter drag state for a missing split", () => {
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const missing = { ...resizeHandle(), splitId: "missing" };
@@ -228,7 +123,7 @@ describe("PointerResizeController batching", () => {
   it("coalesces pointer moves using the latest absolute drag delta", () => {
     vi.useFakeTimers();
 
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const handle = resizeHandle();
@@ -253,7 +148,7 @@ describe("PointerResizeController batching", () => {
   it("flushes the latest pending resize when the drag ends before the frame runs", () => {
     vi.useFakeTimers();
 
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const handle = resizeHandle();
@@ -275,7 +170,7 @@ describe("PointerResizeController batching", () => {
   });
 
   it("registers document-level drag listeners when a drag starts", () => {
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument } = pointerDocument();
     const target = captureTarget(ownerDocument);
@@ -303,7 +198,7 @@ describe("PointerResizeController batching", () => {
   it("continues resizing from document pointer moves after leaving the handle", () => {
     vi.useFakeTimers();
 
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
@@ -331,7 +226,7 @@ describe("PointerResizeController batching", () => {
   it("flushes pending resize, removes listeners, and releases capture on pointer up", () => {
     vi.useFakeTimers();
 
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
@@ -375,7 +270,7 @@ describe("PointerResizeController batching", () => {
   it("cleans up pointer cancel without leaving a pending frame", () => {
     vi.useFakeTimers();
 
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();
@@ -402,7 +297,7 @@ describe("PointerResizeController batching", () => {
   it("keeps document listeners active when pointer capture is unavailable", () => {
     vi.useFakeTimers();
 
-    const controller = new FocusGridController(controllerState());
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
     const resize = vi.spyOn(controller, "resizeHandle");
     const resizeController = new PointerResizeController(controller);
     const { ownerDocument, listeners } = pointerDocument();

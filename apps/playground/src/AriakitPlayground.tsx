@@ -1,9 +1,10 @@
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useShortcuts, ShortcutScope } from "@andrewcyuan/shortcut-engine/react";
 import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
 import { FocusGrid, useFocusGridController, type Pane, createCompositeNavigationKeymap, type CompositeNavigationDirection } from "@andrewcyuan/focusgrid/react";
 import { type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { DemoHeader } from "./DemoHeader";
 import { createDemoPaneKeymap, paneNavigationShortcuts } from "./pane-navigation";
 
@@ -54,12 +55,12 @@ function createAriakitState(): FocusGridControllerState {
 }
 
 export function AriakitPlayground() {
-  const controller = useFocusGridController(() => ({ ...createAriakitState(), minWidth: 320, minHeight: 320 }));
+  const [domController] = useState(() => new FocusGridDomController());
+  const controller = useFocusGridController(() => ({ ...createAriakitState(), minWidth: 320, minHeight: 320 }), domController);
   const paneKeymap = createDemoPaneKeymap(controller);
-  const applicationRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={applicationRef} className="AriakitPage">
+    <div className="AriakitPage">
       <DemoHeader
         title="Ariakit composite"
         description="Application-managed pane focus meets Ariakit collection navigation."
@@ -70,12 +71,9 @@ export function AriakitPlayground() {
         </p>
       </DemoHeader>
       <FocusGrid
+        domController={domController}
         controller={controller}
         keymap={paneKeymap}
-        focusManagement={{
-          mode: "application",
-          scopeRef: applicationRef,
-        }}
         className="AriakitFocusGrid"
         renderPane={(context) => <AriakitPane {...context} />}
       />

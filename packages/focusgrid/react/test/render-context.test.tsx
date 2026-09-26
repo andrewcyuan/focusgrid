@@ -1,10 +1,9 @@
 import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
-import { createRef } from "react";
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
-import { FocusGrid, useControllerState, useFocusGridController, type Pane, type FocusGridFocusManagement } from "../src/index";
-import type { FocusGridDomFocusManagement } from "../../dom/src";
+import { FocusGrid, useControllerState, useFocusGridController, type Pane } from "../src/index";
 
 function state(): FocusGridControllerState {
   return {
@@ -36,12 +35,12 @@ function state(): FocusGridControllerState {
 
 describe("pane render context", () => {
   it("passes computed pane context to renderPane", () => {
-    const controller = new FocusGridController(state());
+    const controller = new FocusGridController(state(), new FocusGridDomController());
     const contexts: Pane[] = [];
 
     renderToStaticMarkup(
       <>
-        <FocusGrid
+        <FocusGrid domController={new FocusGridDomController()}
         controller={controller}
         renderPane={(ctx) => {
           contexts.push(ctx);
@@ -72,12 +71,12 @@ describe("pane render context", () => {
       null;
 
     function TestApp() {
-      const controller = useFocusGridController(state);
+      const controller = useFocusGridController(state, new FocusGridDomController());
       controllerFromHook = controller;
 
       return (
         <>
-        <FocusGrid
+        <FocusGrid domController={new FocusGridDomController()}
           controller={controller}
           renderPane={(ctx) => <span>{ctx.paneId}</span>}
         />
@@ -93,7 +92,7 @@ describe("pane render context", () => {
   });
 
   it("reads state from the supplied controller hook", () => {
-    const controller = new FocusGridController(state());
+    const controller = new FocusGridController(state(), new FocusGridDomController());
     let activePaneId: string | null | undefined;
 
     function TestApp() {
@@ -107,7 +106,7 @@ describe("pane render context", () => {
   });
 
   it("notifies subscribers after controller api mutations", () => {
-    const controller = new FocusGridController(state());
+    const controller = new FocusGridController(state(), new FocusGridDomController());
     const listenerCalls: Array<string | null> = [];
     const transitions: Array<[string | null, string | null]> = [];
     const unsubscribe = controller.subscribe((nextState, previousState) => {
@@ -124,7 +123,7 @@ describe("pane render context", () => {
   });
 
   it("accepts a callback keymap inside the shared provider", () => {
-    const controller = new FocusGridController(state());
+    const controller = new FocusGridController(state(), new FocusGridDomController());
     const keymap: ShortcutBinding[] = [
       {
         sequence: "Ctrl-K",
@@ -134,7 +133,7 @@ describe("pane render context", () => {
 
     const markup = renderToStaticMarkup(
       <>
-        <FocusGrid
+        <FocusGrid domController={new FocusGridDomController()}
         controller={controller}
         keymap={keymap}
         renderPane={(ctx) => <span>{ctx.paneId}</span>}
@@ -146,28 +145,4 @@ describe("pane render context", () => {
     expect(markup).toContain("<span>right</span>");
   });
 
-  it("accepts exported application focus options without server side effects", () => {
-    const controller = new FocusGridController(state());
-    const scopeRef = createRef<HTMLElement>();
-    const focusManagement: FocusGridFocusManagement = {
-      mode: "application",
-      scopeRef,
-    };
-    const domFocusManagement: FocusGridDomFocusManagement | undefined =
-      undefined;
-
-    const markup = renderToStaticMarkup(
-      <>
-        <FocusGrid
-        controller={controller}
-        focusManagement={focusManagement}
-        renderPane={(ctx) => <span>{ctx.paneId}</span>}
-      />
-      </>,
-    );
-
-    expect(domFocusManagement).toBeUndefined();
-    expect(markup).toContain("<span>left</span>");
-    expect(markup).toContain("<span>right</span>");
-  });
 });

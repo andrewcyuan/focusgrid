@@ -1,6 +1,7 @@
 import { useRef, useSyncExternalStore } from "react";
 import {
   FocusGridController,
+  type DomController,
   computeLayout,
   type ComputedLayout,
   type FocusGridControllerProps,
@@ -9,11 +10,12 @@ import {
 
 export function useFocusGridController(
   createProps: () => FocusGridControllerProps,
+  domController: DomController,
 ): FocusGridController {
   const controllerRef = useRef<FocusGridController | null>(null);
 
   if (!controllerRef.current) {
-    controllerRef.current = new FocusGridController(createProps());
+    controllerRef.current = new FocusGridController(createProps(), domController);
   }
 
   return controllerRef.current;

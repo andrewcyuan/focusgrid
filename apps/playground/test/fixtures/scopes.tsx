@@ -1,3 +1,4 @@
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/react";
 import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react";
 import { StrictMode, useState } from "react";
@@ -31,13 +32,14 @@ function Module() {
   const [latest, setLatest] = useState(true);
   const [child, setChild] = useState(true);
   const [grid, setGrid] = useState(true);
+  const [domController] = useState(() => new FocusGridDomController());
   const controller = useFocusGridController(() => ({
     root: { kind: "split", id: "split", orientation: "horizontal", sizes: [1, 1], children: [
       { kind: "pane", id: "node-a", paneId: "pane-a" },
       { kind: "pane", id: "node-b", paneId: "pane-b" },
     ] },
     activePaneId: "pane-a", container: { width: 800, height: 300 },
-  }));
+  }), domController);
   useShortcuts([
     bind("Ctrl-K", () => setResult("parent-short")),
     bind("G B", () => setResult(`parent-b:${version}`)),
@@ -53,7 +55,7 @@ function Module() {
     {latest && <Contributor value={`latest:${version}`} report={setResult} />}
     <ShortcutScope id="sibling"><Child name="sibling" report={setResult} /></ShortcutScope>
     {grid && <div style={{ height: 300, width: 800 }}>
-      <FocusGrid controller={controller} keymap={createDefaultPaneKeymap(controller)} renderPane={({ paneId }) => <>
+      <FocusGrid domController={domController} controller={controller} keymap={createDefaultPaneKeymap(controller)} renderPane={({ paneId }) => <>
         <textarea aria-label={`${paneId}-plain`} defaultValue="abcdef" />
         {child && <ShortcutScope id={`${paneId}-child`}><Child name={paneId} report={setResult} /></ShortcutScope>}
       </>} />

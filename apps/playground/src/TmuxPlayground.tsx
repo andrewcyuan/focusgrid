@@ -1,3 +1,4 @@
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { defaultPaneShortcutActions, type PaneShortcutId, type PaneShortcutValues } from "@andrewcyuan/focusgrid/react";
 import { normalizeShortcut } from "@andrewcyuan/shortcut-engine";
 import { cardinalDirections, findPaneNode, collectPaneIds, PaneCommandCapability, type FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
@@ -40,7 +41,8 @@ const paneComponents: Record<string, ComponentType<Pane>> = {
 };
 
 export function TmuxPlayground() {
-  const controller = useFocusGridController(() => ({ ...createInitialState(), minWidth: 180, minHeight: 120 }));
+  const [domController] = useState(() => new FocusGridDomController());
+  const controller = useFocusGridController(() => ({ ...createInitialState(), minWidth: 180, minHeight: 120 }), domController);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [shortcuts, setShortcuts] = useState(loadSavedShortcuts());
   const keymap = useMemo(
@@ -83,6 +85,7 @@ export function TmuxPlayground() {
           onToggleSidebar={() => setSidebarOpen((open) => !open)}
         />
         <FocusGrid
+        domController={domController}
           controller={controller}
           keymap={keymap}
           className="PlaygroundFocusGrid"

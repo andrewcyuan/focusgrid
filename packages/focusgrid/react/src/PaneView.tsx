@@ -41,6 +41,8 @@ export function PaneView({ controller, pane, renderPane }: PaneViewProps) {
       tabIndex={-1}
       style={style}
       onPointerDown={(event) => {
+        if (event.target instanceof Element &&
+          event.target.closest(".FocusgridFocusGrid") !== event.currentTarget.closest(".FocusgridFocusGrid")) return;
         controller.focus(pane.paneId);
         focusPaneShellForNonInteractivePointer(event);
       }}

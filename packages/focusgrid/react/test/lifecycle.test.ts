@@ -30,8 +30,8 @@ describe("pane lifecycle diff", () => {
       activePaneId: "editor",
       container: { width: 100, height: 100 },
     };
-    const firstController = new FocusGridController(controllerState);
-    const secondController = new FocusGridController(controllerState);
+    const firstController = new FocusGridController(controllerState, { focus: () => true });
+    const secondController = new FocusGridController(controllerState, { focus: () => true });
     const first = advancePaneLifecycle(
       null,
       firstController,
