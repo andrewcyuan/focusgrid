@@ -318,4 +318,42 @@ describe("PointerResizeController batching", () => {
       snapshotSizes: [0.5, 0.5],
     });
   });
+
+  it("uses the original ratios across multiple animation frames", () => {
+    vi.useFakeTimers();
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
+    const changes: number[][] = [];
+    controller.subscribe(next => {
+      if (next.root.kind === "split") changes.push(next.root.sizes);
+    });
+    const resizeController = new PointerResizeController(controller);
+    resizeController.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), resizeHandle());
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 150 }));
+    vi.runOnlyPendingTimers();
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 200 }));
+    vi.runOnlyPendingTimers();
+    resizeController.endResize(pointerEvent({ pointerId: 1, clientX: 200 }));
+    expect(changes).toHaveLength(2);
+    expect(changes[0][0]).toBeCloseTo(0.55);
+    expect(changes[1][0]).toBeCloseTo(0.6);
+  });
+
+  it("ignores a removed split when a queued resize runs and still releases capture", () => {
+    vi.useFakeTimers();
+    const controller = new FocusGridController(controllerState(), { focus: () => true });
+    const resizeController = new PointerResizeController(controller);
+    const { ownerDocument, listeners } = pointerDocument();
+    const target = captureTarget(ownerDocument);
+    resizeController.startResize(pointerEvent({ pointerId: 1, clientX: 100 }), resizeHandle(), target);
+    resizeController.updateResize(pointerEvent({ pointerId: 1, clientX: 150 }));
+    controller.remove("right");
+    const listener = vi.fn();
+    controller.subscribe(listener);
+    vi.runOnlyPendingTimers();
+    resizeController.endResize(pointerEvent({ pointerId: 1, clientX: 150 }));
+    expect(listener).not.toHaveBeenCalled();
+    expect(target.releasePointerCapture).toHaveBeenCalledWith(1);
+    expect(listeners.size).toBe(0);
+  });
+
 });

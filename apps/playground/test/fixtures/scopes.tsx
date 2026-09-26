@@ -1,11 +1,11 @@
 import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { createDefaultPaneKeymap } from "@andrewcyuan/focusgrid/react";
 import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react";
-import { StrictMode, useEffect, useState } from "react";
+import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
-import { PaneView } from "@andrewcyuan/focusgrid/react";
-import { FocusGridController, computeLayout, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
+import { FocusGrid } from "@andrewcyuan/focusgrid/react";
+import { FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
 
 import { type ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import "@andrewcyuan/focusgrid/react/styles.css";
@@ -57,7 +57,7 @@ root: { kind: "split", id: "split", orientation: "horizontal", sizes: [1, 1], ch
     {latest && <Contributor value={`latest:${version}`} report={setResult} />}
     <ShortcutScope id="sibling"><Child name="sibling" report={setResult} /></ShortcutScope>
     {grid && <div style={{ height: 300, width: 800 }}>
-      <TestGrid domController={domController} controller={controller} initial={initial} renderPane={({ paneId }) => <>
+      <FocusGrid domController={domController} controller={controller} keymap={createDefaultPaneKeymap(controller)} renderPane={({ paneId }) => <>
         <textarea aria-label={`${paneId}-plain`} defaultValue="abcdef" />
         {child && <ShortcutScope id={`${paneId}-child`}><Child name={paneId} report={setResult} /></ShortcutScope>}
       </>} />
@@ -81,25 +81,3 @@ function App() {
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><><App /></></StrictMode>);
-
-// This fixture seeds its own view from input and subscription events. Production
-// useControllerLayout still has a deferred dependency on the removed state API.
-function TestGrid({ controller, domController, initial, renderPane }: {
-  controller: FocusGridController; domController: FocusGridDomController;
-  initial: FocusGridControllerState; renderPane: (pane: { paneId: string }) => React.ReactNode;
-}) {
-  const [state, setState] = useState(initial);
-  useEffect(() => controller.subscribe(setState), [controller]);
-  return <ShortcutScope className="FocusgridFocusGrid" ref={root => domController.setRoot(root)}
-    onFocus={event => {
-      const id = event.target.closest<HTMLElement>("[data-pane-id]")?.dataset.paneId;
-      if (id) controller.focus(id);
-    }}>
-    <GridBindings controller={controller} />
-    {computeLayout(state).panes.map(pane => <PaneView key={pane.paneId} controller={controller} pane={pane} renderPane={renderPane} />)}
-  </ShortcutScope>;
-}
-function GridBindings({ controller }: { controller: FocusGridController }) {
-  useShortcuts(createDefaultPaneKeymap(controller));
-  return null;
-}

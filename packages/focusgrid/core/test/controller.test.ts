@@ -169,3 +169,63 @@ describe("public controller methods", () => {
   });
 
 });
+
+
+describe("controller read methods", () => {
+  it("keeps render data stable for no-ops and refreshes it before notifying subscribers", () => {
+    const controller = createController(props());
+    const initial = controller.getLayout();
+    expect(initial.panes).toEqual([
+      { paneId: "editor", nodeId: "editor-node", active: true, rect: { x: 0, y: 0, width: 1000, height: 600 } },
+    ]);
+    expect(controller.getLayout()).toBe(initial);
+    expect(controller.setContainerSize(1000, 600)).toBe(false);
+    expect(controller.getLayout()).toBe(initial);
+    const listener = vi.fn(() => {
+      expect(controller.getLayout()).not.toBe(initial);
+      expect(controller.getLayout().panes[0].rect.width).toBe(800);
+    });
+    controller.subscribe(listener);
+    controller.setContainerSize(800, 600);
+    expect(listener).toHaveBeenCalledOnce();
+    expect(controller.getLayout()).toBe(controller.getLayout());
+    expect(initial.panes[0].rect.width).toBe(1000);
+    expect(controller.getLayout()).not.toHaveProperty("root");
+  });
+
+  it("invalidates render data for capability changes so subscribed controls update", () => {
+    const controller = createController(props());
+    const initial = controller.getLayout();
+    controller.updatePane("editor", { canRemove: false });
+    expect(controller.getLayout()).not.toBe(initial);
+    expect(controller.getPane("editor")?.canRemove).toBe(false);
+    expect(observedState(controller).root).toMatchObject({ canRemove: false });
+  });
+
+  it("returns isolated pane and container data, including normalized defaults", () => {
+    const controller = createController({ ...props(), paneDefaults: { canRemove: false } });
+    const pane = controller.getPane("editor")!;
+    expect(pane).toEqual({ kind: "pane", id: "editor-node", paneId: "editor", canRemove: false });
+    pane.canRemove = true;
+    expect(controller.getPane("editor")?.canRemove).toBe(false);
+    expect(controller.getPane("missing")).toBeNull();
+    const container = controller.getContainerSize();
+    expect(container).toEqual({ width: 1000, height: 600 });
+    container.width = 0;
+    expect(controller.getContainerSize().width).toBe(1000);
+  });
+
+  it("returns copied drag baselines and reports removed splits and panes", () => {
+    const controller = createController(props());
+    controller.split("editor-node", { side: "right", newPaneId: "terminal", splitId: "workspace" });
+    const sizes = controller.getSplitSizes("workspace")!;
+    expect(sizes).toEqual([0.5, 0.5]);
+    sizes[0] = 0;
+    expect(controller.getSplitSizes("workspace")).toEqual([0.5, 0.5]);
+    controller.remove("terminal");
+    expect(controller.getPane("terminal")).toBeNull();
+    expect(controller.getSplitSizes("workspace")).toBeNull();
+    expect(controller.getSplitSizes("editor-node")).toBeNull();
+    expect(controller.getLayout().handles).toEqual([]);
+  });
+});

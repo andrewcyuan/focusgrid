@@ -1,7 +1,6 @@
 import {
   type ComputedHandle,
   type FocusGridController,
-  findSplitNode,
 } from "@andrewcyuan/focusgrid/core";
 import { cancelFrame, requestFrame, type FrameRequest } from "./frame";
 
@@ -53,8 +52,8 @@ export class PointerResizeController {
     const ownerDocument = this.resolveOwnerDocument(event, captureTarget);
     const pointerCaptureTarget = this.resolveCaptureTarget(captureTarget);
 
-    const split = findSplitNode(this.controller.state.root, handle.splitId);
-    if (!split) return;
+    const startSizes = this.controller.getSplitSizes(handle.splitId);
+    if (!startSizes) return;
 
     this.state = {
       phase: "dragging",
@@ -63,8 +62,8 @@ export class PointerResizeController {
       index: handle.index,
       startX: event.clientX,
       startY: event.clientY,
-      direction: split.orientation,
-      startSizes: [...split.sizes],
+      direction: handle.direction,
+      startSizes,
       ownerDocument,
       captureTarget: pointerCaptureTarget,
       pendingDeltaPx: 0,
@@ -77,10 +76,6 @@ export class PointerResizeController {
 
   updateResize(event: PointerEvent): void {
     if (this.state.phase !== "dragging" || this.state.pointerId !== event.pointerId) {
-      return;
-    }
-
-    if (!findSplitNode(this.controller.state.root, this.state.splitId)) {
       return;
     }
 
@@ -140,10 +135,6 @@ export class PointerResizeController {
 
   private dispatchPendingResize(): void {
     if (this.state.phase !== "dragging") {
-      return;
-    }
-
-    if (!findSplitNode(this.controller.state.root, this.state.splitId)) {
       return;
     }
 

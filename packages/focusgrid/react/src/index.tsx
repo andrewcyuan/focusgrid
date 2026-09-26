@@ -13,7 +13,6 @@ export type { ResizeHandleProps } from "./ResizeHandle";
 
 export {
   useControllerLayout,
-  useControllerState,
   useFocusGridController,
 } from "./hooks";
 

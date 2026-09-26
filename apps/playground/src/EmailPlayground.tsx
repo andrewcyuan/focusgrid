@@ -3,7 +3,7 @@ import { useShortcuts, ShortcutScope } from "@andrewcyuan/shortcut-engine/react"
 import { isEditableTarget } from "@andrewcyuan/focusgrid/dom";
 import { Composite, CompositeItem, useCompositeStore } from "@ariakit/react";
 import { FocusGrid, useFocusGridController, type Pane, createCompositeNavigationKeymap, type CompositeNavigationDirection } from "@andrewcyuan/focusgrid/react";
-import { findPaneNode, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
+import { type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DemoHeader } from "./DemoHeader";
 import { mockMailboxes, mockMessages, mockThreads, type MockMailbox, type MockMessage, type MockThread } from "./email-data";
@@ -78,12 +78,14 @@ export function EmailPlayground() {
       setActiveThreadId(threadId);
       setReaderThreadId(threadId);
 
-      if (findPaneNode(controller.state.root, "email-reader")) {
+      if (controller.getPane("email-reader")) {
         controller.focus("email-reader");
         return;
       }
 
-      controller.split(findPaneNode(controller.state.root, "email-inbox")!.id, {
+      const inbox = controller.getPane("email-inbox");
+      if (!inbox) return;
+      controller.split(inbox.id, {
         side: "right",
         newPaneId: "email-reader",
         canRemove: true,

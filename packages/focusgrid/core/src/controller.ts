@@ -11,6 +11,7 @@ import {
   transformLayout,
   updatePane,
   findPaneNode,
+  findSplitNode,
 } from "./layout/tree";
 import {
   PaneCommandCapability,
@@ -18,6 +19,7 @@ import {
   type NodeId,
   type PaneId,
   type PaneNode,
+  type ComputedLayout,
   type CardinalDirection,
   type FocusGridControllerState,
 } from "./layout/types";
@@ -50,6 +52,7 @@ export class FocusGridController {
   readonly minHeight: number;
   readonly directionalFocusOverflow: boolean;
   private currentState: FocusGridControllerState;
+  private layout: ComputedLayout | null = null;
   private readonly paneDefaults: PaneDefaults;
   private readonly listeners = new Set<Listener>();
 
@@ -66,6 +69,25 @@ export class FocusGridController {
       node.kind === "pane" ? withPaneDefaults(node, paneDefaults) : node,
     );
     this.currentState = root === state.root ? state : { ...state, root };
+  }
+
+  /** Computed render data; stable until the next committed change. */
+  getLayout(): ComputedLayout {
+    return this.layout ??= computeLayout(this.currentState);
+  }
+
+  getPane(paneId: PaneId): PaneNode | null {
+    const pane = findPaneNode(this.currentState.root, paneId);
+    return pane ? { ...pane } : null;
+  }
+
+  getContainerSize(): { width: number; height: number } {
+    return { ...this.currentState.container };
+  }
+
+  getSplitSizes(splitId: NodeId): number[] | null {
+    const split = findSplitNode(this.currentState.root, splitId);
+    return split ? [...split.sizes] : null;
   }
 
   splitActive(side: CardinalDirection): PaneId | null {
@@ -206,6 +228,7 @@ export class FocusGridController {
 
     const next = { ...previous, ...patch };
     this.currentState = next;
+    this.layout = null;
 
     for (const listener of this.listeners) {
       listener(next, previous);

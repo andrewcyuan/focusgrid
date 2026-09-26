@@ -1,8 +1,8 @@
 import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { defaultPaneShortcutActions, type PaneShortcutId, type PaneShortcutValues } from "@andrewcyuan/focusgrid/react";
 import { normalizeShortcut } from "@andrewcyuan/shortcut-engine";
-import { cardinalDirections, findPaneNode, collectPaneIds, PaneCommandCapability, type FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
-import { FocusGrid, useControllerState, useFocusGridController, type Pane } from "@andrewcyuan/focusgrid/react";
+import { cardinalDirections, PaneCommandCapability, type FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
+import { FocusGrid, useControllerLayout, useFocusGridController, type Pane } from "@andrewcyuan/focusgrid/react";
 import { type ComponentType, useEffect, useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { loadSavedShortcuts, saveShortcuts } from "./shortcuts";
 import { demoHubPath } from "./demo-routes";
@@ -139,12 +139,14 @@ function Toolbar({
   controller: FocusGridController;
   onToggleSidebar: () => void;
 }) {
-  const state = useControllerState(controller);
-  const paneIds = useMemo(() => collectPaneIds(state.root), [state.root]);
-  const activePane = findPaneNode(state.root, state.activePaneId);
+  const layout = useControllerLayout(controller);
+  const paneIds = useMemo(() => layout.panes.map(pane => pane.paneId), [layout]);
+  const activePaneId = layout.panes.find(pane => pane.active)?.paneId;
+  const activePane = activePaneId ? controller.getPane(activePaneId) : null;
+  const container = controller.getContainerSize();
   const swapTargets = useMemo(
-    () => paneIds.filter((paneId) => paneId !== state.activePaneId),
-    [paneIds, state.activePaneId]
+    () => paneIds.filter((paneId) => paneId !== activePaneId),
+    [paneIds, activePaneId]
   );
   const [swapTargetId, setSwapTargetId] = useState(swapTargets[0] ?? "");
 
@@ -158,8 +160,6 @@ function Toolbar({
 
   const toggleActivePaneCapability = useCallback(
     (key: PaneCommandCapability) => {
-      const activePaneId = state.activePaneId;
-
       if (!activePaneId || !activePane) {
         return;
       }
@@ -168,7 +168,7 @@ function Toolbar({
         [key]: !(activePane[key] ?? true),
       });
     },
-    [activePane, controller, state.activePaneId]
+    [activePane, controller, activePaneId]
   );
 
   return (
@@ -213,10 +213,8 @@ function Toolbar({
             </label>
             <button
               type="button"
-              disabled={!state.activePaneId || !swapTargetId}
+              disabled={!activePaneId || !swapTargetId}
               onClick={() => {
-                const activePaneId = state.activePaneId;
-
                 if (!activePaneId || !swapTargetId) {
                   return;
                 }
@@ -253,7 +251,7 @@ function Toolbar({
           All demos
         </a>
         <span>
-          Root: {state.container.width} x {state.container.height}
+          Root: {container.width} x {container.height}
         </span>
       </div>
     </header>

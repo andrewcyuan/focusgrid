@@ -56,7 +56,9 @@ API overview:
 - `focusAdjacent(direction)` requests DOM focus before updating active-pane state and returns false if focus fails. `focus(paneId)` only synchronizes core state from DOM focus and never requests DOM focus itself.
 - Consuming apps own background clicks, window activation, and remembered-focus restoration. Focusgrid has no application focus manager.
 
-Current migration limitation: `useControllerState`, `useControllerLayout`, pointer resizing, and some playground callers still read the deleted `controller.state`. Their repair is deferred. Full React rendering, related tests, Focusgrid/playground typechecks, and the playground build remain blocked until that work is complete; there is no replacement snapshot API.
+`useControllerLayout(controller)` subscribes to `controller.getLayout()`, which returns computed panes, handles, and geometry with stable identity until the next committed change. It exposes no raw layout tree. Treat the computed layout as read-only.
+
+For imperative queries, `getPane(paneId)` returns a copy of a pane's IDs and capabilities, `getContainerSize()` returns copied dimensions, and `getSplitSizes(splitId)` returns copied ratios for a drag baseline. Missing panes and splits return `null`. Use command methods such as `focusAdjacent()` for navigation rather than reading layout to select a target.
 
 Split an individual pane by its node ID; other pane methods take its pane ID.
 Supplied `newPaneId`, `newPaneNodeId`, and `splitId` are preserved; omitted IDs are generated.

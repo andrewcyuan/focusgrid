@@ -106,3 +106,7 @@ Renaming the split orientation field only in source left validators and fixtures
 ## Shared Listeners Need Per-Consumer Cleanup
 
 Returning the same cleanup function to every listener consumer lets one unmount disable shortcuts for the others. Count consumers and give each an idempotent release function; test partial cleanup and StrictMode remounts.
+
+## Removing State Access Must Include Its Callers
+
+Removing `controller.state` left rendering, pointer resizing, and playground commands broken. Trace each read to the data or action it needs, replace it with a narrow controller method, and run full typechecks and browser tests rather than bypassing the real renderer.

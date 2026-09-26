@@ -3,7 +3,7 @@ import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FocusGridController, type FocusGridControllerState } from "@andrewcyuan/focusgrid/core";
-import { FocusGrid, useControllerState, useFocusGridController, type Pane } from "../src/index";
+import { FocusGrid, useControllerLayout, useFocusGridController, type Pane } from "../src/index";
 
 function state(): FocusGridControllerState {
   return {
@@ -35,12 +35,13 @@ function state(): FocusGridControllerState {
 
 describe("pane render context", () => {
   it("passes computed pane context to renderPane", () => {
-    const controller = new FocusGridController(state(), new FocusGridDomController());
+    const domController = new FocusGridDomController();
+    const controller = new FocusGridController(state(), domController);
     const contexts: Pane[] = [];
 
     renderToStaticMarkup(
       <>
-        <FocusGrid domController={new FocusGridDomController()}
+        <FocusGrid domController={domController}
         controller={controller}
         renderPane={(ctx) => {
           contexts.push(ctx);
@@ -69,14 +70,15 @@ describe("pane render context", () => {
   it("creates a stable controller with useFocusGridController", () => {
     let controllerFromHook: FocusGridController | null =
       null;
+    const domController = new FocusGridDomController();
 
     function TestApp() {
-      const controller = useFocusGridController(state, new FocusGridDomController());
+      const controller = useFocusGridController(state, domController);
       controllerFromHook = controller;
 
       return (
         <>
-        <FocusGrid domController={new FocusGridDomController()}
+        <FocusGrid domController={domController}
           controller={controller}
           renderPane={(ctx) => <span>{ctx.paneId}</span>}
         />
@@ -88,15 +90,16 @@ describe("pane render context", () => {
 
     expect(markup).toContain("<span>left</span>");
     expect(markup).toContain("<span>right</span>");
-    expect(controllerFromHook?.state.activePaneId).toBe("right");
+    expect(controllerFromHook?.getLayout().panes.find(pane => pane.active)?.paneId).toBe("right");
   });
 
-  it("reads state from the supplied controller hook", () => {
-    const controller = new FocusGridController(state(), new FocusGridDomController());
+  it("reads computed layout from the supplied controller hook", () => {
+    const domController = new FocusGridDomController();
+    const controller = new FocusGridController(state(), domController);
     let activePaneId: string | null | undefined;
 
     function TestApp() {
-      activePaneId = useControllerState(controller).activePaneId;
+      activePaneId = useControllerLayout(controller).panes.find(pane => pane.active)?.paneId;
       return null;
     }
 
@@ -106,7 +109,8 @@ describe("pane render context", () => {
   });
 
   it("notifies subscribers after controller api mutations", () => {
-    const controller = new FocusGridController(state(), new FocusGridDomController());
+    const domController = new FocusGridDomController();
+    const controller = new FocusGridController(state(), domController);
     const listenerCalls: Array<string | null> = [];
     const transitions: Array<[string | null, string | null]> = [];
     const unsubscribe = controller.subscribe((nextState, previousState) => {
@@ -122,8 +126,9 @@ describe("pane render context", () => {
     expect(transitions).toEqual([["right", "left"]]);
   });
 
-  it("accepts a callback keymap inside the shared provider", () => {
-    const controller = new FocusGridController(state(), new FocusGridDomController());
+  it("accepts a callback keymap", () => {
+    const domController = new FocusGridDomController();
+    const controller = new FocusGridController(state(), domController);
     const keymap: ShortcutBinding[] = [
       {
         sequence: "Ctrl-K",
@@ -133,7 +138,7 @@ describe("pane render context", () => {
 
     const markup = renderToStaticMarkup(
       <>
-        <FocusGrid domController={new FocusGridDomController()}
+        <FocusGrid domController={domController}
         controller={controller}
         keymap={keymap}
         renderPane={(ctx) => <span>{ctx.paneId}</span>}
