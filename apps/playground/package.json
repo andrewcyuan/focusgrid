@@ -7,7 +7,6 @@
     "focusgrid",
     "playground",
     "react",
-    "ariakit",
     "keyboard-navigation"
   ],
   "type": "module",
@@ -19,7 +18,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ariakit/react": "^0.4.34",
     "@andrewcyuan/focusgrid": "workspace:*",
     "@andrewcyuan/shortcut-engine": "workspace:*",
     "react": "^18.3.1",
