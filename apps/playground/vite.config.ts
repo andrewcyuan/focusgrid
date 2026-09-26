@@ -29,6 +29,10 @@ export default defineConfig({
         ),
       },
       {
+        find: "@andrewcyuan/shortcut-engine/react",
+        replacement: fileURLToPath(new URL("../../packages/shortcut-engine/src/react/index.ts", import.meta.url)),
+      },
+      {
         find: "@andrewcyuan/shortcut-engine",
         replacement: fileURLToPath(
           new URL("../../packages/shortcut-engine/src/index.ts", import.meta.url),

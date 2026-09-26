@@ -32,15 +32,28 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
     }
   },
   "scripts": {
-    "build": "tsdown src/index.ts --config ../../tsdown.config.mjs --format esm,cjs",
+    "build": "tsdown src/index.ts --config ../../tsdown.config.mjs --format esm,cjs && tsdown src/react/index.ts --config ../../tsdown.config.mjs --format esm,cjs --out-dir dist/react --no-clean --deps.never-bundle react",
     "test": "vitest run --config ../../vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
   "devDependencies": {
     "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }

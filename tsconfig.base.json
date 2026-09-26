@@ -4,10 +4,21 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
-      "@andrewcyuan/shortcut-engine": ["./packages/shortcut-engine/src/index.ts"],
-      "@andrewcyuan/focusgrid/core": ["./packages/focusgrid/core/src/index.ts"],
-      "@andrewcyuan/focusgrid/dom": ["./packages/focusgrid/dom/src/index.ts"],
-      "@andrewcyuan/focusgrid/react": ["./packages/focusgrid/react/src/index.tsx"]
+      "@andrewcyuan/shortcut-engine": [
+        "./packages/shortcut-engine/src/index.ts"
+      ],
+      "@andrewcyuan/focusgrid/core": [
+        "./packages/focusgrid/core/src/index.ts"
+      ],
+      "@andrewcyuan/focusgrid/dom": [
+        "./packages/focusgrid/dom/src/index.ts"
+      ],
+      "@andrewcyuan/focusgrid/react": [
+        "./packages/focusgrid/react/src/index.tsx"
+      ],
+      "@andrewcyuan/shortcut-engine/react": [
+        "./packages/shortcut-engine/src/react/index.ts"
+      ]
     },
     "strict": true,
     "declaration": true,
