@@ -63,7 +63,7 @@ export class PointerResizeController {
       index: handle.index,
       startX: event.clientX,
       startY: event.clientY,
-      direction: split.direction,
+      direction: split.orientation,
       startSizes: [...split.sizes],
       ownerDocument,
       captureTarget: pointerCaptureTarget,

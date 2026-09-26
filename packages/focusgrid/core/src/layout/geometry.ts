@@ -1,7 +1,7 @@
 import { HANDLE_SIZE } from "./constants";
 import type {
   ComputedLayout,
-  Direction,
+  Orientation,
   FocusGridControllerState,
   LayoutNode,
   Rect,
@@ -46,13 +46,13 @@ export function normalizeSplitSizes(
 
 export function getMinimumSize(
   node: LayoutNode,
-  direction: Direction,
+  direction: Orientation,
 ): number {
   if (node.kind === "pane") {
     return direction === "horizontal" ? node.minWidth ?? 0 : node.minHeight ?? 0;
   }
 
-  if (node.direction === direction) {
+  if (node.orientation === direction) {
     return (
       node.children.reduce(
         (sum, child) => sum + getMinimumSize(child, direction),
@@ -83,7 +83,7 @@ function computeNode(
   }
 
   const sizes = normalizeSplitSizes(node.sizes, node.children.length);
-  const horizontal = node.direction === "horizontal";
+  const horizontal = node.orientation === "horizontal";
   const axisSize = horizontal ? rect.width : rect.height;
   const axisStart = horizontal ? rect.x : rect.y;
   const handleTotal = Math.max(0, node.children.length - 1) * HANDLE_SIZE;
@@ -95,15 +95,15 @@ function computeNode(
     const childSize = isLast
       ? axisStart + axisSize - cursor
       : Math.floor(contentSize * (sizes[index] ?? 0));
-    const childRect = createChildRect(node.direction, rect, cursor, childSize);
+    const childRect = createChildRect(node.orientation, rect, cursor, childSize);
 
     computeNode(child, childRect, geometry, activePaneId);
     cursor += childSize;
 
     if (!isLast) {
       geometry.handles.push({
-        id: `${node.id}:${index}`, splitId: node.id, index, direction: node.direction,
-        rect: createChildRect(node.direction, rect, cursor, HANDLE_SIZE),
+        id: `${node.id}:${index}`, splitId: node.id, index, direction: node.orientation,
+        rect: createChildRect(node.orientation, rect, cursor, HANDLE_SIZE),
       });
       cursor += HANDLE_SIZE;
     }
@@ -111,7 +111,7 @@ function computeNode(
 }
 
 function createChildRect(
-  direction: Direction,
+  direction: Orientation,
   rect: Rect,
   cursor: number,
   size: number,

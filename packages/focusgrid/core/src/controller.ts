@@ -71,7 +71,7 @@ export class FocusGridController {
     });
     const root = updatePane(state.root, target.paneId, () => ({
       kind: "split", id: splitId,
-      direction: isHorizontalDirection(side) ? "horizontal" : "vertical",
+      orientation: isHorizontalDirection(side) ? "horizontal" : "vertical",
       children: side === "left" || side === "up" ? [pane, target] : [target, pane],
       sizes: [0.5, 0.5],
     }));
@@ -119,7 +119,7 @@ export class FocusGridController {
     const rect = computeLayout(state).rectByNodeId.get(splitId);
     if (!rect) return false;
     const root = transformLayout(state.root, (node) => node.kind === "split" && node.id === splitId
-      ? resizeSplit(node, node.direction === "horizontal" ? rect.width : rect.height, props.index, props.deltaPx, props.snapshotSizes)
+      ? resizeSplit(node, node.orientation === "horizontal" ? rect.width : rect.height, props.index, props.deltaPx, props.snapshotSizes)
       : node,
     );
     return this.commit({ root });

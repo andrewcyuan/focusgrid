@@ -1,7 +1,7 @@
 export type PaneId = string;
 export type NodeId = string;
 
-export type Direction = "horizontal" | "vertical";
+export type Orientation = "horizontal" | "vertical";
 export const cardinalDirections = ["left", "right", "up", "down"] as const;
 
 export type CardinalDirection = (typeof cardinalDirections)[number];
@@ -32,7 +32,7 @@ export type PaneNode = {
 export type SplitNode = {
   kind: "split";
   id: NodeId;
-  direction: Direction;
+  orientation: Orientation;
   children: LayoutNode[];
   sizes: number[];
   lastFocusedChildId?: NodeId;
@@ -59,7 +59,7 @@ export type ComputedHandle = {
   splitId: NodeId;
   index: number;
   rect: Rect;
-  direction: Direction;
+  direction: Orientation;
 };
 
 export type ComputedLayout = {

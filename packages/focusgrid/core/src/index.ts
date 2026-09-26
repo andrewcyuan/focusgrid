@@ -3,7 +3,7 @@ export type {
   ComputedLayout,
   ComputedPane,
   CardinalDirection,
-  Direction,
+  Orientation as Direction,
   LayoutIndex,
   LayoutNode,
   NodeId,

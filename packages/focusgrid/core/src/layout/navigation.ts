@@ -125,11 +125,11 @@ function findDirectionalSibling(
   if (childIndex === -1) return null;
 
   const horizontal = direction === "left" || direction === "right";
-  if (horizontal && parent.direction === "horizontal") {
+  if (horizontal && parent.orientation === "horizontal") {
     if (direction === "right") return parent.children[childIndex + 1] ?? null;
     return parent.children[childIndex - 1] ?? null;
   }
-  if (!horizontal && parent.direction === "vertical") {
+  if (!horizontal && parent.orientation === "vertical") {
     if (direction === "down") return parent.children[childIndex + 1] ?? null;
     return parent.children[childIndex - 1] ?? null;
   }
@@ -198,7 +198,7 @@ export function resolvePaneResizeBoundary(
       return null;
     }
 
-    if (isHorizontalDirection(direction) === (parent.direction === "horizontal")) {
+    if (isHorizontalDirection(direction) === (parent.orientation === "horizontal")) {
       const boundaryIndex =
         childIndex > 0
           ? childIndex - 1

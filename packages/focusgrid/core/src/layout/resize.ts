@@ -1,6 +1,6 @@
 import { HANDLE_SIZE } from "./constants";
 import { getMinimumSize, normalizeSplitSizes } from "./geometry";
-import type { Direction, LayoutNode, SplitNode } from "./types";
+import type { Orientation, LayoutNode, SplitNode } from "./types";
 
 export function resizeSplit(
   split: SplitNode,
@@ -20,7 +20,7 @@ export function resizeSplit(
   nextSizes[index + 1] -= deltaRatio;
 
   const minSizes = split.children.map((child) =>
-    getMinimumSize(child, split.direction) / totalPx
+    getMinimumSize(child, split.orientation) / totalPx
   );
   const currentSizes = normalizeSplitSizes(split.sizes, split.children.length);
   const clamped = clampAdjacentPair(nextSizes, minSizes, index);
@@ -29,7 +29,7 @@ export function resizeSplit(
       ...split,
       sizes: clamped,
     },
-    split.direction,
+    split.orientation,
     totalPx
   );
 
@@ -50,14 +50,14 @@ function sizesEqual(a: number[], b: number[]): boolean {
 
 function fitNodeToAxisSize(
   node: LayoutNode,
-  direction: Direction,
+  direction: Orientation,
   axisSize: number
 ): LayoutNode {
   if (node.kind === "pane") {
     return node;
   }
 
-  if (node.direction !== direction) {
+  if (node.orientation !== direction) {
     let changed = false;
     const children = node.children.map((child) => {
       const nextChild = fitNodeToAxisSize(child, direction, axisSize);
