@@ -3,14 +3,9 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import type { FocusGridController } from "@andrewcyuan/focusgrid/core";
+import type { FocusGridController, PaneLayoutChangeEvent, PaneCloseEvent } from "@andrewcyuan/focusgrid/core";
 import { RootResizeObserver, type FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
 import { useControllerLayout } from "./hooks";
-import {
-  usePaneLifecycleEvents,
-  type PaneCloseEvent,
-  type PaneLayoutChangeEvent,
-} from "./lifecycle";
 import { ShortcutScope, useShortcuts } from "@andrewcyuan/shortcut-engine/react";
 import type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import { createDefaultPaneKeymap } from "./default-pane-keymap";
@@ -51,12 +46,8 @@ export function FocusGrid({
     };
   }, [controller, domController]);
 
-  usePaneLifecycleEvents(
-    controller,
-    layout.panes,
-    onPaneLayoutChange,
-    onPaneClose,
-  );
+  useEffect(() => controller.subscribePaneEvents({ onPaneLayoutChange, onPaneClose }),
+    [controller, onPaneLayoutChange, onPaneClose]);
 
   const rootClassName = className
     ? `FocusgridFocusGrid ${className}`

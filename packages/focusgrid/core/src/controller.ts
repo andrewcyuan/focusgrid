@@ -20,6 +20,7 @@ import {
   type PaneId,
   type PaneNode,
   type ComputedLayout,
+  type ComputedPane,
   type CardinalDirection,
   type FocusGridControllerState,
 } from "./layout/types";
@@ -30,6 +31,12 @@ export interface DomController {
 }
 
 export type Listener = (next: FocusGridControllerState, previous: FocusGridControllerState) => void;
+export type PaneLayoutChangeEvent = { pane: ComputedPane; previousPane: ComputedPane; controller: FocusGridController };
+export type PaneCloseEvent = { paneId: PaneId; previousPane: ComputedPane; controller: FocusGridController };
+export type PaneEventHandlers = {
+  onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
+  onPaneClose?: (event: PaneCloseEvent) => void;
+};
 export type PaneDefaults = PaneCommandCapabilityInput;
 export type FocusGridControllerProps = FocusGridControllerState & {
   paneDefaults?: PaneDefaults;
@@ -235,6 +242,25 @@ export class FocusGridController {
     }
 
     return true;
+  }
+
+  subscribePaneEvents({ onPaneLayoutChange, onPaneClose }: PaneEventHandlers): () => void {
+    if (!onPaneLayoutChange && !onPaneClose) return () => {};
+    return this.subscribe((next, previous) => {
+      const previousPanes = new Map(computeLayout(previous).panes.map(pane => [pane.paneId, pane]));
+      const nextPanes = computeLayout(next).panes;
+      for (const pane of nextPanes) {
+        const previousPane = previousPanes.get(pane.paneId);
+        previousPanes.delete(pane.paneId);
+        if (previousPane && (pane.rect.x !== previousPane.rect.x || pane.rect.y !== previousPane.rect.y ||
+          pane.rect.width !== previousPane.rect.width || pane.rect.height !== previousPane.rect.height)) {
+          onPaneLayoutChange?.({ pane, previousPane, controller: this });
+        }
+      }
+      for (const previousPane of previousPanes.values()) {
+        onPaneClose?.({ paneId: previousPane.paneId, previousPane, controller: this });
+      }
+    });
   }
 
   subscribe(listener: Listener): () => void {

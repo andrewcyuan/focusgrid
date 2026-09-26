@@ -1,6 +1,5 @@
 export { FocusGrid } from "./FocusGrid";
 export type { FocusGridProps } from "./FocusGrid";
-export type { PaneCloseEvent, PaneLayoutChangeEvent } from "./lifecycle";
 
 export { PaneView } from "./PaneView";
 export type {
