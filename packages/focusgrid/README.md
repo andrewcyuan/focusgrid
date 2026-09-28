@@ -1,7 +1,12 @@
 # Focusgrid
 
-Resizable panes with keyboard navigation. Core owns layout and commands; DOM handles focus and resizing; React renders the computed tree.
+Create tmux-like, resizable-pane layouts. Use the included React bindings (reocmmended) or write your own bindings to the `focusgrid/core` and `focusgrid/dom` packages!
 
+You can put any react component in the panes using the `renderPane` prop and support all basic layout actions: resize, split, delete, swap, move focus.
+
+The react bindings are also dependent on [shortcut-engine](https://www.npmjs.com/package/@andrewcyuan/shortcut-engine) for out-of-the-box keyboard support.
+
+**Example usage**
 ```tsx
 import { useState } from "react";
 import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
@@ -28,12 +33,14 @@ export function App() {
 }
 ```
 
-Give the grid's parent a height. An optional `keymap` replaces the default bindings, including when empty.
+**Customizing Focusgrid**
+Focusgrid can be easily customized. It can be the surface in which you create your entire webapp. Here are some ways you can customize it.
 
-Default shortcuts: Ctrl+B, then `%` / `"` to split, `x` to close, arrows to focus, Shift+arrows to swap, or H/J/K/L to resize. The [playground](../../apps/playground/src/keymap.ts) uses its own tmux bindings.
+- Define the grid's width and height. When these change, panes are scaled proportionally (not the left-shrinks-first strategy that `tmux` uses)
+- Replace the keybinds by passing `keymap`
+- Directly hit the API by using controller commands: `splitActive`, `removeActive`, `focusAdjacent`, `swapAdjacent`, and `resizeActive`. `focus(paneId)` only syncs active-pane state; `focusAdjacent(direction)` also requests DOM focus.
+- Read layout with `getLayout()`/`useControllerLayout(controller)` (React version). You can also directly mutate the layout, although using the API is probably easier and safer.
+- To write your own frontend framework binding, use `getPane`, `getContainerSize`, and `getSplitSizes` for specific queries, and `subscribe` for changes.
 
-Use controller commands: `splitActive`, `removeActive`, `focusAdjacent`, `swapAdjacent`, and `resizeActive`. `focus(paneId)` only syncs active-pane state; `focusAdjacent(direction)` also requests DOM focus. Apps own editor focus restoration and window activation.
 
-Read layout with `getLayout()` or React's `useControllerLayout(controller)`; treat it as read-only. Use `getPane`, `getContainerSize`, and `getSplitSizes` for specific queries, and `subscribe` for changes.
-
-Without React, construct `FocusGridController(props, domController)` from `/core` and attach your renderer with `mountFocusGrid(root, controller, domController)` from `/dom`; it returns cleanup. Core requires only `domController.focus(paneId): boolean`.
+Made by [Andrew Yuan](https://andrewcyuan.com)
