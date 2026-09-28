@@ -1,6 +1,6 @@
 {
   "name": "@andrewcyuan/focusgrid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Keyboard-native pane layouts and deterministic focus management for web applications.",
   "keywords": [
     "keyboard-navigation",
