@@ -127,3 +127,7 @@ Repeating tsdown's `--deps.never-bundle` flag retained only its last value, so D
 
 - **Mistake:** `minWidth`/`minHeight` were enforced only by resize, so repeated splits halved panes down to 0px and moved focus into an invisible pane.
 - **Fix pattern:** Any command that creates or shrinks panes must check the same minimum sizes as resize. When focus looks lost, check the size of the focused pane before you debug focus routing.
+
+## Default Styles Must Yield to Consumer Styles
+
+Ordinary class selectors in the package stylesheet overrode consumer colors when bundling loaded the package CSS last, hiding an application's pane divider. Use zero-specificity `:where(...)` selectors for defaults, expose idle as well as interactive colors, and check computed styles in a browser with both stylesheet orders.
