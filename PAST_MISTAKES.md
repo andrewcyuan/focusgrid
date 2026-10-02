@@ -118,3 +118,7 @@ Changing React parent boundaries when a split is added or removed can remount ed
 ## Repeat Windows Must Allow New Commands
 
 Repeat mode swallowed new prefixes and direct shortcuts for 500 ms after a resize command. When a key is not a repeat follower, try it as a new shortcut; test rapid repeat-to-prefix and repeat-to-direct transitions with textarea contents intact.
+
+## Public Entry Points Must Share Class Identity
+
+Repeating tsdown's `--deps.never-bundle` flag retained only its last value, so DOM and React bundles duplicated core classes and private-member declarations. Use an explicit external dependency list and compile consumers against built package exports without workspace aliases; source-only typechecks conceal this mismatch.
