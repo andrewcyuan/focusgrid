@@ -7,11 +7,18 @@ import { FocusgridController, FocusGrid, useControllerLayout, useFocusGridContro
 
 function state(): FocusGridControllerState {
   return {
-    root: { kind: "split", id: "root", orientation: "horizontal", sizes: [1, 1], children: [
-      { kind: "pane", id: "left-node", paneId: "left" },
-      { kind: "pane", id: "right-node", paneId: "right" },
-    ] },
-    activePaneId: "right", container: { width: 800, height: 600 },
+    root: {
+      kind: "split",
+      id: "root",
+      orientation: "horizontal",
+      sizes: [1, 1],
+      children: [
+        { kind: "pane", id: "left-node", paneId: "left" },
+        { kind: "pane", id: "right-node", paneId: "right" },
+      ],
+    },
+    activePaneId: "right",
+    container: { width: 800, height: 600 },
   };
 }
 
@@ -20,13 +27,27 @@ function controllers() {
   return { controller: new FocusGridController(state(), domController), domController };
 }
 
+function HookApp() {
+  const value = useFocusGridController(state);
+  return (
+    <FocusgridController.Provider value={value}>
+      <FocusGrid renderPane={({ paneId }) => <span>{paneId}</span>} />
+    </FocusgridController.Provider>
+  );
+}
+
 describe("pane render context", () => {
   it("passes computed pane geometry and the context controller to renderPane", () => {
     const value = controllers();
     const panes: Pane[] = [];
     renderToStaticMarkup(
       <FocusgridController.Provider value={value}>
-        <FocusGrid renderPane={pane => { panes.push(pane); return <span>{pane.paneId}</span>; }} />
+        <FocusGrid
+          renderPane={(pane) => {
+            panes.push(pane);
+            return <span>{pane.paneId}</span>;
+          }}
+        />
       </FocusgridController.Provider>,
     );
     expect(panes).toEqual([
@@ -36,27 +57,17 @@ describe("pane render context", () => {
   });
 
   it("creates the controller in the app and supplies it through context", () => {
-    const domController = new FocusGridDomController();
-    function App() {
-      const controller = useFocusGridController(state, domController);
-      return <FocusgridController.Provider value={{ controller, domController }}>
-        <FocusGrid renderPane={({ paneId }) => <span>{paneId}</span>} />
-      </FocusgridController.Provider>;
-    }
-    const markup = renderToStaticMarkup(<App />);
+    const markup = renderToStaticMarkup(<HookApp />);
     expect(markup).toContain("<span>left</span>");
     expect(markup).toContain("<span>right</span>");
   });
 
   it("reads computed layout from the supplied controller hook", () => {
     const { controller } = controllers();
-    let activePaneId: string | undefined;
-    function App() {
-      activePaneId = useControllerLayout(controller).panes.find(pane => pane.active)?.paneId;
-      return null;
+    function ActivePane() {
+      return useControllerLayout(controller).panes.find((pane) => pane.active)?.paneId;
     }
-    renderToStaticMarkup(<App />);
-    expect(activePaneId).toBe("right");
+    expect(renderToStaticMarkup(<ActivePane />)).toBe("right");
   });
 
   it("renders mixed recursive splits and their separators", () => {

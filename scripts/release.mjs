@@ -38,14 +38,20 @@ try {
   }
   for (const directory of packageDirectories) {
     const cwd = join(repoRoot, "packages", directory);
-    const { name, version, private: isPrivate } = JSON.parse(
-      readFileSync(join(cwd, "package.json"), "utf8"),
-    );
+    const { name, version, private: isPrivate } = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8"));
     if (isPrivate) throw new Error(`Refusing to publish private package ${name}`);
-    run("bun", [
-      "publish", "--access", "public", "--frozen-lockfile",
-      "--tolerate-republish", ...(dryRun ? ["--dry-run"] : publishArgs),
-    ], cwd);
+    run(
+      "bun",
+      [
+        "publish",
+        "--access",
+        "public",
+        "--frozen-lockfile",
+        "--tolerate-republish",
+        ...(dryRun ? ["--dry-run"] : publishArgs),
+      ],
+      cwd,
+    );
     if (!dryRun) {
       const tag = `${name}@${version}`;
       if (!run("git", ["tag", "--list", tag], repoRoot, true)) {

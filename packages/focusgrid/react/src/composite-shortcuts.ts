@@ -7,12 +7,16 @@ export function createCompositeNavigationKeymap(
   move: (direction: CompositeNavigationDirection, event: KeyboardEvent) => void,
 ): ShortcutBinding[] {
   const keys: [string, CompositeNavigationDirection][] = [
-    ["Left", "left"], ["Right", "right"], ["Up", "up"],
-    ["Down", "down"], ["Home", "start"], ["End", "end"],
+    ["Left", "left"],
+    ["Right", "right"],
+    ["Up", "up"],
+    ["Down", "down"],
+    ["Home", "start"],
+    ["End", "end"],
   ];
   return keys.map(([key, direction]) => ({
     sequence: key,
-    action: event => move(direction, event),
-    when: event => !isEditableTarget(event.target),
+    action: (event) => move(direction, event),
+    when: (event) => !isEditableTarget(event.target),
   }));
 }

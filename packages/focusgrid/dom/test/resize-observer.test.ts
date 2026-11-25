@@ -3,9 +3,14 @@ import { FocusGridController } from "@andrewcyuan/focusgrid/core";
 import { observeRootSize } from "../src/resize-observer";
 
 function controller() {
-  return new FocusGridController({
-    root: { kind: "pane", id: "node", paneId: "pane" }, activePaneId: "pane", container: { width: 0, height: 0 },
-  }, { focus: () => true });
+  return new FocusGridController(
+    {
+      root: { kind: "pane", id: "node", paneId: "pane" },
+      activePaneId: "pane",
+      container: { width: 0, height: 0 },
+    },
+    { focus: () => true },
+  );
 }
 afterEach(() => vi.unstubAllGlobals());
 
@@ -14,11 +19,16 @@ describe("root resize observation", () => {
     let notify: ResizeObserverCallback;
     const observe = vi.fn();
     const disconnect = vi.fn();
-    vi.stubGlobal("ResizeObserver", class {
-      constructor(callback: ResizeObserverCallback) { notify = callback; }
-      observe = observe;
-      disconnect = disconnect;
-    });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          notify = callback;
+        }
+        observe = observe;
+        disconnect = disconnect;
+      },
+    );
     const root = {} as HTMLElement;
     const grid = controller();
     const listener = vi.fn();

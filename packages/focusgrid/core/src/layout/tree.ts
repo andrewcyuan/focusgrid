@@ -1,42 +1,19 @@
 import { normalizeSplitSizes } from "./geometry";
-import type {
-  LayoutIndex,
-  LayoutNode,
-  NodeId,
-  PaneId,
-  PaneNode,
-  SplitNode,
-} from "./types";
+import type { LayoutNode, NodeId, PaneId, PaneNode, SplitNode } from "./types";
 
-export function buildLayoutIndex(root: LayoutNode): LayoutIndex {
-  const index: LayoutIndex = {
-    nodeById: new Map(),
-    paneNodeByPaneId: new Map(),
-    parentByNodeId: new Map(),
-  };
+export type PanePathStep = { split: SplitNode; childIndex: number };
 
-  visit(root, null);
-  return index;
-
-  function visit(node: LayoutNode, parent: SplitNode | null): void {
-    index.nodeById.set(node.id, node);
-    index.parentByNodeId.set(node.id, parent);
-
-    if (node.kind === "pane") {
-      index.paneNodeByPaneId.set(node.paneId, node);
-      return;
-    }
-
-    for (const child of node.children) {
-      visit(child, node);
-    }
+export function findNode(root: LayoutNode, nodeId: NodeId): LayoutNode | null {
+  if (root.id === nodeId) return root;
+  if (root.kind === "pane") return null;
+  for (const child of root.children) {
+    const node = findNode(child, nodeId);
+    if (node) return node;
   }
+  return null;
 }
 
-export function findPaneNode(
-  root: LayoutNode,
-  paneId: PaneId | null,
-): PaneNode | null {
+export function findPaneNode(root: LayoutNode, paneId: PaneId | null): PaneNode | null {
   if (!paneId) return null;
   if (root.kind === "pane") return root.paneId === paneId ? root : null;
   for (const child of root.children) {
@@ -46,15 +23,11 @@ export function findPaneNode(
   return null;
 }
 
-export function findSplitNode(
-  root: LayoutNode,
-  splitId: NodeId,
-): SplitNode | null {
-  if (root.kind === "pane") return null;
-  if (root.id === splitId) return root;
-  for (const child of root.children) {
-    const split = findSplitNode(child, splitId);
-    if (split) return split;
+export function findPanePath(root: LayoutNode, paneId: PaneId): PanePathStep[] | null {
+  if (root.kind === "pane") return root.paneId === paneId ? [] : null;
+  for (const [childIndex, child] of root.children.entries()) {
+    const path = findPanePath(child, paneId);
+    if (path) return [{ split: root, childIndex }, ...path];
   }
   return null;
 }
@@ -64,10 +37,7 @@ export function collectPaneIds(root: LayoutNode): PaneId[] {
   return root.children.flatMap(collectPaneIds);
 }
 
-export function transformLayout(
-  node: LayoutNode,
-  transform: (node: LayoutNode) => LayoutNode,
-): LayoutNode {
+export function transformLayout(node: LayoutNode, transform: (node: LayoutNode) => LayoutNode): LayoutNode {
   if (node.kind === "pane") return transform(node);
 
   let childrenChanged = false;
@@ -76,34 +46,19 @@ export function transformLayout(
     childrenChanged ||= nextChild !== child;
     return nextChild;
   });
-  const nextNode = childrenChanged ? { ...node, children } : node;
-  return transform(nextNode);
+  return transform(childrenChanged ? { ...node, children } : node);
 }
 
-export function updatePane(
-  root: LayoutNode,
-  paneId: PaneId,
-  update: (pane: PaneNode) => LayoutNode,
-): LayoutNode {
-  return transformLayout(root, (node) =>
-    node.kind === "pane" && node.paneId === paneId ? update(node) : node,
-  );
+export function updatePane(root: LayoutNode, paneId: PaneId, update: (pane: PaneNode) => LayoutNode): LayoutNode {
+  return transformLayout(root, (node) => (node.kind === "pane" && node.paneId === paneId ? update(node) : node));
 }
 
-export function markFocusedPanePath(root: LayoutNode, paneId: PaneId): LayoutNode {
-  const index = buildLayoutIndex(root);
-  const pane = index.paneNodeByPaneId.get(paneId);
-  if (!pane) return root;
-  const path = new Map<NodeId, NodeId>();
-  let childId = pane.id;
-  let parent = index.parentByNodeId.get(childId);
-  while (parent) {
-    path.set(parent.id, childId);
-    childId = parent.id;
-    parent = index.parentByNodeId.get(childId);
-  }
+export function markFocusedPanePath(root: LayoutNode, paneId: PaneId | null): LayoutNode {
+  const path = paneId ? findPanePath(root, paneId) : null;
+  if (!path) return root;
+  const focusedChildIds = new Map(path.map(({ split, childIndex }) => [split.id, split.children[childIndex]!.id]));
   return transformLayout(root, (node) => {
-    const focusedChildId = path.get(node.id);
+    const focusedChildId = focusedChildIds.get(node.id);
     return node.kind === "split" && focusedChildId !== undefined && node.lastFocusedChildId !== focusedChildId
       ? { ...node, lastFocusedChildId: focusedChildId }
       : node;
@@ -111,33 +66,18 @@ export function markFocusedPanePath(root: LayoutNode, paneId: PaneId): LayoutNod
 }
 
 export function removePaneNode(node: LayoutNode, paneId: PaneId): LayoutNode | null {
-  if (node.kind === "pane") {
-    return node.paneId === paneId ? null : node;
-  }
+  if (node.kind === "pane") return node.paneId === paneId ? null : node;
 
   const children: LayoutNode[] = [];
   const sizes: number[] = [];
-
-  for (let i = 0; i < node.children.length; i += 1) {
-    const child = removePaneNode(node.children[i]!, paneId);
-
-    if (child) {
-      children.push(child);
-      sizes.push(node.sizes[i] ?? 1);
+  node.children.forEach((child, index) => {
+    const nextChild = removePaneNode(child, paneId);
+    if (nextChild) {
+      children.push(nextChild);
+      sizes.push(node.sizes[index] ?? 1);
     }
-  }
+  });
 
-  if (children.length === 0) {
-    return null;
-  }
-
-  if (children.length === 1) {
-    return children[0]!;
-  }
-
-  return {
-    ...node,
-    children,
-    sizes: normalizeSplitSizes(sizes, children.length),
-  };
+  if (children.length <= 1) return children[0] ?? null;
+  return { ...node, children, sizes: normalizeSplitSizes(sizes, children.length) };
 }

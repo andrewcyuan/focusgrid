@@ -1,180 +1,109 @@
-import { HANDLE_SIZE } from "./constants";
-import { getMinimumSize, normalizeSplitSizes } from "./geometry";
-import type { Orientation, LayoutNode, SplitNode } from "./types";
+import { getHandlesSize, normalizeSplitSizes } from "./geometry";
+import type { LayoutNode, Orientation, SplitNode } from "./types";
+
+export function getMinimumSize(node: LayoutNode, direction: Orientation, paneMinSize: number): number {
+  if (node.kind === "pane") return paneMinSize;
+  const childMinimums = node.children.map((child) => getMinimumSize(child, direction, paneMinSize));
+  if (node.orientation !== direction) return Math.max(0, ...childMinimums);
+  return childMinimums.reduce((sum, size) => sum + size, 0) + getHandlesSize(node);
+}
 
 export function resizeSplit(
   split: SplitNode,
   totalPx: number,
   index: number,
   deltaPx: number,
-  snapshotSizes?: number[],
-  minWidth = 0,
-  minHeight = 0,
+  snapshotSizes: number[] | undefined,
+  paneMinSize: number,
 ): SplitNode {
   if (totalPx <= 0 || index < 0 || index >= split.children.length - 1) return split;
-  const baseSizes = normalizeSplitSizes(
-    snapshotSizes ?? split.sizes,
-    split.children.length
-  );
+  const nextSizes = normalizeSplitSizes(snapshotSizes ?? split.sizes, split.children.length);
   const deltaRatio = deltaPx / totalPx;
-  const nextSizes = [...baseSizes];
   nextSizes[index] += deltaRatio;
   nextSizes[index + 1] -= deltaRatio;
 
-  const minSizes = split.children.map((child) =>
-    getMinimumSize(child, split.orientation, minWidth, minHeight) / totalPx
-  );
-  const currentSizes = normalizeSplitSizes(split.sizes, split.children.length);
-  const clamped = clampAdjacentPair(nextSizes, minSizes, index);
-  const fitted = fitNodeToAxisSize(
-    {
-      ...split,
-      sizes: clamped,
-    },
+  const minSizes = split.children.map((child) => getMinimumSize(child, split.orientation, paneMinSize) / totalPx);
+  const fitted = fitSplitToAxisSize(
+    { ...split, sizes: clampAdjacentPair(nextSizes, minSizes, index) },
     split.orientation,
-    totalPx, minWidth, minHeight
+    totalPx,
+    paneMinSize,
   );
-
-  if (fitted.kind !== "split" || sizesEqual(fitted.sizes, currentSizes)) {
-    return split;
-  }
-
-  return fitted;
+  return sizesEqual(fitted.sizes, normalizeSplitSizes(split.sizes, split.children.length)) ? split : fitted;
 }
 
 function sizesEqual(a: number[], b: number[]): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  return a.every((value, index) => value === b[index]);
+  return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
-function fitNodeToAxisSize(
-  node: LayoutNode,
+function fitSplitToAxisSize(
+  split: SplitNode,
   direction: Orientation,
   axisSize: number,
-  minWidth: number,
-  minHeight: number
-): LayoutNode {
-  if (node.kind === "pane") {
-    return node;
-  }
+  paneMinSize: number,
+): SplitNode {
+  const sameAxis = split.orientation === direction;
+  const contentSize = Math.max(0, axisSize - getHandlesSize(split));
+  const normalized = normalizeSplitSizes(split.sizes, split.children.length);
+  const sizes = sameAxis
+    ? fitSizesToMinimums(
+        normalized,
+        split.children.map((child) => getMinimumSize(child, direction, paneMinSize)),
+        contentSize,
+      )
+    : split.sizes;
+  let changed = sameAxis && !sizesEqual(sizes, normalized);
 
-  if (node.orientation !== direction) {
-    let changed = false;
-    const children = node.children.map((child) => {
-      const nextChild = fitNodeToAxisSize(child, direction, axisSize, minWidth, minHeight);
-      changed ||= nextChild !== child;
-      return nextChild;
-    });
-
-    return changed ? { ...node, children } : node;
-  }
-
-  const sizes = normalizeSplitSizes(node.sizes, node.children.length);
-  const handleTotal = Math.max(0, node.children.length - 1) * HANDLE_SIZE;
-  const contentSize = Math.max(0, axisSize - handleTotal);
-  const minSizes = node.children.map((child) =>
-    getMinimumSize(child, direction, minWidth, minHeight)
-  );
-  const fittedSizes = fitSizesToMinimums(sizes, minSizes, contentSize);
-  let changed = !sizesEqual(fittedSizes, sizes);
-
-  const children = node.children.map((child, index) => {
-    const childAxisSize = contentSize * (fittedSizes[index] ?? 0);
-    const nextChild = fitNodeToAxisSize(child, direction, childAxisSize, minWidth, minHeight);
+  const children = split.children.map((child, index) => {
+    if (child.kind === "pane") return child;
+    const childAxisSize = sameAxis ? contentSize * (sizes[index] ?? 0) : axisSize;
+    const nextChild = fitSplitToAxisSize(child, direction, childAxisSize, paneMinSize);
     changed ||= nextChild !== child;
     return nextChild;
   });
 
-  return changed
-    ? {
-      ...node,
-      children,
-      sizes: fittedSizes,
-    }
-    : node;
+  return changed ? { ...split, children, sizes } : split;
 }
 
-function fitSizesToMinimums(
-  sizes: number[],
-  minSizes: number[],
-  contentSize: number
-): number[] {
+function fitSizesToMinimums(sizes: number[], minSizes: number[], contentSize: number): number[] {
   const normalized = normalizeSplitSizes(sizes, sizes.length);
-
-  if (contentSize <= 0) {
-    return normalized;
-  }
-
-  const desired = normalized.map((size) => size * contentSize);
-
-  if (desired.every((size, index) => size >= (minSizes[index] ?? 0))) {
-    return normalized;
-  }
+  if (contentSize <= 0) return normalized;
+  if (normalized.every((size, index) => size * contentSize >= (minSizes[index] ?? 0))) return normalized;
 
   const out = Array.from({ length: normalized.length }, () => 0);
   const fixed = Array.from({ length: normalized.length }, () => false);
   let remainingSize = contentSize;
   let remainingWeight = normalized.reduce((sum, size) => sum + size, 0);
-  let changed = true;
+  const shareOf = (index: number) => remainingSize * (remainingWeight > 0 ? normalized[index]! / remainingWeight : 0);
 
+  let changed = true;
   while (changed) {
     changed = false;
-
     for (let index = 0; index < normalized.length; index += 1) {
-      if (fixed[index]) {
-        continue;
-      }
-
-      const weight =
-        remainingWeight > 0 ? normalized[index]! / remainingWeight : 0;
-      const allocated = remainingSize * weight;
       const minSize = minSizes[index] ?? 0;
-
-      if (allocated < minSize) {
-        out[index] = minSize;
-        fixed[index] = true;
-        remainingSize -= minSize;
-        remainingWeight -= normalized[index]!;
-        changed = true;
-      }
+      if (fixed[index] || shareOf(index) >= minSize) continue;
+      out[index] = minSize;
+      fixed[index] = true;
+      remainingSize -= minSize;
+      remainingWeight -= normalized[index]!;
+      changed = true;
     }
   }
 
   for (let index = 0; index < normalized.length; index += 1) {
-    if (fixed[index]) {
-      continue;
-    }
-
-    const weight =
-      remainingWeight > 0 ? normalized[index]! / remainingWeight : 0;
-    out[index] = Math.max(0, remainingSize * weight);
+    if (!fixed[index]) out[index] = Math.max(0, shareOf(index));
   }
 
   const total = out.reduce((sum, size) => sum + size, 0);
-
-  if (total <= 0) {
-    return normalized;
-  }
-
-  return out.map((size) => size / total);
+  return total <= 0 ? normalized : out.map((size) => size / total);
 }
 
-function clampAdjacentPair(
-  sizes: number[],
-  minSizes: number[],
-  index: number
-): number[] {
+function clampAdjacentPair(sizes: number[], minSizes: number[], index: number): number[] {
   const out = [...sizes];
   const pairTotal = out[index]! + out[index + 1]!;
   const leftMin = minSizes[index] ?? 0;
-  const rightMin = minSizes[index + 1] ?? 0;
-  const maxLeft = Math.max(leftMin, pairTotal - rightMin);
-
+  const maxLeft = Math.max(leftMin, pairTotal - (minSizes[index + 1] ?? 0));
   out[index] = Math.min(Math.max(out[index]!, leftMin), maxLeft);
   out[index + 1] = pairTotal - out[index]!;
-
   return normalizeSplitSizes(out, out.length);
 }

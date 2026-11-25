@@ -30,25 +30,12 @@ const INTERACTIVE_ROLES = new Set([
   "treeitem",
 ]);
 
-function hasInteractiveOwner(
-  target: Element,
-  boundary: HTMLElement,
-): boolean {
-  let element: Element | null = target;
-
-  while (element && element !== boundary) {
-    if (element instanceof HTMLElement && isInteractiveElement(element)) return true;
-    element = element.parentElement;
+export function shouldFocusPaneShellForPointer(target: Element, paneShell: HTMLElement): boolean {
+  if (target === paneShell) return true;
+  for (let element: Element | null = target; element && element !== paneShell; element = element.parentElement) {
+    if (element instanceof HTMLElement && isInteractiveElement(element)) return false;
   }
-
-  return boundary instanceof HTMLElement && isInteractiveElement(boundary);
-}
-
-export function shouldFocusPaneShellForPointer(
-  target: Element,
-  paneShell: HTMLElement,
-): boolean {
-  return target === paneShell || !hasInteractiveOwner(target, paneShell);
+  return !isInteractiveElement(paneShell);
 }
 
 function isInteractiveElement(element: HTMLElement): boolean {
@@ -76,7 +63,6 @@ function isUnavailableElement(element: HTMLElement): boolean {
   while (current) {
     if (
       current.hidden ||
-      current.hasAttribute("hidden") ||
       current.hasAttribute("inert") ||
       current.getAttribute("aria-hidden") === "true" ||
       current.getAttribute("aria-disabled") === "true" ||
@@ -101,6 +87,24 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable || target.getAttribute("role")?.toLowerCase() === "textbox") return true;
   if (target.matches("textarea, select")) return !target.matches(":disabled");
-  return target instanceof HTMLInputElement && !target.disabled && !target.readOnly &&
-    ["date", "datetime-local", "email", "file", "month", "number", "password", "search", "tel", "text", "time", "url", "week"].includes(target.type);
+  return (
+    target instanceof HTMLInputElement &&
+    !target.disabled &&
+    !target.readOnly &&
+    [
+      "date",
+      "datetime-local",
+      "email",
+      "file",
+      "month",
+      "number",
+      "password",
+      "search",
+      "tel",
+      "text",
+      "time",
+      "url",
+      "week",
+    ].includes(target.type)
+  );
 }

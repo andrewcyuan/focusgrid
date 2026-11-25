@@ -4,24 +4,32 @@ const shifted: Record<string, string> = Object.fromEntries(
 );
 
 export function normalizeShortcut(sequence: string): string {
-  if (!sequence.trim()) throw new Error("Shortcut sequences must not be empty");
-  return sequence.trim().split(/\s+/).map(stroke => {
-    let key = stroke.toLowerCase();
-    const held = new Set<string>();
-    let prefix: RegExpMatchArray | null;
-    while ((prefix = key.match(/^(ctrl|cmd|alt|shift)-/))) {
-      held.add(prefix[1]!);
-      key = key.slice(prefix[0].length);
-    }
-    if (!key || (key.length !== 1 && !/^[a-z][a-z0-9]*$/.test(key)) || modifiers.some(modifier => modifier === key)) {
-      throw new Error(`Invalid shortcut: ${stroke}`);
-    }
-    if (held.has("shift") && key.length === 1) {
-      key = shifted[key] ?? key;
-      if (key.toLowerCase() === key.toUpperCase()) held.delete("shift");
-    }
-    return [...modifiers.filter(modifier => held.has(modifier)), key].join("-");
-  }).join(" ");
+  const trimmed = sequence.trim();
+  if (!trimmed) throw new Error("Shortcut sequences must not be empty");
+  return trimmed
+    .split(/\s+/)
+    .map((stroke) => {
+      let key = stroke.toLowerCase();
+      const held = new Set<string>();
+      let prefix: RegExpMatchArray | null;
+      while ((prefix = key.match(/^(ctrl|cmd|alt|shift)-/))) {
+        held.add(prefix[1]!);
+        key = key.slice(prefix[0].length);
+      }
+      if (
+        !key ||
+        (key.length !== 1 && !/^[a-z][a-z0-9]*$/.test(key)) ||
+        modifiers.some((modifier) => modifier === key)
+      ) {
+        throw new Error(`Invalid shortcut: ${stroke}`);
+      }
+      if (held.has("shift") && key.length === 1) {
+        key = shifted[key] ?? key;
+        if (key.toLowerCase() === key.toUpperCase()) held.delete("shift");
+      }
+      return [...modifiers.filter((modifier) => held.has(modifier)), key].join("-");
+    })
+    .join(" ");
 }
 
 export function normalizeKeyboardEvent(event: KeyboardEvent): string | null {

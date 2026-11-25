@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { FocusGridController } from "../src";
+import { gridState, paneNode } from "./layouts";
 
 function controller() {
-  return new FocusGridController({
-    root: { kind: "pane", id: "editor-node", paneId: "editor" },
-    activePaneId: "editor", container: { width: 800, height: 600 },
-  }, { focus: () => true });
+  return new FocusGridController(gridState(paneNode("editor"), "editor", { width: 800, height: 600 }), {
+    focus: () => true,
+  });
 }
 
 describe("controller pane events", () => {
@@ -17,7 +17,8 @@ describe("controller pane events", () => {
     expect(onPaneLayoutChange).toHaveBeenCalledOnce();
     expect(onPaneLayoutChange.mock.calls[0][0]).toMatchObject({
       pane: { paneId: "editor", rect: { width: 600 } },
-      previousPane: { paneId: "editor", rect: { width: 800 } }, controller: grid,
+      previousPane: { paneId: "editor", rect: { width: 800 } },
+      controller: grid,
     });
   });
 

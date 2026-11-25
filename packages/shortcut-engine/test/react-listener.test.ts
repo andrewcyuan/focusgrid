@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { createShortcutEngine } from "../src";
+import { ShortcutEngine } from "../src";
 import { mountShortcutListener } from "../src/react/shortcut-listener";
 
 function fixture() {
   const document = Object.assign(new EventTarget(), { activeElement: null, defaultView: new EventTarget() });
-  const engine = createShortcutEngine();
+  const engine = new ShortcutEngine();
   engine.registerScope({ id: "root", parentId: null });
   const action = vi.fn();
   engine.registerBindings("root", [{ sequence: "a", action }]);
@@ -22,7 +22,8 @@ describe("React document listener ownership", () => {
     expect(add.mock.calls[0][2]).toMatchObject({ capture: true });
     keydown();
     expect(action).toHaveBeenCalledTimes(1);
-    first(); first();
+    first();
+    first();
     keydown();
     expect(action).toHaveBeenCalledTimes(2);
     second();

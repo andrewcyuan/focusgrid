@@ -15,7 +15,7 @@
   min-height: 0;
 }
 
-.FocusgridPaneView[data-active="true"] {
+.FocusgridFocusGrid:focus-within .FocusgridPaneView[data-active="true"] {
   outline: 1px solid var(--focusgrid-focus-color, #4d8dff);
   outline-offset: -1px;
 }

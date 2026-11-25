@@ -7,24 +7,20 @@ You can put any react component in the panes using the `renderPane` prop and sup
 The react bindings are also dependent on [shortcut-engine](https://www.npmjs.com/package/@andrewcyuan/shortcut-engine) for out-of-the-box keyboard support.
 
 **Example usage**
+
 ```tsx
-import { useState } from "react";
-import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
-import {
-  FocusGrid, FocusgridController, useFocusGridController,
-} from "@andrewcyuan/focusgrid/react";
+import { FocusGrid, FocusgridController, useFocusGridController } from "@andrewcyuan/focusgrid/react";
 import "@andrewcyuan/focusgrid/react/styles.css";
 
 export function App() {
-  const [domController] = useState(() => new FocusGridDomController());
-  const controller = useFocusGridController(() => ({
+  const controllers = useFocusGridController(() => ({
     root: { kind: "pane", id: "root", paneId: "editor" },
     activePaneId: "editor",
     container: { width: 0, height: 0 },
-  }), domController);
+  }));
 
   return (
-    <FocusgridController.Provider value={{ controller, domController }}>
+    <FocusgridController.Provider value={controllers}>
       <div style={{ height: 500 }}>
         <FocusGrid renderPane={({ paneId }) => <textarea aria-label={paneId} />} />
       </div>
@@ -41,6 +37,5 @@ Focusgrid can be easily customized. It can be the surface in which you create yo
 - Directly hit the API by using controller commands: `splitActive`, `removeActive`, `focusAdjacent`, `swapAdjacent`, and `resizeActive`. `focus(paneId)` only syncs active-pane state; `focusAdjacent(direction)` also requests DOM focus.
 - Read layout with `getLayout()`/`useControllerLayout(controller)` (React version). You can also directly mutate the layout, although using the API is probably easier and safer.
 - To write your own frontend framework binding, use `getPane`, `getContainerSize`, and `getSplitSizes` for specific queries, and `subscribe` for changes.
-
 
 Made by [Andrew Yuan](https://andrewcyuan.com)

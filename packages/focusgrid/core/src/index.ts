@@ -21,18 +21,11 @@ export type {
   PaneLayoutChangeEvent,
   PaneCloseEvent,
   PaneEventHandlers,
-  PaneDefaults,
   ResizeHandleOptions,
   ResizePaneOptions,
   SplitPaneOptions,
 } from "./controller";
 
-export { cardinalDirections, PaneCommandCapability } from "./layout/types";
-export {
-  FocusGridStateValidationException,
-  validateFocusGridControllerState,
-} from "./validation";
-export type {
-  FocusGridStateValidationError,
-  FocusGridStateValidationResult,
-} from "./validation";
+export { PaneCommandCapability } from "./layout/types";
+export { FocusGridStateValidationException, validateFocusGridControllerState } from "./validation";
+export type { FocusGridStateValidationError, FocusGridStateValidationResult } from "./validation";

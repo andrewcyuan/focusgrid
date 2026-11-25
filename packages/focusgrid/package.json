@@ -3,30 +3,27 @@
   "version": "0.2.0",
   "description": "Keyboard-native pane layouts and deterministic focus management for web applications.",
   "keywords": [
-    "keyboard-navigation",
     "focus-management",
+    "keyboard-navigation",
     "pane-layout",
     "react",
     "typescript"
   ],
-  "type": "module",
   "license": "MIT",
-  "sideEffects": [
-    "./dist/react/styles.css",
-    "./react/styles.css"
-  ],
-  "files": [
-    "dist",
-    "LICENSE"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/andrewcyuan/focusgrid.git",
     "directory": "packages/focusgrid"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "./dist/react/styles.css",
+    "./react/styles.css"
+  ],
   "exports": {
     "./core": {
       "types": "./dist/core/index.d.ts",
@@ -45,22 +42,19 @@
     },
     "./react/styles.css": "./dist/react/styles.css"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown core/src/index.ts --config buildConfig.mjs --format esm,cjs --out-dir dist/core && tsdown dom/src/index.ts --config buildConfig.mjs --format esm,cjs --out-dir dist/dom --no-clean && tsdown react/src/index.tsx --config buildConfig.mjs --format esm,cjs --out-dir dist/react --no-clean && cp react/src/styles.css dist/react/styles.css",
     "test": "vitest run --config ../../vitest.config.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
-  },
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@andrewcyuan/shortcut-engine": "workspace:*"
   },
-  "devDependencies": {
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "vitest": "^2.1.8"
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
   }
 }

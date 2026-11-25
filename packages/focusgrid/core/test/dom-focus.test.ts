@@ -1,21 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 import { FocusGridController, type FocusGridControllerState } from "../src";
+import { gridState, paneNode, splitNode } from "./layouts";
 
 function state(): FocusGridControllerState {
-  return {
-    root: { kind: "split", id: "root", orientation: "horizontal", sizes: [1, 1], children: [
-      { kind: "pane", id: "a-node", paneId: "a" },
-      { kind: "pane", id: "b-node", paneId: "b" },
-    ] },
-    activePaneId: "a", container: { width: 800, height: 600 },
-  };
+  return gridState(splitNode("root", "horizontal", [1, 1], [paneNode("a"), paneNode("b")]), "a", {
+    width: 800,
+    height: 600,
+  });
 }
 
 describe("injected DOM focus", () => {
   it("requests focus before emitting the active-pane change", () => {
     const calls: string[] = [];
-    const controller = new FocusGridController(state(), { focus: id => { calls.push(`focus:${id}`); return true; } });
-    controller.subscribe(next => calls.push(`active:${next.activePaneId}`));
+    const controller = new FocusGridController(state(), {
+      focus: (id) => {
+        calls.push(`focus:${id}`);
+        return true;
+      },
+    });
+    controller.subscribe((next) => calls.push(`active:${next.activePaneId}`));
     expect(controller.focusAdjacent("right")).toBe(true);
     expect(calls).toEqual(["focus:b", "active:b"]);
   });
@@ -41,7 +44,12 @@ describe("injected DOM focus", () => {
   });
 
   it("succeeds when a synchronous focus event already synchronized core", () => {
-    const controller = new FocusGridController(state(), { focus: id => { controller.focus(id); return true; } });
+    const controller = new FocusGridController(state(), {
+      focus: (id) => {
+        controller.focus(id);
+        return true;
+      },
+    });
     const listener = vi.fn();
     controller.subscribe(listener);
     expect(controller.focusAdjacent("right")).toBe(true);

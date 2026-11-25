@@ -3,30 +3,27 @@
   "version": "0.2.0",
   "description": "Key sequence parsing, normalization, and stateful keyboard shortcut routing.",
   "keywords": [
-    "keyboard-shortcuts",
     "hotkeys",
     "keybindings",
     "keyboard",
+    "keyboard-shortcuts",
     "typescript"
   ],
-  "type": "module",
   "license": "MIT",
-  "sideEffects": false,
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "LICENSE"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/andrewcyuan/focusgrid.git",
     "directory": "packages/shortcut-engine"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -39,14 +36,13 @@
       "require": "./dist/react/index.cjs"
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown src/index.ts --config ../../tsdown.config.mjs --format esm,cjs && tsdown src/react/index.ts --config ../../tsdown.config.mjs --format esm,cjs --out-dir dist/react --no-clean --deps.never-bundle react",
     "test": "vitest run --config ../../vitest.config.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "vitest": "^2.1.8"
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "react": ">=18"

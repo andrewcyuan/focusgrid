@@ -1,24 +1,26 @@
-import { PaneCommandCapability } from "./types";
-import { buildLayoutIndex, collectPaneIds } from "./tree";
+import { collectPaneIds, findPaneNode, findPanePath, type PanePathStep } from "./tree";
 import {
-  isHorizontalDirection,
-  compareEnteringEdge,
-  getCenterDistance,
-  getEnteringEdge,
-  getPerpendicularCenter,
-  getRectCenter,
-  isRectInDirection,
-} from "./spatial";
-import type {
-  LayoutIndex,
-  CardinalDirection,
-  ComputedPane,
-  ComputedLayout,
-  PaneId,
-  LayoutNode,
-  NodeId,
-  SplitNode,
+  PaneCommandCapability,
+  type CardinalDirection,
+  type ComputedLayout,
+  type ComputedPane,
+  type LayoutNode,
+  type PaneId,
+  type Rect,
 } from "./types";
+
+export function isHorizontalDirection(direction: CardinalDirection): boolean {
+  return direction === "left" || direction === "right";
+}
+
+export function isForwardDirection(direction: CardinalDirection): boolean {
+  return direction === "right" || direction === "down";
+}
+
+export function nearestSplitsOnAxis(path: PanePathStep[], direction: CardinalDirection): PanePathStep[] {
+  const horizontal = isHorizontalDirection(direction);
+  return path.filter(({ split }) => (split.orientation === "horizontal") === horizontal).toReversed();
+}
 
 export function findPaneInDirection(
   root: LayoutNode,
@@ -26,22 +28,20 @@ export function findPaneInDirection(
   paneId: PaneId,
   direction: CardinalDirection,
 ): PaneId | null {
-  const index = buildLayoutIndex(root);
-  const paneNode = index.paneNodeByPaneId.get(paneId);
-  if (!paneNode) return null;
-
   const activePane = layout.panes.find((pane) => pane.paneId === paneId);
-  if (!activePane) return null;
+  const path = findPanePath(root, paneId);
+  if (!activePane || !path) return null;
 
-  let currentId = paneNode.id;
-  let parent = index.parentByNodeId.get(currentId) ?? null;
-  while (parent) {
-    const sibling = findDirectionalSibling(parent, currentId, direction);
-    if (sibling) {
-      return findTargetPaneInSubtree(sibling, layout.panes, activePane, direction);
-    }
-    currentId = parent.id;
-    parent = index.parentByNodeId.get(currentId) ?? null;
+  for (const { split, childIndex } of nearestSplitsOnAxis(path, direction)) {
+    const sibling = split.children[childIndex + (isForwardDirection(direction) ? 1 : -1)];
+    if (!sibling) continue;
+    const siblingPaneIds = new Set(collectPaneIds(sibling));
+    return findClosestPane(
+      layout.panes.filter((pane) => siblingPaneIds.has(pane.paneId)),
+      activePane,
+      direction,
+      (candidateId) => getFocusMemoryRank(sibling, candidateId),
+    );
   }
   return null;
 }
@@ -56,122 +56,55 @@ export function findPaneForFocusCommand(
   const activePane = layout.panes.find((pane) => pane.paneId === paneId);
   if (!activePane) return null;
 
-  const index = buildLayoutIndex(root);
-  const candidates = layout.panes.filter((pane) =>
-    pane.paneId !== paneId && index.paneNodeByPaneId.get(pane.paneId)?.[PaneCommandCapability.Focus] !== false,
+  const candidates = layout.panes.filter(
+    (pane) => pane.paneId !== paneId && findPaneNode(root, pane.paneId)?.[PaneCommandCapability.Focus] !== false,
   );
-  const target = sortFocusCandidates(
+  const target = findClosestPane(
     candidates.filter((pane) => isRectInDirection(pane.rect, activePane.rect, direction)),
     activePane,
     direction,
-  )[0]?.paneId ?? null;
+    () => 0,
+  );
   if (target || !overflow) return target;
-  return sortOverflowCandidates(candidates, direction)[0]?.paneId ?? null;
+  const wrapped = candidates.toSorted(
+    (first, second) => enteringEdgeOrder(first.rect, direction) - enteringEdgeOrder(second.rect, direction),
+  );
+  return wrapped[0]?.paneId ?? null;
 }
 
-function sortFocusCandidates(
+function findClosestPane(
   candidates: ComputedPane[],
   activePane: ComputedPane,
   direction: CardinalDirection,
-): ComputedPane[] {
-  const activeCenter = getRectCenter(activePane.rect);
-  return [...candidates].sort((first, second) => {
-    const edgeDelta = compareEnteringEdge(
-      getEnteringEdge(first.rect, direction),
-      getEnteringEdge(second.rect, direction),
-      direction,
-    );
-    if (edgeDelta !== 0) return edgeDelta;
-
-    const firstPerpendicular = Math.abs(
-      getPerpendicularCenter(first.rect, direction) -
-      getPerpendicularCenter(activePane.rect, direction),
-    );
-    const secondPerpendicular = Math.abs(
-      getPerpendicularCenter(second.rect, direction) -
-      getPerpendicularCenter(activePane.rect, direction),
-    );
-    if (firstPerpendicular !== secondPerpendicular) {
-      return firstPerpendicular - secondPerpendicular;
-    }
-
-    return (
-      getCenterDistance(first.rect, activeCenter) -
-      getCenterDistance(second.rect, activeCenter)
-    );
-  });
-}
-
-function sortOverflowCandidates(
-  candidates: ComputedPane[],
-  direction: CardinalDirection,
-): ComputedPane[] {
-  return [...candidates].sort((first, second) => {
-    if (direction === "right") return first.rect.x - second.rect.x;
-    if (direction === "left") {
-      return second.rect.x + second.rect.width - (first.rect.x + first.rect.width);
-    }
-    if (direction === "down") return first.rect.y - second.rect.y;
-    return second.rect.y + second.rect.height - (first.rect.y + first.rect.height);
-  });
-}
-
-function findDirectionalSibling(
-  parent: SplitNode,
-  childId: NodeId,
-  direction: CardinalDirection,
-): LayoutNode | null {
-  const childIndex = parent.children.findIndex((child) => child.id === childId);
-  if (childIndex === -1) return null;
-
-  const horizontal = direction === "left" || direction === "right";
-  if (horizontal && parent.orientation === "horizontal") {
-    if (direction === "right") return parent.children[childIndex + 1] ?? null;
-    return parent.children[childIndex - 1] ?? null;
-  }
-  if (!horizontal && parent.orientation === "vertical") {
-    if (direction === "down") return parent.children[childIndex + 1] ?? null;
-    return parent.children[childIndex - 1] ?? null;
-  }
-  return null;
-}
-
-function findTargetPaneInSubtree(
-  subtree: LayoutNode,
-  panes: ComputedPane[],
-  activePane: ComputedPane,
-  direction: CardinalDirection,
+  focusMemoryRank: (paneId: PaneId) => number,
 ): PaneId | null {
-  const subtreePaneIds = new Set(collectPaneIds(subtree));
-  const candidates = panes.filter((pane) => subtreePaneIds.has(pane.paneId));
-  if (candidates.length === 0) return null;
-
-  const activeCenter = getRectCenter(activePane.rect);
-  return candidates
-    .map((pane) => ({
-      pane,
-      edge: getEnteringEdge(pane.rect, direction),
-      perpendicularDistance: Math.abs(
-        getPerpendicularCenter(pane.rect, direction) -
-        getPerpendicularCenter(activePane.rect, direction),
-      ),
-      focusMemoryRank: getFocusMemoryRank(subtree, pane.paneId),
-      centerDistance: getCenterDistance(pane.rect, activeCenter),
-    }))
-    .sort((first, second) =>
-      compareEnteringEdge(first.edge, second.edge, direction) ||
-      first.focusMemoryRank - second.focusMemoryRank ||
-      first.perpendicularDistance - second.perpendicularDistance ||
+  const activeCenter = rectCenter(activePane.rect);
+  const ranked = candidates.map((pane) => {
+    const center = rectCenter(pane.rect);
+    const dx = Math.abs(center.x - activeCenter.x);
+    const dy = Math.abs(center.y - activeCenter.y);
+    return {
+      paneId: pane.paneId,
+      edge: enteringEdgeOrder(pane.rect, direction),
+      memory: focusMemoryRank(pane.paneId),
+      perpendicular: isHorizontalDirection(direction) ? dy : dx,
+      centerDistance: dx + dy,
+    };
+  });
+  ranked.sort(
+    (first, second) =>
+      first.edge - second.edge ||
+      first.memory - second.memory ||
+      first.perpendicular - second.perpendicular ||
       first.centerDistance - second.centerDistance,
-    )[0]!.pane.paneId;
+  );
+  return ranked[0]?.paneId ?? null;
 }
 
 function getFocusMemoryRank(subtree: LayoutNode, paneId: PaneId): number {
   if (subtree.kind === "pane") return Number.POSITIVE_INFINITY;
 
-  const rememberedChild = subtree.children.find(
-    (child) => child.id === subtree.lastFocusedChildId,
-  );
+  const rememberedChild = subtree.children.find((child) => child.id === subtree.lastFocusedChildId);
   if (!rememberedChild || !collectPaneIds(rememberedChild).includes(paneId)) {
     return Number.POSITIVE_INFINITY;
   }
@@ -181,43 +114,21 @@ function getFocusMemoryRank(subtree: LayoutNode, paneId: PaneId): number {
   return Number.isFinite(nestedRank) ? nestedRank : 1;
 }
 
-export function resolvePaneResizeBoundary(
-  index: LayoutIndex,
-  nodeId: NodeId,
-  direction: CardinalDirection
-): { splitId: NodeId; index: number; deltaPxSign: 1 | -1 } | null {
-  let currentId = nodeId;
-  let parent = index.parentByNodeId.get(currentId) ?? null;
+function isRectInDirection(rect: Rect, activeRect: Rect, direction: CardinalDirection): boolean {
+  const epsilon = 0.001;
+  if (direction === "right") return rect.x >= activeRect.x + activeRect.width - epsilon;
+  if (direction === "left") return rect.x + rect.width <= activeRect.x + epsilon;
+  if (direction === "down") return rect.y >= activeRect.y + activeRect.height - epsilon;
+  return rect.y + rect.height <= activeRect.y + epsilon;
+}
 
-  while (parent) {
-    const childIndex = parent.children.findIndex(
-      (child) => child.id === currentId
-    );
+function enteringEdgeOrder(rect: Rect, direction: CardinalDirection): number {
+  if (direction === "right") return rect.x;
+  if (direction === "left") return -(rect.x + rect.width);
+  if (direction === "down") return rect.y;
+  return -(rect.y + rect.height);
+}
 
-    if (childIndex === -1) {
-      return null;
-    }
-
-    if (isHorizontalDirection(direction) === (parent.orientation === "horizontal")) {
-      const boundaryIndex =
-        childIndex > 0
-          ? childIndex - 1
-          : childIndex < parent.children.length - 1
-            ? childIndex
-            : null;
-
-      if (boundaryIndex !== null) {
-        return {
-          splitId: parent.id,
-          index: boundaryIndex,
-          deltaPxSign: (direction === "right" || direction === "down") ? 1 : -1,
-        };
-      }
-    }
-
-    currentId = parent.id;
-    parent = index.parentByNodeId.get(currentId) ?? null;
-  }
-
-  return null;
+function rectCenter(rect: Rect): { x: number; y: number } {
+  return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
 }

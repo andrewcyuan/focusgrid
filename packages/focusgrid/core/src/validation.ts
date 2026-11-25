@@ -16,16 +16,14 @@ type ValidationMeta = Pick<FocusGridStateValidationError, "paneId" | "nodeId">;
 
 export class FocusGridStateValidationException extends Error {
   constructor(readonly errors: FocusGridStateValidationError[]) {
-    const details = errors.slice(0, 3).map((error) => `${error.path}: ${error.message}`).join("; ");
+    const details = errors
+      .slice(0, 3)
+      .map((error) => `${error.path}: ${error.message}`)
+      .join("; ");
     const suffix = errors.length > 3 ? `; ${errors.length - 3} more` : "";
     super(details ? `Invalid FocusGrid controller state: ${details}${suffix}` : "Invalid FocusGrid controller state.");
     this.name = "FocusGridStateValidationException";
   }
-}
-
-export function assertValidFocusGridControllerState(input: unknown): asserts input is FocusGridControllerState {
-  const result = validateFocusGridControllerState(input);
-  if (!result.ok) throw new FocusGridStateValidationException(result.errors);
 }
 
 export function validateFocusGridControllerState(input: unknown): FocusGridStateValidationResult {
@@ -37,14 +35,15 @@ export function validateFocusGridControllerState(input: unknown): FocusGridState
     errors.push({ code, path, message, ...meta });
   }
 
-  function fields(value: Record<string, unknown>, path: string, allowed: ReadonlySet<string>, meta: ValidationMeta = {}): void {
+  function fields(
+    value: Record<string, unknown>,
+    path: string,
+    allowed: ReadonlySet<string>,
+    meta: ValidationMeta = {},
+  ): void {
     for (const field of Object.keys(value)) {
       if (!allowed.has(field)) add("unknown-field", `${path}.${field}`, `Unknown field "${field}".`, meta);
     }
-  }
-
-  function size(value: unknown, path: string, label: string, meta: ValidationMeta = {}): void {
-    if (!isSize(value)) add("invalid-number", path, `${label} must be a finite, non-negative number.`, meta);
   }
 
   function id(value: unknown, seen: Set<string>, kind: "pane" | "node", path: string, meta: ValidationMeta): void {
@@ -52,7 +51,10 @@ export function validateFocusGridControllerState(input: unknown): FocusGridState
     if (typeof value !== "string" || value.length === 0) {
       add(`invalid-${kind}-id`, path, `${label} id must be a non-empty string.`, meta);
     } else if (seen.has(value)) {
-      add(`duplicate-${kind}-id`, path, `Duplicate ${kind} id "${value}".`, { ...meta, [kind === "pane" ? "paneId" : "nodeId"]: value });
+      add(`duplicate-${kind}-id`, path, `Duplicate ${kind} id "${value}".`, {
+        ...meta,
+        [kind === "pane" ? "paneId" : "nodeId"]: value,
+      });
     } else {
       seen.add(value);
     }
@@ -88,23 +90,38 @@ export function validateFocusGridControllerState(input: unknown): FocusGridState
     if (!Array.isArray(value.children)) {
       add("invalid-children", `${path}.children`, "Split children must be an array.", meta);
     } else {
-      if (value.children.length !== 2) add("non-binary-split", `${path}.children`, "Split nodes must have exactly two children.", meta);
+      if (value.children.length !== 2)
+        add("non-binary-split", `${path}.children`, "Split nodes must have exactly two children.", meta);
       value.children.forEach((child, index) => node(child, `${path}.children[${index}]`));
     }
     if (!Array.isArray(value.sizes)) {
       add("invalid-sizes", `${path}.sizes`, "Split sizes must be an array.", meta);
     } else {
-      if (value.sizes.length !== 2) add("invalid-sizes", `${path}.sizes`, "Split sizes must contain exactly two values.", meta);
+      if (value.sizes.length !== 2)
+        add("invalid-sizes", `${path}.sizes`, "Split sizes must contain exactly two values.", meta);
       value.sizes.forEach((entry, index) => {
-        if (!isSize(entry)) add("invalid-size", `${path}.sizes[${index}]`, "Split sizes must be finite, non-negative numbers.", meta);
+        if (!isSize(entry))
+          add("invalid-size", `${path}.sizes[${index}]`, "Split sizes must be finite, non-negative numbers.", meta);
       });
     }
     if (value.lastFocusedChildId !== undefined && typeof value.lastFocusedChildId !== "string") {
-      add("invalid-last-focused-child", `${path}.lastFocusedChildId`, "lastFocusedChildId must be a node id string when provided.", meta);
-    }
-    if (typeof value.lastFocusedChildId === "string" && Array.isArray(value.children) &&
-      !value.children.some((child) => isRecord(child) && child.id === value.lastFocusedChildId)) {
-      add("invalid-last-focused-child", `${path}.lastFocusedChildId`, "lastFocusedChildId must reference one of the split's direct children.", { ...meta, nodeId: value.lastFocusedChildId });
+      add(
+        "invalid-last-focused-child",
+        `${path}.lastFocusedChildId`,
+        "lastFocusedChildId must be a node id string when provided.",
+        meta,
+      );
+    } else if (
+      typeof value.lastFocusedChildId === "string" &&
+      Array.isArray(value.children) &&
+      !value.children.some((child) => isRecord(child) && child.id === value.lastFocusedChildId)
+    ) {
+      add(
+        "invalid-last-focused-child",
+        `${path}.lastFocusedChildId`,
+        "lastFocusedChildId must reference one of the split's direct children.",
+        { ...meta, nodeId: value.lastFocusedChildId },
+      );
     }
   }
 
@@ -120,7 +137,12 @@ export function validateFocusGridControllerState(input: unknown): FocusGridState
       if (input.activePaneId !== null && typeof input.activePaneId !== "string") {
         add("invalid-active-pane", "$.activePaneId", "State must use a pane id string or null for activePaneId.");
       } else if (typeof input.activePaneId === "string" && !paneIds.has(input.activePaneId)) {
-        add("unknown-active-pane", "$.activePaneId", `activePaneId "${input.activePaneId}" does not reference a pane in root.`, { paneId: input.activePaneId });
+        add(
+          "unknown-active-pane",
+          "$.activePaneId",
+          `activePaneId "${input.activePaneId}" does not reference a pane in root.`,
+          { paneId: input.activePaneId },
+        );
       }
     }
     if ("container" in input) {
@@ -130,7 +152,8 @@ export function validateFocusGridControllerState(input: unknown): FocusGridState
         fields(input.container, "$.container", CONTAINER_FIELDS);
         for (const key of CONTAINER_FIELDS) {
           if (!(key in input.container)) add("missing-field", `$.container.${key}`, `${key} is required.`);
-          else size(input.container[key], `$.container.${key}`, `container ${key}`);
+          else if (!isSize(input.container[key]))
+            add("invalid-number", `$.container.${key}`, `container ${key} must be a finite, non-negative number.`);
         }
       }
     }

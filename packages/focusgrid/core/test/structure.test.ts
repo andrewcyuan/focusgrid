@@ -1,24 +1,16 @@
 import { createController, observedState } from "./observe-controller";
 import { describe, expect, it } from "vitest";
-import { FocusGridController, PaneCommandCapability, validateFocusGridControllerState, type FocusGridControllerState } from "../src";
-import { computeLayout, getMinimumSize } from "../src/layout/geometry";
-import { collectPaneIds, findPaneNode, findSplitNode, transformLayout, updatePane } from "../src/layout/tree";
+import { PaneCommandCapability, validateFocusGridControllerState, type FocusGridControllerState } from "../src";
+import { computeLayout } from "../src/layout/geometry";
+import { getMinimumSize } from "../src/layout/resize";
+import { collectPaneIds, findNode, findPaneNode, transformLayout, updatePane } from "../src/layout/tree";
+import { gridState, paneNode, splitNode } from "./layouts";
 
 function state(): FocusGridControllerState {
-  return {
-    root: {
-      kind: "split",
-      id: "root",
-      orientation: "horizontal",
-      sizes: [1, 1],
-      children: [
-        { kind: "pane", id: "left-node", paneId: "left" },
-        { kind: "pane", id: "right-node", paneId: "right" },
-      ],
-    },
-    activePaneId: "left",
-    container: { width: 403, height: 200 },
-  };
+  return gridState(splitNode("root", "horizontal", [1, 1], [paneNode("left"), paneNode("right")]), "left", {
+    width: 403,
+    height: 200,
+  });
 }
 
 describe("shared layout structure", () => {
@@ -32,8 +24,9 @@ describe("shared layout structure", () => {
   it("serves pane and split queries from the canonical tree helpers", () => {
     const root = state().root;
     expect(collectPaneIds(root)).toEqual(["left", "right"]);
-    expect(findSplitNode(root, "root")).toBe(root);
-    expect(findSplitNode(root, "missing")).toBeNull();
+    expect(findNode(root, "root")).toBe(root);
+    expect(findNode(root, "left-node")).toMatchObject({ paneId: "left" });
+    expect(findNode(root, "missing")).toBeNull();
   });
 
   it("uses the rendered split rectangle for minimum-size resize math", () => {
@@ -46,20 +39,17 @@ describe("shared layout structure", () => {
       height: 200,
     });
     expect(geometry.panes.map((pane) => pane.rect.width)).toEqual([200, 200]);
-    expect(getMinimumSize(current.root, "horizontal", 100, 0)).toBe(203);
+    expect(getMinimumSize(current.root, "horizontal", 100)).toBe(203);
   });
 });
 
 describe("canonical pane capabilities", () => {
   it("applies and validates every capability from the shared key set", () => {
-    const paneDefaults = Object.fromEntries(
-      Object.values(PaneCommandCapability).map((key) => [key, false]),
-    );
+    const paneDefaults = Object.fromEntries(Object.values(PaneCommandCapability).map((key) => [key, false]));
     const controller = createController({ ...state(), paneDefaults });
     controller.focus("right");
     const firstPane = observedState(controller).root;
-    expect(firstPane.kind).toBe("split");
-    if (firstPane.kind !== "split") return;
+    if (firstPane.kind !== "split") throw new Error("Expected a split root.");
 
     for (const key of Object.values(PaneCommandCapability)) {
       expect(firstPane.children[0]?.kind === "pane" && firstPane.children[0][key]).toBe(false);

@@ -4,8 +4,11 @@ import { PointerResizeController } from "./pointer-resize";
 import { observeRootSize } from "./resize-observer";
 import { shouldFocusPaneShellForPointer } from "./interactivity";
 
-/** Own native grid interactions; React only attaches and detaches the root. */
-export function mountFocusGrid(root: HTMLElement, controller: FocusGridController, dom: FocusGridDomController): () => void {
+export function mountFocusGrid(
+  root: HTMLElement,
+  controller: FocusGridController,
+  dom: FocusGridDomController,
+): () => void {
   dom.setRoot(root);
   const resize = new PointerResizeController(controller);
   const ownedTarget = (event: Event) => {
@@ -21,7 +24,9 @@ export function mountFocusGrid(root: HTMLElement, controller: FocusGridControlle
     if (!target) return;
     const separator = target.closest<HTMLElement>("[data-resize-handle]");
     if (separator) {
-      const handle = controller.getLayout().handles.find(handle => handle.id === separator.dataset.resizeHandle);
+      const handle = controller
+        .getLayout()
+        .handles.find((candidate) => candidate.id === separator.dataset.resizeHandle);
       if (handle) resize.startResize(event, handle, separator);
       return;
     }

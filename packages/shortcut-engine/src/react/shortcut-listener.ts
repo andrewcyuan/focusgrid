@@ -1,18 +1,26 @@
 import type { ShortcutEngine } from "../engine";
 
-const mounts = new WeakMap<Document, { engine: ShortcutEngine; cleanup: () => void; consumers: number }>();
+type Mount = { engine: ShortcutEngine; consumers: number; dispose: () => void };
 
-/** Scope elements use data-shortcut-scope; ancestry stays in the engine. */
+const mounts = new WeakMap<Document, Mount>();
+
 export function mountShortcutListener(engine: ShortcutEngine, document: Document, rootScopeId: string): () => void {
+  const mount = mounts.get(document) ?? createMount(engine, document, rootScopeId);
+  if (mount.engine !== engine) throw new Error("Use one shortcut engine per document");
+  mount.consumers++;
   let released = false;
-  const existing = mounts.get(document);
-  if (existing) {
-    if (existing.engine !== engine) throw new Error("Use one shortcut engine per document");
-    existing.consumers++;
-    return release;
-  }
+  return () => {
+    if (released) return;
+    released = true;
+    if (--mount.consumers === 0) mount.dispose();
+  };
+}
+
+function createMount(engine: ShortcutEngine, document: Document, rootScopeId: string): Mount {
   const activate = (path: EventTarget[]) => {
-    const scope = path.find(target => (target as Element).hasAttribute?.("data-shortcut-scope")) as Element | undefined;
+    const scope = path.find((target) => (target as Element).hasAttribute?.("data-shortcut-scope")) as
+      | Element
+      | undefined;
     engine.setActiveScope(scope?.getAttribute("data-shortcut-scope") ?? rootScopeId);
   };
   const activateElement = (element: Element | null) => {
@@ -27,28 +35,28 @@ export function mountShortcutListener(engine: ShortcutEngine, document: Document
   const refresh = () => activateElement(document.activeElement);
   const abort = new AbortController();
   const options = { capture: true, signal: abort.signal };
-  document.addEventListener("keydown", event => {
-    activate(event.composedPath());
-    engine.handle(event);
-  }, options);
-  document.addEventListener("focusin", event => activate(event.composedPath()), options);
-  document.addEventListener("focusout", event => activateElement(event.relatedTarget as Element | null), options);
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      activate(event.composedPath());
+      engine.handle(event);
+    },
+    options,
+  );
+  document.addEventListener("focusin", (event) => activate(event.composedPath()), options);
+  document.addEventListener("focusout", (event) => activateElement(event.relatedTarget as Element | null), options);
   document.defaultView?.addEventListener("blur", () => engine.setActiveScope(null), options);
   document.defaultView?.addEventListener("focus", refresh, options);
-  const cleanup = () => {
-    if (abort.signal.aborted) return;
-    abort.abort();
-    mounts.delete(document);
-    engine.setActiveScope(null);
+  const mount: Mount = {
+    engine,
+    consumers: 0,
+    dispose: () => {
+      abort.abort();
+      mounts.delete(document);
+      engine.setActiveScope(null);
+    },
   };
-  mounts.set(document, { engine, cleanup, consumers: 1 });
+  mounts.set(document, mount);
   refresh();
-  return release;
-
-  function release() {
-    if (released) return;
-    released = true;
-    const mount = mounts.get(document);
-    if (mount && --mount.consumers === 0) mount.cleanup();
-  }
+  return mount;
 }

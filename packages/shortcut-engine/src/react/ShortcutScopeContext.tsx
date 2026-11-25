@@ -1,33 +1,36 @@
-import { useBrowserLayoutEffect } from "./use-browser-layout-effect";
 import {
-  createContext, forwardRef, useContext, useId,
+  createContext,
+  forwardRef,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
   useRef,
   type HTMLAttributes,
 } from "react";
-import {
-  createShortcutEngine,
-  type ShortcutBinding, type ShortcutRegistration,
-} from "../index";
-
+import { ShortcutEngine, type ShortcutRegistration } from "../engine";
+import type { ShortcutBinding } from "../matching";
 import { mountShortcutListener } from "./shortcut-listener";
 
-const engine = createShortcutEngine();
+const useBrowserLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+const engine = new ShortcutEngine();
 const rootScopeId = "shortcut-engine-root";
 engine.registerScope({ id: rootScopeId, parentId: null });
-export const ShortcutScopeContext = createContext(rootScopeId);
+const ShortcutScopeContext = createContext(rootScopeId);
 
-export type ShortcutScopeProps = HTMLAttributes<HTMLDivElement>;
-
-export const ShortcutScope = forwardRef<HTMLDivElement, ShortcutScopeProps>(function ShortcutScope(
-  { id: suppliedId, children, ...props }, forwardedRef,
+export const ShortcutScope = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function ShortcutScope(
+  { id: suppliedId, children, ...props },
+  forwardedRef,
 ) {
   const generatedId = useId();
   const id = suppliedId ?? generatedId;
   const parentId = useContext(ShortcutScopeContext);
-  useBrowserLayoutEffect(() => engine.registerScope({ id, parentId }), [engine, id, parentId]);
+  useBrowserLayoutEffect(() => engine.registerScope({ id, parentId }), [id, parentId]);
   return (
     <ShortcutScopeContext.Provider value={id}>
-      <div {...props} id={id} data-shortcut-scope={id} ref={forwardedRef}>{children}</div>
+      <div {...props} id={id} data-shortcut-scope={id} ref={forwardedRef}>
+        {children}
+      </div>
     </ShortcutScopeContext.Provider>
   );
 });
@@ -42,8 +45,9 @@ export function useShortcuts(bindings: readonly ShortcutBinding[]): void {
     return () => {
       registration.dispose();
       release();
-      registrationRef.current = null;
     };
-  }, [engine, scopeId]);
-  useBrowserLayoutEffect(() => { registrationRef.current?.update(bindings); });
+  }, [scopeId]);
+  useBrowserLayoutEffect(() => {
+    registrationRef.current?.update(bindings);
+  });
 }

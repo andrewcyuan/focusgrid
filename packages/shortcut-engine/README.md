@@ -11,7 +11,11 @@ function Editor({ save }: { save: () => void }) {
 }
 
 export function App() {
-  return <ShortcutScope><Editor save={() => alert("Saved")} /></ShortcutScope>;
+  return (
+    <ShortcutScope>
+      <Editor save={() => alert("Saved")} />
+    </ShortcutScope>
+  );
 }
 ```
 

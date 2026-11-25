@@ -1,16 +1,13 @@
 import { findPaneNode } from "../src/layout/tree";
 import { createController, observedState } from "./observe-controller";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FocusGridController, validateFocusGridControllerState, type FocusGridControllerProps } from "../src";
+import { validateFocusGridControllerState, type FocusGridControllerProps } from "../src";
 import * as geometry from "../src/layout/geometry";
 import * as ids from "../src/utils/ids";
+import { gridState, paneNode } from "./layouts";
 
 function props(): FocusGridControllerProps {
-  return {
-    root: { kind: "pane", id: "editor-node", paneId: "editor" },
-    activePaneId: "editor",
-    container: { width: 1000, height: 600 },
-  };
+  return gridState(paneNode("editor"), "editor");
 }
 
 afterEach(() => vi.restoreAllMocks());
@@ -46,12 +43,21 @@ describe("public controller methods", () => {
   it("preserves supplied IDs without generating replacements", () => {
     const createId = vi.spyOn(ids, "createId");
     const controller = createController(props());
-    expect(controller.split("editor-node", {
-      side: "right", newPaneId: "terminal", newPaneNodeId: "terminal-node", splitId: "workspace",
-    })).toBe("terminal");
+    expect(
+      controller.split("editor-node", {
+        side: "right",
+        newPaneId: "terminal",
+        newPaneNodeId: "terminal-node",
+        splitId: "workspace",
+      }),
+    ).toBe("terminal");
     expect(createId).not.toHaveBeenCalled();
     expect(observedState(controller).root).toMatchObject({
-      id: "workspace", children: [{ id: "editor-node", paneId: "editor" }, { id: "terminal-node", paneId: "terminal" }],
+      id: "workspace",
+      children: [
+        { id: "editor-node", paneId: "editor" },
+        { id: "terminal-node", paneId: "terminal" },
+      ],
     });
     expect(validateFocusGridControllerState(observedState(controller)).ok).toBe(true);
   });
@@ -81,8 +87,10 @@ describe("public controller methods", () => {
     const controller = createController(props());
     const before = observedState(controller);
     for (const patch of [
-      { newPaneId: "editor" }, { newPaneNodeId: "editor-node" },
-      { splitId: "editor-node" }, { newPaneNodeId: "same", splitId: "same" },
+      { newPaneId: "editor" },
+      { newPaneNodeId: "editor-node" },
+      { splitId: "editor-node" },
+      { newPaneNodeId: "same", splitId: "same" },
     ]) {
       expect(controller.split("editor-node", { side: "right", ...patch })).toBeNull();
       expect(observedState(controller)).toBe(before);
@@ -91,14 +99,18 @@ describe("public controller methods", () => {
 
   it("applies defaults on construction and pane creation while preserving explicit values", () => {
     const initial = props();
-    initial.root = { ...initial.root, canRemove: true };
+    initial.root = paneNode("editor", { canRemove: true });
     const controller = createController({
-      ...initial, paneDefaults: { canRemove: false, canFocus: false },
+      ...initial,
+      paneDefaults: { canRemove: false, canFocus: false },
     });
     expect(initial.root).not.toHaveProperty("canFocus");
     controller.split("editor-node", { side: "right", newPaneId: "terminal", canFocus: true });
     expect(findPaneNode(observedState(controller).root, "editor")).toMatchObject({ canRemove: true, canFocus: false });
-    expect(findPaneNode(observedState(controller).root, "terminal")).toMatchObject({ canRemove: false, canFocus: true });
+    expect(findPaneNode(observedState(controller).root, "terminal")).toMatchObject({
+      canRemove: false,
+      canFocus: true,
+    });
   });
 
   it("patches pane fields together while preserving identity and omitted fields", () => {
@@ -109,7 +121,12 @@ describe("public controller methods", () => {
     const listener = vi.fn();
     controller.subscribe(listener);
     expect(controller.updatePane("editor", { canRemove: false })).toBe(true);
-    expect(findPaneNode(observedState(controller).root, "editor")).toEqual({ kind: "pane", id: "editor-node", paneId: "editor", canRemove: false });
+    expect(findPaneNode(observedState(controller).root, "editor")).toEqual({
+      kind: "pane",
+      id: "editor-node",
+      paneId: "editor",
+      canRemove: false,
+    });
     expect(findPaneNode(observedState(controller).root, "terminal")).toBe(sibling);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledWith(observedState(controller), previous);
@@ -142,10 +159,12 @@ describe("public controller methods", () => {
 
   it("uses pane defaults when creation props are omitted or undefined", () => {
     const controller = createController({
-      ...props(), paneDefaults: { canFocus: false },
+      ...props(),
+      paneDefaults: { canFocus: false },
     });
     controller.split("editor-node", {
-      side: "right", newPaneId: "terminal",
+      side: "right",
+      newPaneId: "terminal",
       canFocus: undefined,
     });
     expect(findPaneNode(observedState(controller).root, "terminal")).toMatchObject({ canFocus: false });
@@ -169,9 +188,7 @@ describe("public controller methods", () => {
     expect(observedState(controller)).toBe(before);
     expect(listener).not.toHaveBeenCalled();
   });
-
 });
-
 
 describe("controller read methods", () => {
   it("keeps render data stable for no-ops and refreshes it before notifying subscribers", () => {
@@ -232,7 +249,6 @@ describe("controller read methods", () => {
     expect(controller.getLayout().handles).toEqual([]);
   });
 });
-
 
 it("uses the controller's private layout cache for command geometry", () => {
   const controller = createController(props());

@@ -122,3 +122,8 @@ Repeat mode swallowed new prefixes and direct shortcuts for 500 ms after a resiz
 ## Public Entry Points Must Share Class Identity
 
 Repeating tsdown's `--deps.never-bundle` flag retained only its last value, so DOM and React bundles duplicated core classes and private-member declarations. Use an explicit external dependency list and compile consumers against built package exports without workspace aliases; source-only typechecks conceal this mismatch.
+
+## Minimum Pane Sizes Must Gate Every Layout Command
+
+- **Mistake:** `minWidth`/`minHeight` were enforced only by resize, so repeated splits halved panes down to 0px and moved focus into an invisible pane.
+- **Fix pattern:** Any command that creates or shrinks panes must check the same minimum sizes as resize. When focus looks lost, check the size of the focused pane before you debug focus routing.

@@ -6,7 +6,7 @@ import type { ShortcutBinding } from "@andrewcyuan/shortcut-engine";
 import { createDefaultPaneKeymap } from "./default-pane-keymap";
 import { useGridControllers } from "./FocusgridController";
 import { useControllerLayout } from "./hooks";
-import { PaneView, type Pane } from "./PaneView";
+import { renderNode, type Pane } from "./PaneView";
 
 export type FocusGridProps = PaneEventHandlers & {
   keymap?: readonly ShortcutBinding[];
@@ -21,8 +21,10 @@ export function FocusGrid({ className, onPaneLayoutChange, onPaneClose, ...conte
     const root = rootRef.current;
     if (root) return mountFocusGrid(root, controller, domController);
   }, [controller, domController]);
-  useEffect(() => controller.subscribePaneEvents({ onPaneLayoutChange, onPaneClose }),
-    [controller, onPaneLayoutChange, onPaneClose]);
+  useEffect(
+    () => controller.subscribePaneEvents({ onPaneLayoutChange, onPaneClose }),
+    [controller, onPaneLayoutChange, onPaneClose],
+  );
   return (
     <ShortcutScope ref={rootRef} className={className ? `FocusgridFocusGrid ${className}` : "FocusgridFocusGrid"}>
       <GridContent {...content} />
@@ -34,5 +36,5 @@ function GridContent({ keymap, renderPane }: Pick<FocusGridProps, "keymap" | "re
   const { controller } = useGridControllers();
   const layout = useControllerLayout(controller);
   useShortcuts(keymap ?? createDefaultPaneKeymap(controller));
-  return <PaneView node={layout.root} renderPane={renderPane} />;
+  return renderNode(layout.root, renderPane);
 }

@@ -1,17 +1,14 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
-import {
-  FocusGridController,
-  type DomController,
-  type ComputedLayout,
-  type FocusGridControllerProps,
-} from "@andrewcyuan/focusgrid/core";
+import { FocusGridController, type ComputedLayout, type FocusGridControllerProps } from "@andrewcyuan/focusgrid/core";
+import { FocusGridDomController } from "@andrewcyuan/focusgrid/dom";
+import type { FocusGridControllers } from "./FocusgridController";
 
-export function useFocusGridController(
-  createProps: () => FocusGridControllerProps,
-  domController: DomController,
-): FocusGridController {
-  const [controller] = useState(() => new FocusGridController(createProps(), domController));
-  return controller;
+export function useFocusGridController(createProps: () => FocusGridControllerProps): FocusGridControllers {
+  const [controllers] = useState(() => {
+    const domController = new FocusGridDomController();
+    return { controller: new FocusGridController(createProps(), domController), domController };
+  });
+  return controllers;
 }
 
 export function useControllerLayout(controller: FocusGridController): ComputedLayout {

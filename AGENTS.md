@@ -9,7 +9,7 @@ NEVER support legacy versions of the library; this simply bloats the library. Yo
 - Always check before adding dependencies. This is a library so dependencies should be kept at a minimum
 - Use Bun directly. The repo requires Bun `1.3.14`; use `bun install --frozen-lockfile` and `bun run <script>` (including `bun run test` to run Vitest).
 - Write tests in the test/ folder in each package. Heavily emphasize regression testing to make sure that bugs don't come back, since DOM / focus capture in the browser can be quite flaky. Assert where focus is. The goal of this library is to make focus deterministic enough to become the main mode of driving the app.
-- Do not add end-to-end tests for trivial playground-only persistence or UI state wiring unless it covers a real keyboard, focus, or DOM regression risk.
+- Run `bun run format` and `bun run lint` (oxfmt, oxlint, tsc) before you commit.
 
 ## Debugging DOM and keyboard regressions
 

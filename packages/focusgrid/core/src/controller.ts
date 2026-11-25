@@ -1,17 +1,22 @@
 import { createId } from "./utils/ids";
 import { computeLayout } from "./layout/geometry";
-import { resizeSplit } from "./layout/resize";
-import { findPaneForFocusCommand, findPaneInDirection, resolvePaneResizeBoundary } from "./layout/navigation";
-import { isHorizontalDirection } from "./layout/spatial";
+import { getMinimumSize, resizeSplit } from "./layout/resize";
 import {
-  buildLayoutIndex,
+  findPaneForFocusCommand,
+  findPaneInDirection,
+  isForwardDirection,
+  isHorizontalDirection,
+  nearestSplitsOnAxis,
+} from "./layout/navigation";
+import {
   collectPaneIds,
+  findNode,
+  findPaneNode,
+  findPanePath,
   markFocusedPanePath,
   removePaneNode,
   transformLayout,
   updatePane,
-  findPaneNode,
-  findSplitNode,
 } from "./layout/tree";
 import {
   PaneCommandCapability,
@@ -23,8 +28,9 @@ import {
   type ComputedPane,
   type CardinalDirection,
   type FocusGridControllerState,
+  type SplitNode,
 } from "./layout/types";
-import { assertValidFocusGridControllerState } from "./validation";
+import { FocusGridStateValidationException, validateFocusGridControllerState } from "./validation";
 
 export interface DomController {
   focus(paneId: PaneId): boolean;
@@ -37,14 +43,13 @@ export type PaneEventHandlers = {
   onPaneLayoutChange?: (event: PaneLayoutChangeEvent) => void;
   onPaneClose?: (event: PaneCloseEvent) => void;
 };
-export type PaneDefaults = PaneCommandCapabilityInput;
 export type FocusGridControllerProps = FocusGridControllerState & {
-  paneDefaults?: PaneDefaults;
+  paneDefaults?: PaneCommandCapabilityInput;
   minWidth?: number;
   minHeight?: number;
   directionalFocusOverflow?: boolean;
 };
-export type SplitPaneOptions = Partial<Omit<PaneNode, "kind" | "id" | "paneId">> & {
+export type SplitPaneOptions = PaneCommandCapabilityInput & {
   side: CardinalDirection;
   newPaneId?: PaneId;
   newPaneNodeId?: NodeId;
@@ -57,15 +62,25 @@ export type ResizeHandleOptions = { index: number; deltaPx: number; snapshotSize
 export class FocusGridController {
   readonly minWidth: number;
   readonly minHeight: number;
-  readonly directionalFocusOverflow: boolean;
+  private readonly directionalFocusOverflow: boolean;
   private currentState: FocusGridControllerState;
   private cachedLayout: ComputedLayout | null = null;
-  private readonly paneDefaults: PaneDefaults;
+  private readonly paneDefaults: PaneCommandCapabilityInput;
   private readonly listeners = new Set<Listener>();
 
-  constructor({ paneDefaults = {}, minWidth = 0, minHeight = 0, directionalFocusOverflow = false, ...state }: FocusGridControllerProps, private readonly domController: DomController) {
-    assertValidFocusGridControllerState(state);
-    if (![minWidth, minHeight].every(value => Number.isFinite(value) && value >= 0)) {
+  constructor(
+    {
+      paneDefaults = {},
+      minWidth = 0,
+      minHeight = 0,
+      directionalFocusOverflow = false,
+      ...state
+    }: FocusGridControllerProps,
+    private readonly domController: DomController,
+  ) {
+    const validation = validateFocusGridControllerState(state);
+    if (!validation.ok) throw new FocusGridStateValidationException(validation.errors);
+    if (![minWidth, minHeight].every((value) => Number.isFinite(value) && value >= 0)) {
       throw new RangeError("Minimum pane dimensions must be finite, non-negative numbers.");
     }
     this.minWidth = minWidth;
@@ -78,9 +93,8 @@ export class FocusGridController {
     this.currentState = root === state.root ? state : { ...state, root };
   }
 
-  /** Computed render data; stable until the next committed change. */
   getLayout(): ComputedLayout {
-    return this.cachedLayout ??= computeLayout(this.currentState);
+    return (this.cachedLayout ??= computeLayout(this.currentState));
   }
 
   getPane(paneId: PaneId): PaneNode | null {
@@ -93,13 +107,15 @@ export class FocusGridController {
   }
 
   getSplitSizes(splitId: NodeId): number[] | null {
-    const split = findSplitNode(this.currentState.root, splitId);
-    return split ? [...split.sizes] : null;
+    const split = findNode(this.currentState.root, splitId);
+    return split?.kind === "split" ? [...split.sizes] : null;
   }
 
   splitActive(side: CardinalDirection): PaneId | null {
     const pane = findPaneNode(this.currentState.root, this.currentState.activePaneId);
-    const capability = isHorizontalDirection(side) ? PaneCommandCapability.SplitHorizontal : PaneCommandCapability.SplitVertical;
+    const capability = isHorizontalDirection(side)
+      ? PaneCommandCapability.SplitHorizontal
+      : PaneCommandCapability.SplitVertical;
     return pane && pane[capability] !== false ? this.split(pane.id, { side }) : null;
   }
 
@@ -111,7 +127,13 @@ export class FocusGridController {
   focusAdjacent(direction: CardinalDirection): boolean {
     const state = this.currentState;
     if (!state.activePaneId) return false;
-    const target = findPaneForFocusCommand(state.root, this.getLayout(), state.activePaneId, direction, this.directionalFocusOverflow);
+    const target = findPaneForFocusCommand(
+      state.root,
+      this.getLayout(),
+      state.activePaneId,
+      direction,
+      this.directionalFocusOverflow,
+    );
     if (!target || !this.domController.focus(target)) return false;
     this.focus(target);
     return true;
@@ -125,7 +147,8 @@ export class FocusGridController {
     const target = findPaneNode(state.root, targetId);
     const capability = isHorizontalDirection(direction) ? PaneCommandCapability.SwapX : PaneCommandCapability.SwapY;
     return target && active[capability] !== false && target[capability] !== false
-      ? this.swap(active.paneId, target.paneId) : false;
+      ? this.swap(active.paneId, target.paneId)
+      : false;
   }
 
   resizeActive(direction: CardinalDirection, deltaPx: number): boolean {
@@ -134,25 +157,41 @@ export class FocusGridController {
     return pane && pane[capability] !== false ? this.resize(pane.paneId, { direction, deltaPx }) : false;
   }
 
-  split(paneNodeId: NodeId, props: SplitPaneOptions): PaneId | null {
+  split(
+    paneNodeId: NodeId,
+    {
+      side,
+      newPaneId,
+      newPaneNodeId,
+      splitId: requestedSplitId,
+      preserveActivePane,
+      ...capabilities
+    }: SplitPaneOptions,
+  ): PaneId | null {
     const state = this.currentState;
-    const index = buildLayoutIndex(state.root);
-    const target = index.nodeById.get(paneNodeId);
+    const target = findNode(state.root, paneNodeId);
     if (target?.kind !== "pane") return null;
-    const paneId = props.newPaneId ?? createId("pane");
-    const id = props.newPaneNodeId ?? createId("node");
-    const splitId = props.splitId ?? createId("split");
-    if (index.paneNodeByPaneId.has(paneId) || index.nodeById.has(id) || index.nodeById.has(splitId) || id === splitId) return null;
-    const { side, newPaneId, newPaneNodeId, splitId: suppliedSplitId, preserveActivePane, ...paneProps } = props;
-    const pane = withPaneDefaults({ kind: "pane", id, paneId, ...paneProps }, this.paneDefaults);
-    const root = updatePane(state.root, target.paneId, () => ({
-      kind: "split", id: splitId,
-      orientation: isHorizontalDirection(side) ? "horizontal" : "vertical",
-      children: side === "left" || side === "up" ? [pane, target] : [target, pane],
+    const paneId = newPaneId ?? createId("pane");
+    const id = newPaneNodeId ?? createId("node");
+    const splitId = requestedSplitId ?? createId("split");
+    if (findPaneNode(state.root, paneId) || findNode(state.root, id) || findNode(state.root, splitId) || id === splitId)
+      return null;
+    const pane = withPaneDefaults({ kind: "pane", id, paneId, ...capabilities }, this.paneDefaults);
+    const horizontal = isHorizontalDirection(side);
+    const split: SplitNode = {
+      kind: "split",
+      id: splitId,
+      orientation: horizontal ? "horizontal" : "vertical",
+      children: isForwardDirection(side) ? [target, pane] : [pane, target],
       sizes: [0.5, 0.5],
-    }));
+    };
+    const paneMinSize = horizontal ? this.minWidth : this.minHeight;
+    const rect = this.getLayout().rectByNodeId.get(target.id)!;
+    const available = horizontal ? rect.width : rect.height;
+    if (paneMinSize > 0 && available < getMinimumSize(split, split.orientation, paneMinSize)) return null;
+    const root = updatePane(state.root, target.paneId, () => split);
     const activePaneId = preserveActivePane ? state.activePaneId : paneId;
-    this.commit({ root: activePaneId ? markFocusedPanePath(root, activePaneId) : root, activePaneId });
+    this.commit({ root: markFocusedPanePath(root, activePaneId), activePaneId });
     return paneId;
   }
 
@@ -162,41 +201,48 @@ export class FocusGridController {
     if (!panes.includes(paneId) || panes.length <= 1) return false;
     const root = removePaneNode(state.root, paneId)!;
     const activePaneId = state.activePaneId === paneId ? collectPaneIds(root)[0]! : state.activePaneId;
-    return this.commit({ root: activePaneId ? markFocusedPanePath(root, activePaneId) : root, activePaneId });
+    return this.commit({ root: markFocusedPanePath(root, activePaneId), activePaneId });
   }
 
   swap(firstPaneId: PaneId, secondPaneId: PaneId): boolean {
     if (firstPaneId === secondPaneId) return false;
     const state = this.currentState;
-    const index = buildLayoutIndex(state.root);
-    const first = index.paneNodeByPaneId.get(firstPaneId);
-    const second = index.paneNodeByPaneId.get(secondPaneId);
+    const first = findPaneNode(state.root, firstPaneId);
+    const second = findPaneNode(state.root, secondPaneId);
     if (!first || !second) return false;
     const root = transformLayout(state.root, (node) => {
       if (node.id === first.id) return { ...second, id: node.id };
       if (node.id === second.id) return { ...first, id: node.id };
       return node;
     });
-    return this.commit({ root: state.activePaneId ? markFocusedPanePath(root, state.activePaneId) : root });
+    return this.commit({ root: markFocusedPanePath(root, state.activePaneId) });
   }
 
-  resize(paneId: PaneId, props: ResizePaneOptions): boolean {
-    const index = buildLayoutIndex(this.currentState.root);
-    const pane = index.paneNodeByPaneId.get(paneId);
-    if (!pane) return false;
-    const boundary = resolvePaneResizeBoundary(index, pane.id, props.direction);
-    return boundary ? this.resizeHandle(boundary.splitId, {
-      index: boundary.index, deltaPx: boundary.deltaPxSign * props.deltaPx,
-    }) : false;
+  resize(paneId: PaneId, { direction, deltaPx }: ResizePaneOptions): boolean {
+    const path = findPanePath(this.currentState.root, paneId);
+    const nearest = path ? nearestSplitsOnAxis(path, direction)[0] : undefined;
+    if (!nearest) return false;
+    return this.resizeHandle(nearest.split.id, {
+      index: Math.max(0, nearest.childIndex - 1),
+      deltaPx: isForwardDirection(direction) ? deltaPx : -deltaPx,
+    });
   }
 
   resizeHandle(splitId: NodeId, props: ResizeHandleOptions): boolean {
     const state = this.currentState;
     const rect = this.getLayout().rectByNodeId.get(splitId);
     if (!rect) return false;
-    const root = transformLayout(state.root, (node) => node.kind === "split" && node.id === splitId
-      ? resizeSplit(node, node.orientation === "horizontal" ? rect.width : rect.height, props.index, props.deltaPx, props.snapshotSizes, this.minWidth, this.minHeight)
-      : node,
+    const root = transformLayout(state.root, (node) =>
+      node.kind === "split" && node.id === splitId
+        ? resizeSplit(
+            node,
+            node.orientation === "horizontal" ? rect.width : rect.height,
+            props.index,
+            props.deltaPx,
+            props.snapshotSizes,
+            node.orientation === "horizontal" ? this.minWidth : this.minHeight,
+          )
+        : node,
     );
     return this.commit({ root });
   }
@@ -208,16 +254,9 @@ export class FocusGridController {
     return this.commit({ root, activePaneId: paneId });
   }
 
-  updatePane(
-    paneId: PaneId,
-    patch: Partial<Omit<PaneNode, "kind" | "id" | "paneId">>,
-  ): boolean {
+  updatePane(paneId: PaneId, patch: PaneCommandCapabilityInput): boolean {
     const root = updatePane(this.currentState.root, paneId, (pane) =>
-      Object.entries(patch).every(([key, value]) => Object.is(pane[key as keyof PaneNode], value))
-        ? pane
-        : Object.fromEntries(
-          Object.entries({ ...pane, ...patch }).filter(([, value]) => value !== undefined),
-        ) as PaneNode,
+      keepPaneIfUnchanged(pane, withoutUndefined({ ...pane, ...patch })),
     );
     return this.commit({ root });
   }
@@ -229,7 +268,9 @@ export class FocusGridController {
 
   private commit(patch: Partial<FocusGridControllerState>): boolean {
     const previous = this.currentState;
-    if (Object.entries(patch).every(([key, value]) => Object.is(previous[key as keyof FocusGridControllerState], value))) {
+    if (
+      Object.entries(patch).every(([key, value]) => Object.is(previous[key as keyof FocusGridControllerState], value))
+    ) {
       return false;
     }
 
@@ -247,13 +288,18 @@ export class FocusGridController {
   subscribePaneEvents({ onPaneLayoutChange, onPaneClose }: PaneEventHandlers): () => void {
     if (!onPaneLayoutChange && !onPaneClose) return () => {};
     return this.subscribe((next, previous) => {
-      const previousPanes = new Map(computeLayout(previous).panes.map(pane => [pane.paneId, pane]));
+      const previousPanes = new Map(computeLayout(previous).panes.map((pane) => [pane.paneId, pane]));
       const nextPanes = (next === this.currentState ? this.getLayout() : computeLayout(next)).panes;
       for (const pane of nextPanes) {
         const previousPane = previousPanes.get(pane.paneId);
         previousPanes.delete(pane.paneId);
-        if (previousPane && (pane.rect.x !== previousPane.rect.x || pane.rect.y !== previousPane.rect.y ||
-          pane.rect.width !== previousPane.rect.width || pane.rect.height !== previousPane.rect.height)) {
+        if (
+          previousPane &&
+          (pane.rect.x !== previousPane.rect.x ||
+            pane.rect.y !== previousPane.rect.y ||
+            pane.rect.width !== previousPane.rect.width ||
+            pane.rect.height !== previousPane.rect.height)
+        ) {
           onPaneLayoutChange?.({ pane, previousPane, controller: this });
         }
       }
@@ -272,10 +318,16 @@ export class FocusGridController {
   }
 }
 
-function withPaneDefaults(pane: PaneNode, defaults: PaneDefaults): PaneNode {
-  const definedPane = Object.fromEntries(Object.entries(pane).filter(([, value]) => value !== undefined)) as PaneNode;
-  const next = Object.fromEntries(Object.entries({ ...defaults, ...definedPane }).filter(([, value]) => value !== undefined)) as PaneNode;
-  return Object.keys(next).length === Object.keys(pane).length &&
-    Object.entries(next).every(([key, value]) => Object.is(pane[key as keyof PaneNode], value))
-    ? pane : next;
+function withPaneDefaults(pane: PaneNode, defaults: PaneCommandCapabilityInput): PaneNode {
+  return keepPaneIfUnchanged(pane, withoutUndefined({ ...defaults, ...withoutUndefined(pane) }));
+}
+
+function withoutUndefined<T extends object>(value: T): T {
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
+}
+
+function keepPaneIfUnchanged(pane: PaneNode, next: PaneNode): PaneNode {
+  const keys = Object.keys(next) as (keyof PaneNode)[];
+  const unchanged = keys.length === Object.keys(pane).length && keys.every((key) => Object.is(pane[key], next[key]));
+  return unchanged ? pane : next;
 }

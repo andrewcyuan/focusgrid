@@ -2,9 +2,8 @@ export type PaneId = string;
 export type NodeId = string;
 
 export type Orientation = "horizontal" | "vertical";
-export const cardinalDirections = ["left", "right", "up", "down"] as const;
+export type CardinalDirection = "left" | "right" | "up" | "down";
 
-export type CardinalDirection = (typeof cardinalDirections)[number];
 export enum PaneCommandCapability {
   ResizeX = "canResizeX",
   ResizeY = "canResizeY",
@@ -75,10 +74,4 @@ export type FocusGridControllerState = {
     width: number;
     height: number;
   };
-};
-
-export type LayoutIndex = {
-  nodeById: Map<NodeId, LayoutNode>;
-  paneNodeByPaneId: Map<PaneId, PaneNode>;
-  parentByNodeId: Map<NodeId, SplitNode | null>;
 };

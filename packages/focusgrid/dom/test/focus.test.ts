@@ -7,9 +7,12 @@ function fixture() {
   const root = { ownerDocument: document, querySelectorAll: () => panes } as unknown as HTMLElement;
   const addPane = (paneId: string, owner = root) => {
     const pane = {
-      dataset: { paneId }, closest: () => owner,
+      dataset: { paneId },
+      closest: () => owner,
       contains: (element: unknown) => element === pane,
-      focus: vi.fn(() => { document.activeElement = pane; }),
+      focus: vi.fn(() => {
+        document.activeElement = pane;
+      }),
     };
     panes.push(pane);
     return pane;

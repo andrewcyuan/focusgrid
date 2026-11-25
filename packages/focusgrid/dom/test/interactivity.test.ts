@@ -10,8 +10,12 @@ class ElementStub {
   attributes = new Map<string, string>();
   ownerDocument = { defaultView: null };
   constructor(readonly tagName: string) {}
-  hasAttribute(name: string) { return this.attributes.has(name); }
-  getAttribute(name: string) { return this.attributes.get(name) ?? null; }
+  hasAttribute(name: string) {
+    return this.attributes.has(name);
+  }
+  getAttribute(name: string) {
+    return this.attributes.get(name) ?? null;
+  }
 }
 
 beforeEach(() => {
@@ -25,7 +29,7 @@ function shouldFocus(target: ElementStub, pane: ElementStub) {
 }
 
 describe("pane pointer focus", () => {
-  it.each(["INPUT", "BUTTON", "SELECT", "TEXTAREA", "DIALOG", "SUMMARY"])("preserves an interactive %s", tag => {
+  it.each(["INPUT", "BUTTON", "SELECT", "TEXTAREA", "DIALOG", "SUMMARY"])("preserves an interactive %s", (tag) => {
     const pane = new ElementStub("DIV");
     const target = new ElementStub(tag);
     target.parentElement = pane;
