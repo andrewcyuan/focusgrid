@@ -54,7 +54,8 @@ try {
     );
     if (!dryRun) {
       const tag = `${name}@${version}`;
-      run("npm", ["dist-tag", "add", tag, "latest"], cwd);
+      const latest = run("npm", ["view", `${name}@latest`, "version"], cwd, true);
+      if (latest !== version) run("npm", ["dist-tag", "add", tag, "latest"], cwd);
       if (!run("git", ["tag", "--list", tag], repoRoot, true)) {
         run("git", ["tag", tag]);
       }
