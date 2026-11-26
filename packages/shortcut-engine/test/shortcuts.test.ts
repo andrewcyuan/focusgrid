@@ -180,6 +180,17 @@ it("starts a new prefix and runs direct bindings during the repeat window", () =
   expect(resize).toHaveBeenCalledTimes(2);
 });
 
+it("clears pending chords via the public reset method", () => {
+  const engine = setup(),
+    action = vi.fn();
+  engine.registerBindings("child", [binding("g g", action)]);
+  expect(engine.handle(key("g"))).toBe("pending");
+  engine.reset();
+  expect(engine.handle(key("g"))).toBe("pending");
+  engine.handle(key("g"));
+  expect(action).toHaveBeenCalledOnce();
+});
+
 it("keeps an initial prefix pending regardless of the repeat timeout", () => {
   vi.useFakeTimers({ now: 0 });
   const engine = new ShortcutEngine(),

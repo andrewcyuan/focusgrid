@@ -12,6 +12,10 @@ export class ShortcutEngine {
   private activeScopeId: string | null = null;
   private state = idleSequence();
 
+  reset(): void {
+    this.state = idleSequence();
+  }
+
   registerScope({ id, parentId }: ShortcutScopeOptions): () => void {
     if (this.scopes.get(id)?.parentId !== undefined) throw new Error(`Duplicate shortcut scope: ${id}`);
     if (this.path(parentId).includes(id)) throw new Error("Shortcut scope parents must not form a cycle");
@@ -85,10 +89,6 @@ export class ShortcutEngine {
 
   private isScopeActive(id: string): boolean {
     return this.path().includes(id);
-  }
-
-  private reset(): void {
-    this.state = idleSequence();
   }
 
   private resetIfActive(id: string): void {
