@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -55,6 +55,10 @@ function options(args) {
 
 try {
   const { dryRun, publishArgs } = options(process.argv.slice(2));
+  // Bun does not prune orphaned packages from node_modules/.bun on install,
+  // which lets stale type declarations (e.g. duplicate csstype) break typecheck.
+  // Force a clean install so the release runs against exactly the lockfile.
+  rmSync(join(repoRoot, "node_modules"), { recursive: true, force: true });
   run("bun", ["install", "--frozen-lockfile"]);
   assertLockfileMatchesPackageVersions();
   for (const script of ["typecheck", "test", "build"]) {
