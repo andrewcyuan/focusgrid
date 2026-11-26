@@ -1,5 +1,11 @@
 # @andrewcyuan/focusgrid
 
+## 0.3.2
+
+### Patch Changes
+
+- Republish focusgrid so its packed dependency on `@andrewcyuan/shortcut-engine` resolves to the current `0.4.x` line. Previous releases shipped with a stale lockfile that pinned shortcut-engine to `0.2.0`, which caused duplicate engine instances when consumers installed shortcut-engine alongside focusgrid.
+
 ## 0.3.1
 
 ### Patch Changes

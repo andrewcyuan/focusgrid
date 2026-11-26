@@ -6,6 +6,29 @@ import { spawnSync } from "node:child_process";
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const packageDirectories = ["shortcut-engine", "focusgrid"];
 
+function readPackageJson(directory) {
+  return JSON.parse(readFileSync(join(directory, "package.json"), "utf8"));
+}
+
+function assertLockfileMatchesPackageVersions() {
+  const raw = readFileSync(join(repoRoot, "bun.lock"), "utf8");
+  // bun.lock is JSONC — trailing commas are allowed and must be stripped before JSON.parse.
+  const lockfile = JSON.parse(raw.replace(/,(\s*[}\]])/g, "$1"));
+  const workspaces = lockfile.workspaces ?? {};
+  for (const directory of packageDirectories) {
+    const key = `packages/${directory}`;
+    const lockEntry = workspaces[key];
+    const pkg = readPackageJson(join(repoRoot, "packages", directory));
+    if (!lockEntry) throw new Error(`bun.lock is missing workspace entry for ${key}.`);
+    if (lockEntry.version !== pkg.version) {
+      throw new Error(
+        `bun.lock lists ${pkg.name} at ${lockEntry.version}, but packages/${directory}/package.json is ${pkg.version}. ` +
+          `Delete bun.lock and run 'bun install' so 'workspace:*' resolves to ${pkg.version} on publish.`,
+      );
+    }
+  }
+}
+
 function run(command, args, cwd = repoRoot, capture = false) {
   const result = spawnSync(command, args, {
     cwd,
@@ -33,12 +56,13 @@ function options(args) {
 try {
   const { dryRun, publishArgs } = options(process.argv.slice(2));
   run("bun", ["install", "--frozen-lockfile"]);
+  assertLockfileMatchesPackageVersions();
   for (const script of ["typecheck", "test", "build"]) {
     run("bun", ["run", script]);
   }
   for (const directory of packageDirectories) {
     const cwd = join(repoRoot, "packages", directory);
-    const { name, version, private: isPrivate } = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8"));
+    const { name, version, private: isPrivate } = readPackageJson(cwd);
     if (isPrivate) throw new Error(`Refusing to publish private package ${name}`);
     run(
       "bun",
