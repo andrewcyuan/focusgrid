@@ -1,5 +1,11 @@
 # @andrewcyuan/shortcut-engine
 
+## 0.5.0
+
+### Minor Changes
+
+- reset function + lockfile fixes
+
 ## 0.4.0
 
 ### Minor Changes
