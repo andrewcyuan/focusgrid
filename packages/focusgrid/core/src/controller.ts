@@ -186,9 +186,11 @@ export class FocusGridController {
       sizes: [0.5, 0.5],
     };
     const paneMinSize = horizontal ? this.minWidth : this.minHeight;
+    const { width: containerWidth, height: containerHeight } = state.container;
+    const measured = containerWidth > 0 && containerHeight > 0;
     const rect = this.getLayout().rectByNodeId.get(target.id)!;
     const available = horizontal ? rect.width : rect.height;
-    if (paneMinSize > 0 && available < getMinimumSize(split, split.orientation, paneMinSize)) return null;
+    if (measured && paneMinSize > 0 && available < getMinimumSize(split, split.orientation, paneMinSize)) return null;
     const root = updatePane(state.root, target.paneId, () => split);
     const activePaneId = preserveActivePane ? state.activePaneId : paneId;
     this.commit({ root: markFocusedPanePath(root, activePaneId), activePaneId });

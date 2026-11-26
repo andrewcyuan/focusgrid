@@ -40,6 +40,14 @@ describe("public controller methods", () => {
     }
   });
 
+  it("splits before the container is measured even when a minimum size is set", () => {
+    const unmeasured = gridState(paneNode("editor"), "editor", { width: 0, height: 0 });
+    for (const side of ["right", "down"] as const) {
+      const controller = createController({ ...unmeasured, minWidth: 120, minHeight: 90 });
+      expect(controller.split("editor-node", { side, newPaneId: "next" })).toBe("next");
+    }
+  });
+
   it("preserves supplied IDs without generating replacements", () => {
     const createId = vi.spyOn(ids, "createId");
     const controller = createController(props());
