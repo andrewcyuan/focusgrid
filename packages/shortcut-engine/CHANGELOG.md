@@ -1,5 +1,11 @@
 # @andrewcyuan/shortcut-engine
 
+## 0.4.0
+
+### Minor Changes
+
+- 5dc2696: Expose `ShortcutEngine.reset()` on the public API for clearing pending chord state.
+
 ## 0.3.0
 
 ### Minor Changes

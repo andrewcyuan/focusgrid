@@ -1,5 +1,12 @@
 # @andrewcyuan/focusgrid
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [5dc2696]
+  - @andrewcyuan/shortcut-engine@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
